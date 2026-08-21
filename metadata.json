@@ -1,0 +1,6 @@
+{
+  "name": "Kelas Pak Hafiz",
+  "description": "Hub dokumentasi, galeri eksperimen laboratorium, materi modul unduhan, dan blog pembelajaran Kimia & IPA SMA dengan tampilan segar dan inspiratif.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
