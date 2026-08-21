@@ -40,7 +40,7 @@ export const LearningPlatformCTA: React.FC<LearningPlatformCTAProps> = ({ onOpen
               </h2>
 
               <p className="text-[#94A3B8] text-sm sm:text-base leading-relaxed mb-8 max-w-xl">
-                Landing page ini adalah etalase dokumentasi dan inspirasi. Untuk mengikuti kelas terstruktur, mengerjakan kuis berkala, dan evaluasi hasil belajar, segera masuk ke portal resmi pembelajaran utama kami.
+                Landing page ini adalah etalase dokumentasi dan inspirasi. Untuk mengikuti kelas terstruktur, mengerjakan kuis berkala, dan evaluasi hasil belajar, segera masuk ke portal pembelajaran utama kami.
               </p>
 
               {/* Perks List */}

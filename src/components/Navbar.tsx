@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
   const navLinks = [
     { label: 'Beranda', href: '#beranda', id: 'beranda' },
     { label: 'Galeri Praktikum', href: '#galeri', id: 'galeri' },
-    { label: 'Lab Maya', href: '#lab-maya', id: 'lab-maya' },
+    { label: 'Catatan Kelas', href: '#catatan-kelas', id: 'catatan-kelas' },
     { label: 'Dokumentasi File', href: '#modul', id: 'modul' },
     { label: 'Artikel & Blog', href: '#blog', id: 'blog' },
     { label: 'Hubungi', href: '#kontak', id: 'kontak' },

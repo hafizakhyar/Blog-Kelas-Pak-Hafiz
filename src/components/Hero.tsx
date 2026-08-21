@@ -67,7 +67,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMainPortal, onExploreClick }) 
                   className="w-full sm:w-auto border border-[#0284C7]/50 text-[#0284C7] hover:text-[#0369A1] hover:bg-[#E0F2FE]/50 bg-white px-8 py-3.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5 shadow-2xs"
                 >
                   <BookOpen className="w-4 h-4 text-[#0284C7]" />
-                  <span>Portal Resmi Pembelajaran</span>
+                  <span>Portal Pembelajaran</span>
                   <ExternalLink className="w-3.5 h-3.5 text-[#0284C7]" />
                 </a>
               </div>

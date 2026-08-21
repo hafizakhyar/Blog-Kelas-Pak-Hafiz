@@ -1,4 +1,4 @@
-import { GalleryItem, DocumentItem, BlogPost, NaturalIndicator, TestSolution } from '../types';
+import { GalleryItem, DocumentItem, BlogPost, NaturalIndicator, TestSolution, ClassNote } from '../types';
 
 export const TEACHER_INFO = {
   name: 'Pak Hafiz Akhyar, S.Si.',
@@ -454,7 +454,7 @@ export const FAQ_ITEMS = [
   },
   {
     question: 'Bagaimana cara mengakses Website Pembelajaran Utama (LMS)?',
-    answer: 'Anda cukup mengklik tombol "Masuk ke Kelas Utama" di navigasi atas atau tombol CTA di berbagai bagian halaman ini. Anda akan diarahkan ke portal LMS interaktif yang memuat kuis gamifikasi, video materi berdurasi penuh, serta forum tanya jawab materi kimia.'
+    answer: 'Anda cukup mengklik tombol "Masuk ke Portal Pembelajaran" di navigasi atas atau tombol CTA di berbagai bagian halaman ini. Anda akan diarahkan ke portal LMS interaktif yang memuat kuis gamifikasi, video materi berdurasi penuh, serta forum tanya jawab materi kimia.'
   },
   {
     question: 'Apakah eksperimen indikator alami aman dicoba sendiri di rumah?',
@@ -465,3 +465,91 @@ export const FAQ_ITEMS = [
     answer: 'Tentu saja! Anda dapat menghubungi Pak Hafiz melalui formulir kontak di bagian bawah situs ini atau melalui email resmi kelaspakhafiz@gmail.com untuk kolaborasi pengajaran, workshop praktikum kreatif, dan seminar pendidikan IPA/Kimia.'
   }
 ];
+
+export const INITIAL_CLASS_NOTES: ClassNote[] = [
+  {
+    id: 'note-1',
+    title: 'Ringkasan Cepat: Cara Mudah Menentukan Bilangan Oksidasi (Biloks)',
+    category: 'Redoks & Elektrokimia',
+    classGrade: 'Kelas XII',
+    content: 'Saat menyetarakan reaksi redoks (metode setengah reaksi atau perubahan biloks), kunci utamanya adalah menguasai aturan dasar bilangan oksidasi tanpa perlu panik.',
+    keyPoints: [
+      'Unsur bebas selalu bernilai 0 (Contoh: Fe, O₂, H₂, Cl₂, Na)',
+      'Fluor (F) selalu bernilai -1 dalam semua senyawanya',
+      'Golongan IA (Li, Na, K) = +1, Golongan IIA (Mg, Ca, Ba) = +2',
+      'Hidrogen (H) = +1 (kecuali hidrida logam seperti NaH nilainya -1)',
+      'Oksigen (O) = -2 (kecuali peroksida H₂O₂ = -1, dan senyawa OF₂ = +2)',
+      'Total biloks molekul netral = 0, sedangkan total biloks ion poliatom = muatan ionnya'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80',
+    date: '20 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: true,
+    likes: 42,
+    tags: ['Biloks', 'Redoks', 'KimiaXII', 'RumusCepat']
+  },
+  {
+    id: 'note-2',
+    title: 'Jembatan Keledai Tata Nama & Gugus Fungsi Senyawa Karbon',
+    category: 'Kimia Organik',
+    classGrade: 'Kelas XII',
+    content: 'Mengingat gugus fungsi turunan alkana sering membingungkan jika dihafal tanpa pola. Gunakan urutan prioritas IUPAC dan jembatan keledai visual berikut agar tidak tertukar antara aldehid, keton, dan ester.',
+    keyPoints: [
+      'Alkohol (-OH) -> Berakhiran -ol (Contoh: Etanol)',
+      'Eter (-O-) -> Alkoksi Alkana (Pelarut organik)',
+      'Aldehid (-CHO) -> Alkanal | Posisi selalu di ujung rantai (C-1)',
+      'Keton (-CO-) -> Alkanon | Gugus karbonil diapit oleh 2 atom karbon',
+      'Asam Karboksilat (-COOH) -> Asam Alkanoat (Gugus paling prioritas)',
+      'Ester (-COO-) -> Alkil Alkanoat (Pemberi aroma esens buah)'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b4?auto=format&fit=crop&w=800&q=80',
+    date: '18 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: true,
+    likes: 38,
+    tags: ['KimiaOrganik', 'GugusFungsi', 'Alkana', 'UTBK']
+  },
+  {
+    id: 'note-3',
+    title: 'Peta Konsep Stoikiometri & Konversi Jembatan Mol',
+    category: 'Stoikiometri',
+    classGrade: 'Kelas X',
+    content: 'Mol (n) adalah "mata uang" dalam perhitungan kimia. Semua data massa (gram), volume gas (Liter), konsentrasi (Molaritas), dan jumlah partikel harus dikonversi melewati pos Mol terlebih dahulu.',
+    keyPoints: [
+      'Massa ke Mol : n = gram / Mr',
+      'Jumlah Partikel : N = n × 6,02 × 10²³ (Bilangan Avogadro)',
+      'Volume Gas STP (0°C, 1 atm) : V = n × 22,4 Liter',
+      'Volume Gas RTP (25°C, 1 atm) : V = n × 24 Liter',
+      'Gas Ideal Keadaan Sembarang : P × V = n × R × T',
+      'Molaritas Larutan : M = n / V (Liter)'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=800&q=80',
+    date: '15 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: false,
+    likes: 29,
+    tags: ['Stoikiometri', 'Mol', 'RumusKimia', 'KelasX']
+  },
+  {
+    id: 'note-4',
+    title: 'Tips & Rumus Cepat Menghitung pH Larutan Asam Basa & Buffer',
+    category: 'Larutan Asam Basa',
+    classGrade: 'Kelas XI',
+    content: 'Sebelum menghitung pH, tentukan terlebih dahulu jenis larutannya: Asam/Basa Kuat, Asam/Basa Lemah, Larutan Penyangga (Buffer), atau Hidrolisis Garam.',
+    keyPoints: [
+      'Asam Kuat: [H⁺] = a × Ma  =>  pH = -log [H⁺]',
+      'Asam Lemah: [H⁺] = √(Ka × Ma)  atau  [H⁺] = α × Ma',
+      'Buffer Asam: [H⁺] = Ka × (mol Asam Lemah / mol Garam/Basa Konjugasi)',
+      'Buffer Basa: [OH⁻] = Kb × (mol Basa Lemah / mol Asam Konjugasi)',
+      'Garam Terhidrolisis Parsial (Asam Lemah + Basa Kuat): [OH⁻] = √( (Kw/Ka) × [Garam] × valensi )',
+      'Ingat rumus hubungan: pH + pOH = 14 (pada suhu 25°C)'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=800&q=80',
+    date: '10 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: false,
+    likes: 34,
+    tags: ['AsamBasa', 'Buffer', 'pH', 'KelasXI']
+  }
+];
+

@@ -60,7 +60,7 @@ export const MainPlatformModal: React.FC<MainPlatformModalProps> = ({
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold backdrop-blur-md mb-3 text-[#E0F2FE] border border-white/15">
               <Sparkles className="w-3.5 h-3.5 text-[#38BDF8]" />
-              <span className="uppercase tracking-widest text-[10px]">Portal Pembelajaran Resmi</span>
+              <span className="uppercase tracking-widest text-[10px]">Portal Pembelajaran</span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-light font-heading leading-tight">

@@ -94,8 +94,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
                 </a>
               </li>
               <li>
-                <a href="#lab-maya" className="hover:text-white transition-colors">
-                  Laboratorium Maya Indikator
+                <a href="#catatan-kelas" className="hover:text-white transition-colors">
+                  Papan Catatan & Rumus Kelas
                 </a>
               </li>
               <li>
@@ -105,7 +105,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
               </li>
               <li>
                 <a href="#blog" className="hover:text-white transition-colors">
-                  Catatan & Majalah Kimia
+                  Artikel & Wawasan Kimia
                 </a>
               </li>
             </ul>
@@ -115,7 +115,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
           <div className="lg:col-span-5 p-6 rounded-[24px] bg-[#1E293B]/80 border border-[#334155] space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-[#38BDF8] uppercase tracking-wider">
-                Portal Resmi Pembelajaran
+                Portal Pembelajaran
               </span>
               <span className="w-2 h-2 rounded-full bg-[#38BDF8] animate-pulse" />
             </div>
@@ -132,7 +132,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
               className="w-full py-3 px-4 rounded-xl text-xs font-bold text-white bg-[#0284C7] hover:bg-[#0369A1] flex items-center justify-center gap-2 transition-all shadow-md shadow-[#0284C7]/30 cursor-pointer"
             >
               <BookOpen className="w-4 h-4" />
-              <span>Masuk ke Portal Pembelajaran Resmi</span>
+              <span>Masuk ke Portal Pembelajaran</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
           </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { NaturalIndicatorLab } from './components/NaturalIndicatorLab';
+import { ClassNotesSection } from './components/ClassNotesSection';
 import { GallerySection } from './components/GallerySection';
 import { DocumentsSection } from './components/DocumentsSection';
 import { BlogSection } from './components/BlogSection';
@@ -38,7 +38,7 @@ export default function App() {
 
   // Scroll section spy
   useEffect(() => {
-    const sections = ['beranda', 'galeri', 'lab-maya', 'modul', 'blog', 'kontak'];
+    const sections = ['beranda', 'galeri', 'catatan-kelas', 'modul', 'blog', 'kontak'];
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 180;
       for (const sectionId of sections) {
@@ -65,7 +65,7 @@ export default function App() {
   const handleConfirmRedirect = () => {
     window.open('https://www.kelaspakhafiz.my.id/', '_blank', 'noopener,noreferrer');
     addToast(
-      'Membuka Portal Kelas Utama',
+      'Membuka Portal Pembelajaran',
       'Mengarahkan ke https://www.kelaspakhafiz.my.id/',
       'info'
     );
@@ -158,7 +158,7 @@ Untuk pembahasan video lengkap dan kuis latihan, kunjungi Website Pembelajaran U
           onExploreClick={handleExploreClick}
         />
 
-        <NaturalIndicatorLab />
+        <ClassNotesSection onAddToast={addToast} />
 
         <GallerySection
           onSelectItem={(item) => setSelectedGalleryItem(item)}

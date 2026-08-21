@@ -70,3 +70,19 @@ export interface TestSolution {
   pH: number;
   householdExample: string;
 }
+
+export interface ClassNote {
+  id: string;
+  title: string;
+  category: string;
+  classGrade: 'Kelas X' | 'Kelas XI' | 'Kelas XII' | 'Semua Tingkat';
+  content: string;
+  keyPoints: string[];
+  imageUrl?: string;
+  date: string;
+  authorName: string;
+  isPinned?: boolean;
+  likes?: number;
+  tags?: string[];
+}
+
