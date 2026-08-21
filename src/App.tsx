@@ -15,7 +15,23 @@ import { ClassNoteDetailPage } from './components/Pages/ClassNoteDetailPage';
 import { DocumentDetailPage } from './components/Pages/DocumentDetailPage';
 import { ArticleDetailPage } from './components/Pages/ArticleDetailPage';
 import { GalleryItem, BlogPost, DocumentItem, ClassNote } from './types';
-import { INITIAL_CLASS_NOTES, DOCUMENT_ITEMS, BLOG_POSTS } from './data/mockData';
+import { INITIAL_CLASS_NOTES, DOCUMENT_ITEMS, BLOG_POSTS, GALLERY_ITEMS } from './data/mockData';
+import {
+  subscribeToClassNotes,
+  subscribeToDocuments,
+  subscribeToArticles,
+  subscribeToGalleryPhotos,
+  saveClassNoteToFirestore,
+  deleteClassNoteFromFirestore,
+  saveDocumentToFirestore,
+  deleteDocumentFromFirestore,
+  incrementDocumentDownloads,
+  saveArticleToFirestore,
+  deleteArticleFromFirestore,
+  incrementArticleReactions,
+  saveGalleryItemToFirestore,
+  deleteGalleryItemFromFirestore
+} from './lib/firebase';
 
 const NOTES_STORAGE_KEY = 'kelaspakhafiz_class_notes_v2';
 const ADMIN_AUTH_KEY = 'kelaspakhafiz_admin_auth_v1';
@@ -39,18 +55,20 @@ export default function App() {
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Notes state with persistence
+  // Main Data States with Firestore Realtime Sync
   const [notes, setNotes] = useState<ClassNote[]>(() => {
     try {
       const saved = localStorage.getItem(NOTES_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
+      if (saved) return JSON.parse(saved);
     } catch (e) {
-      console.error('Failed to load notes', e);
+      console.error('Failed to load local notes', e);
     }
     return INITIAL_CLASS_NOTES;
   });
+
+  const [documents, setDocuments] = useState<DocumentItem[]>(DOCUMENT_ITEMS);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>(BLOG_POSTS);
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(GALLERY_ITEMS);
 
   // Admin Auth State
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -61,12 +79,66 @@ export default function App() {
     }
   });
 
-  // Save notes whenever changed
+  // Subscribe to Firebase Firestore Realtime collections
+  useEffect(() => {
+    // 1. Catatan Kelas (catatan_kelas)
+    const unsubNotes = subscribeToClassNotes((cloudNotes) => {
+      if (cloudNotes && cloudNotes.length > 0) {
+        setNotes(cloudNotes);
+        // If an active note is open, sync it with real-time data
+        setActiveNote((prev) => {
+          if (!prev) return null;
+          const found = cloudNotes.find((n) => n.id === prev.id);
+          return found || prev;
+        });
+      }
+    });
+
+    // 2. Dokumen Modul (catatan_dokumen)
+    const unsubDocs = subscribeToDocuments((cloudDocs) => {
+      if (cloudDocs && cloudDocs.length > 0) {
+        setDocuments(cloudDocs);
+        setActiveDocument((prev) => {
+          if (!prev) return null;
+          const found = cloudDocs.find((d) => d.id === prev.id);
+          return found || prev;
+        });
+      }
+    });
+
+    // 3. Artikel Blog (catatan_artikel)
+    const unsubArticles = subscribeToArticles((cloudArticles) => {
+      if (cloudArticles && cloudArticles.length > 0) {
+        setBlogPosts(cloudArticles);
+        setActiveBlogPost((prev) => {
+          if (!prev) return null;
+          const found = cloudArticles.find((p) => p.id === prev.id);
+          return found || prev;
+        });
+      }
+    });
+
+    // 4. Galeri Foto Lab (catatan_foto)
+    const unsubPhotos = subscribeToGalleryPhotos((cloudPhotos) => {
+      if (cloudPhotos && cloudPhotos.length > 0) {
+        setGalleryItems(cloudPhotos);
+      }
+    });
+
+    return () => {
+      unsubNotes();
+      unsubDocs();
+      unsubArticles();
+      unsubPhotos();
+    };
+  }, []);
+
+  // Save notes locally for offline backup
   useEffect(() => {
     try {
       localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
     } catch (e) {
-      console.error('Failed to save notes', e);
+      console.error('Failed to save notes locally', e);
     }
   }, [notes]);
 
@@ -119,7 +191,7 @@ export default function App() {
       hash !== '#dokumentasi-file'
     ) {
       const rawParam = hash.replace(/^#(file|dokumentasi|modul)-/, '').toLowerCase();
-      const matchedDoc = DOCUMENT_ITEMS.find(
+      const matchedDoc = documents.find(
         (d) =>
           d.id.toLowerCase() === rawParam ||
           d.id.toLowerCase() === `doc-${rawParam}` ||
@@ -139,11 +211,11 @@ export default function App() {
     // 3. Check Blog Post detail: #blog-... or #artikel-... (excluding #blog)
     if ((hash.startsWith('#blog-') || hash.startsWith('#artikel-')) && hash !== '#blog' && hash !== '#artikel') {
       const rawParam = hash.replace(/^#(blog|artikel)-/, '').toLowerCase();
-      const matchedPost = BLOG_POSTS.find(
+      const matchedPost = blogPosts.find(
         (p) =>
           p.id.toLowerCase() === rawParam ||
           p.id.toLowerCase() === `post-${rawParam}` ||
-          p.slug.toLowerCase() === rawParam ||
+          p.slug?.toLowerCase() === rawParam ||
           p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(rawParam) ||
           rawParam.includes(p.id.toLowerCase())
       );
@@ -169,7 +241,7 @@ export default function App() {
         el.scrollIntoView({ behavior: 'smooth' });
       }
     }, 50);
-  }, [notes]);
+  }, [notes, documents, blogPosts]);
 
   // Listen to Hash Changes
   useEffect(() => {
@@ -235,40 +307,81 @@ export default function App() {
     }, 50);
   };
 
-  // Note updates & deletion (from admin mode in full detail page or section)
-  const handleUpdateNote = (updatedNote: ClassNote) => {
+  // --- CRUD Firestore Actions: Catatan Kelas ---
+  const handleUpdateNote = async (updatedNote: ClassNote) => {
     setNotes((prev) => prev.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
     if (activeNote && activeNote.id === updatedNote.id) {
       setActiveNote(updatedNote);
     }
+    try {
+      await saveClassNoteToFirestore(updatedNote);
+    } catch (e) {
+      console.warn('Failed to sync updated note to Firestore:', e);
+    }
   };
 
-  const handleDeleteNote = (noteId: string) => {
+  const handleDeleteNote = async (noteId: string) => {
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
     handleBackToSection('catatan-kelas');
+    try {
+      await deleteClassNoteFromFirestore(noteId);
+      addToast('Catatan Dihapus dari Cloud', 'Catatan berhasil dihapus dari Firebase.', 'info');
+    } catch (e) {
+      console.warn('Failed to delete note from Firestore:', e);
+    }
   };
 
-  const handleOpenMainPortal = () => {
-    setIsMainPortalModalOpen(true);
+  // --- CRUD Firestore Actions: Dokumen & Modul ---
+  const handleAddDocument = async (newDoc: DocumentItem) => {
+    setDocuments((prev) => [newDoc, ...prev]);
+    try {
+      await saveDocumentToFirestore(newDoc);
+    } catch (e) {
+      console.warn('Failed to sync new document to Firestore:', e);
+    }
   };
 
-  const handleConfirmRedirect = () => {
-    window.open('https://www.kelaspakhafiz.my.id/', '_blank', 'noopener,noreferrer');
-    addToast(
-      'Membuka Portal Pembelajaran',
-      'Mengarahkan ke https://www.kelaspakhafiz.my.id/',
-      'info'
-    );
+  const handleDeleteDocument = async (docId: string) => {
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
+    if (activeDocument && activeDocument.id === docId) {
+      handleBackToSection('modul');
+    }
+    try {
+      await deleteDocumentFromFirestore(docId);
+    } catch (e) {
+      console.warn('Failed to delete doc from Firestore:', e);
+    }
   };
 
   const handleDownloadDocument = (doc: DocumentItem) => {
-    doc.downloads += 1;
-    
-    // Create simulated downloadable file
+    // Increment download counter locally & in Firestore
+    doc.downloads = (doc.downloads || 0) + 1;
+    incrementDocumentDownloads(doc.id);
+
+    // If file is stored in Firebase Storage or external URL, open/download directly
+    if (doc.fileUrl && doc.fileUrl.startsWith('http')) {
+      const link = document.createElement('a');
+      link.href = doc.fileUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.download = `${doc.title.replace(/[/\\?%*:|"<>]/g, '-')}.${doc.fileFormat.toLowerCase()}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      addToast(
+        `Mengunduh Berkas Cloud: ${doc.title}`,
+        `File ${doc.fileFormat} (${doc.fileSize}) sedang diunduh dari Firebase Storage.`,
+        'success'
+      );
+      return;
+    }
+
+    // Default module syllabus package generator
     const dummyContent = `=====================================================
 KELAS PAK HAFIZ — PEMBELAJARAN KIMIA & IPA SMA
 Judul Berkas: ${doc.title}
-Jenjang: ${doc.classGrade} | Format: ${doc.fileFormat}
+Jenjang: ${doc.classGrade} | Format: ${doc.fileFormat} (${doc.fileSize})
 Tanggal Rilis: ${doc.updatedDate}
 Kategori: ${doc.category}
 =====================================================
@@ -279,9 +392,9 @@ ${doc.summary}
 Materi yang Termuat:
 ${doc.topics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
 
-Catatan Pengajar:
+Catatan Pengajar (Pak Hafiz Akhyar, S.Si.):
 Gunakan modul ini sebagai panduan belajar mandiri maupun praktikum di sekolah.
-Untuk pembahasan video lengkap dan kuis latihan, kunjungi Website Pembelajaran Utama Kelas Pak Hafiz:
+Untuk pembahasan video lengkap dan bank soal interaktif, kunjungi Website Pembelajaran Utama:
 https://www.kelaspakhafiz.my.id/
 
 © Kelas Pak Hafiz — Sains Dalam Sudut Pandang yang Lebih Segar.
@@ -301,6 +414,64 @@ https://www.kelaspakhafiz.my.id/
       `Berhasil Mengunduh: ${doc.title}`,
       `File ${doc.fileFormat} (${doc.fileSize}) telah siap disimpan di perangkatmu.`,
       'success'
+    );
+  };
+
+  // --- CRUD Firestore Actions: Artikel Blog ---
+  const handleAddArticle = async (newPost: BlogPost) => {
+    setBlogPosts((prev) => [newPost, ...prev]);
+    try {
+      await saveArticleToFirestore(newPost);
+    } catch (e) {
+      console.warn('Failed to sync new article to Firestore:', e);
+    }
+  };
+
+  const handleDeleteArticle = async (postId: string) => {
+    setBlogPosts((prev) => prev.filter((p) => p.id !== postId));
+    if (activeBlogPost && activeBlogPost.id === postId) {
+      handleBackToSection('blog');
+    }
+    try {
+      await deleteArticleFromFirestore(postId);
+    } catch (e) {
+      console.warn('Failed to delete article from Firestore:', e);
+    }
+  };
+
+  const handleLikeArticle = (postId: string) => {
+    incrementArticleReactions(postId);
+  };
+
+  // --- CRUD Firestore Actions: Galeri Foto ---
+  const handleAddGalleryItem = async (newItem: GalleryItem) => {
+    setGalleryItems((prev) => [newItem, ...prev]);
+    try {
+      await saveGalleryItemToFirestore(newItem);
+    } catch (e) {
+      console.warn('Failed to sync new gallery item to Firestore:', e);
+    }
+  };
+
+  const handleDeleteGalleryItem = async (itemId: string) => {
+    setGalleryItems((prev) => prev.filter((i) => i.id !== itemId));
+    try {
+      await deleteGalleryItemFromFirestore(itemId);
+    } catch (e) {
+      console.warn('Failed to delete gallery item from Firestore:', e);
+    }
+  };
+
+  const handleOpenMainPortal = () => {
+    setIsMainPortalModalOpen(true);
+  };
+
+  const handleConfirmRedirect = () => {
+    window.open('https://www.kelaspakhafiz.my.id/', '_blank', 'noopener,noreferrer');
+    addToast(
+      'Membuka Portal Pembelajaran',
+      'Mengarahkan ke https://www.kelaspakhafiz.my.id/',
+      'info'
     );
   };
 
@@ -362,7 +533,7 @@ https://www.kelaspakhafiz.my.id/
           /* Dedicated Full-Page View: Dokumentasi File */
           <DocumentDetailPage
             doc={activeDocument}
-            allDocs={DOCUMENT_ITEMS}
+            allDocs={documents}
             onSelectDoc={handleSelectDocument}
             onBack={() => handleBackToSection('modul')}
             onDownload={handleDownloadDocument}
@@ -373,11 +544,14 @@ https://www.kelaspakhafiz.my.id/
           /* Dedicated Full-Page View: Artikel & Blog */
           <ArticleDetailPage
             post={activeBlogPost}
-            allPosts={BLOG_POSTS}
+            allPosts={blogPosts}
             onSelectPost={handleSelectBlogPost}
             onBack={() => handleBackToSection('blog')}
             onOpenMainPortal={handleOpenMainPortal}
             onAddToast={addToast}
+            onLikePost={handleLikeArticle}
+            isAdmin={isAdmin}
+            onDeletePost={handleDeleteArticle}
           />
         ) : (
           /* Main Landing Page Layout with All Sections */
@@ -398,16 +572,31 @@ https://www.kelaspakhafiz.my.id/
 
             <GallerySection
               onSelectItem={(item) => setSelectedGalleryItem(item)}
+              items={galleryItems}
+              isAdmin={isAdmin}
+              onAddItem={handleAddGalleryItem}
+              onDeleteItem={handleDeleteGalleryItem}
+              onAddToast={addToast}
             />
 
             <DocumentsSection
               onPreviewDoc={handleSelectDocument}
               onDownloadDoc={handleDownloadDocument}
+              docs={documents}
+              isAdmin={isAdmin}
+              onAddDoc={handleAddDocument}
+              onDeleteDoc={handleDeleteDocument}
+              onAddToast={addToast}
             />
 
             <BlogSection
               onSelectPost={handleSelectBlogPost}
               onOpenMainPortal={handleOpenMainPortal}
+              posts={blogPosts}
+              isAdmin={isAdmin}
+              onAddPost={handleAddArticle}
+              onDeletePost={handleDeleteArticle}
+              onAddToast={addToast}
             />
 
             <LearningPlatformCTA

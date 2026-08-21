@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default rule
+    match /{document=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /catatan_kelas/{noteId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /catatan_artikel/{articleId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /catatan_foto/{photoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /catatan_dokumen/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

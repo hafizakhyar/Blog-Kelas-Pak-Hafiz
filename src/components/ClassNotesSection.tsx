@@ -23,10 +23,18 @@ import {
   KeyRound,
   ShieldCheck,
   LogOut,
-  Info
+  Info,
+  CloudUpload,
+  Loader2
 } from 'lucide-react';
 import { ClassNote } from '../types';
 import { INITIAL_CLASS_NOTES, TEACHER_INFO } from '../data/mockData';
+import {
+  uploadFileToFirebaseStorage,
+  saveClassNoteToFirestore,
+  deleteClassNoteFromFirestore,
+  STORAGE_FOLDERS
+} from '../lib/firebase';
 
 interface ClassNotesSectionProps {
   onAddToast: (title: string, description?: string, type?: 'success' | 'info') => void;
@@ -150,6 +158,8 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const quickChangeInputRef = useRef<HTMLInputElement | null>(null);
   const [quickChangeNoteId, setQuickChangeNoteId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   // Save to LocalStorage whenever notes change
   useEffect(() => {
@@ -221,8 +231,8 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
     setIsEditorOpen(true);
   };
 
-  // Handle Image File Upload (converts to base64 Data URL)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isQuickChange = false) => {
+  // Handle Image File Upload (uploads to Firebase Storage with fallback to base64)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isQuickChange = false) => {
     if (!isAdmin) {
       setIsAdminModalOpen(true);
       return;
@@ -236,28 +246,62 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
       return;
     }
 
-    // Size limit ~ 4MB
-    if (file.size > 4 * 1024 * 1024) {
-      onAddToast('Ukuran Terlalu Besar', 'Maksimal ukuran foto adalah 4MB.', 'info');
+    // Size limit ~ 10MB for cloud storage
+    if (file.size > 10 * 1024 * 1024) {
+      onAddToast('Ukuran Terlalu Besar', 'Maksimal ukuran foto adalah 10MB.', 'info');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
+    setIsUploading(true);
+    setUploadProgress(10);
+
+    try {
+      // 1. Attempt upload to Firebase Storage folder: catatan_foto/catatan_kelas
+      const downloadUrl = await uploadFileToFirebaseStorage(
+        file,
+        STORAGE_FOLDERS.NOTES_IMAGES,
+        (progress) => setUploadProgress(progress)
+      );
+
       if (isQuickChange && quickChangeNoteId) {
-        setNotes((prev) =>
-          prev.map((n) => (n.id === quickChangeNoteId ? { ...n, imageUrl: dataUrl } : n))
-        );
-        onAddToast('Gambar Diperbarui', 'Foto catatan kelas berhasil diganti.', 'success');
+        const targetNote = notes.find((n) => n.id === quickChangeNoteId);
+        if (targetNote) {
+          const updated = { ...targetNote, imageUrl: downloadUrl };
+          setNotes((prev) => prev.map((n) => (n.id === quickChangeNoteId ? updated : n)));
+          await saveClassNoteToFirestore(updated);
+        }
+        onAddToast('Gambar Cloud Tersimpan', 'Foto catatan berhasil diunggah ke Firebase Storage & Firestore.', 'success');
         setQuickChangeNoteId(null);
       } else {
-        setFormImageUrl(dataUrl);
-        onAddToast('Gambar Terunggah', 'Gambar siap dilampirkan pada catatan.', 'success');
+        setFormImageUrl(downloadUrl);
+        onAddToast('Foto Siap di Cloud', 'Foto berhasil diunggah ke Firebase Storage dan siap disimpan.', 'success');
       }
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
+    } catch (storageErr) {
+      console.warn('Firebase Storage upload fallback to local reader:', storageErr);
+      // Fallback to FileReader if storage network error
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const dataUrl = event.target?.result as string;
+        if (isQuickChange && quickChangeNoteId) {
+          const targetNote = notes.find((n) => n.id === quickChangeNoteId);
+          if (targetNote) {
+            const updated = { ...targetNote, imageUrl: dataUrl };
+            setNotes((prev) => prev.map((n) => (n.id === quickChangeNoteId ? updated : n)));
+            await saveClassNoteToFirestore(updated);
+          }
+          onAddToast('Gambar Diperbarui', 'Foto catatan kelas berhasil diganti.', 'success');
+          setQuickChangeNoteId(null);
+        } else {
+          setFormImageUrl(dataUrl);
+          onAddToast('Gambar Terunggah', 'Gambar siap dilampirkan pada catatan.', 'success');
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      e.target.value = '';
+    }
   };
 
   // Trigger quick change image on a card
@@ -292,7 +336,7 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
   };
 
   // Save or Update Note
-  const handleSaveNote = (e: React.FormEvent) => {
+  const handleSaveNote = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isAdmin) {
@@ -325,26 +369,23 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
 
     if (editingNoteId) {
       // Update existing
-      setNotes((prev) =>
-        prev.map((n) => {
-          if (n.id === editingNoteId) {
-            return {
-              ...n,
-              title: formTitle.trim(),
-              category: formCategory,
-              classGrade: formClassGrade,
-              content: formContent.trim(),
-              keyPoints: cleanedPoints,
-              imageUrl: formImageUrl.trim() || undefined,
-              tags: cleanedTags,
-              isPinned: formIsPinned,
-              date: dateFormatted + ' (Diedit)',
-            };
-          }
-          return n;
-        })
-      );
-      onAddToast('Catatan Diperbarui', `Perubahan pada "${formTitle}" telah disimpan.`, 'success');
+      const updatedNote: ClassNote = {
+        id: editingNoteId,
+        title: formTitle.trim(),
+        category: formCategory,
+        classGrade: formClassGrade,
+        content: formContent.trim(),
+        keyPoints: cleanedPoints,
+        imageUrl: formImageUrl.trim() || undefined,
+        tags: cleanedTags,
+        isPinned: formIsPinned,
+        date: dateFormatted + ' (Diedit)',
+        authorName: TEACHER_INFO.name,
+      };
+
+      setNotes((prev) => prev.map((n) => (n.id === editingNoteId ? updatedNote : n)));
+      await saveClassNoteToFirestore(updatedNote);
+      onAddToast('Catatan Disimpan di Cloud', `Perubahan pada "${formTitle}" telah tersimpan di Firebase Firestore.`, 'success');
     } else {
       // Create new
       const newNote: ClassNote = {
@@ -362,7 +403,8 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
         tags: cleanedTags.length > 0 ? cleanedTags : [formCategory.replace(/\s+/g, '')],
       };
       setNotes((prev) => [newNote, ...prev]);
-      onAddToast('Catatan Baru Diposting', `Catatan "${formTitle}" berhasil ditambahkan ke papan kelas.`, 'success');
+      await saveClassNoteToFirestore(newNote);
+      onAddToast('Catatan Baru Tersimpan di Cloud', `Catatan "${formTitle}" berhasil diposting ke Firebase Firestore & Storage.`, 'success');
     }
 
     setIsEditorOpen(false);
@@ -398,28 +440,26 @@ ${
   };
 
   // Confirm and Execute Delete
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!isAdmin) {
       setIsAdminModalOpen(true);
       return;
     }
     if (!noteToDelete) return;
     setNotes((prev) => prev.filter((n) => n.id !== noteToDelete.id));
-    onAddToast('Catatan Dihapus', `Catatan "${noteToDelete.title}" telah dihapus dari papan kelas.`, 'info');
+    await deleteClassNoteFromFirestore(noteToDelete.id);
+    onAddToast('Catatan Dihapus dari Cloud', `Catatan "${noteToDelete.title}" telah dihapus dari Firebase Firestore.`, 'info');
     setNoteToDelete(null);
   };
 
   // Toggle Like Reaction
-  const handleLikeNote = (noteId: string) => {
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.id === noteId) {
-          const current = n.likes || 0;
-          return { ...n, likes: current + 1 };
-        }
-        return n;
-      })
-    );
+  const handleLikeNote = async (noteId: string) => {
+    const target = notes.find((n) => n.id === noteId);
+    if (!target) return;
+    const current = target.likes || 0;
+    const updated = { ...target, likes: current + 1 };
+    setNotes((prev) => prev.map((n) => (n.id === noteId ? updated : n)));
+    await saveClassNoteToFirestore(updated);
   };
 
   // Reset to Default Initial Notes (Admin only)
@@ -1149,7 +1189,20 @@ ${
 
                   {/* Current Preview or Upload Button */}
                   <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {formImageUrl ? (
+                    {isUploading ? (
+                      <div className="w-full h-24 rounded-xl border border-[#0284C7] bg-[#E0F2FE]/50 flex flex-col items-center justify-center gap-2 p-3 text-center">
+                        <Loader2 className="w-5 h-5 text-[#0284C7] animate-spin" />
+                        <div className="w-full max-w-[200px] bg-[#BAE6FD] h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-[#0284C7] h-full transition-all duration-300 rounded-full"
+                            style={{ width: `${uploadProgress}%` }}
+                          />
+                        </div>
+                        <span className="text-[11px] font-bold text-[#0369A1]">
+                          Mengunggah ke Cloud Firebase Storage ({uploadProgress}%)...
+                        </span>
+                      </div>
+                    ) : formImageUrl ? (
                       <div className="relative w-full sm:w-44 h-28 rounded-xl overflow-hidden border border-[#CBD5E1] bg-black/5 shrink-0">
                         <img
                           src={formImageUrl}
@@ -1172,10 +1225,10 @@ ${
                       >
                         <Upload className="w-5 h-5 text-[#0284C7]" />
                         <span className="font-semibold text-[#0F172A] text-xs">
-                          Klik untuk Unggah Foto dari Perangkat
+                          Klik untuk Unggah Foto ke Firebase Cloud
                         </span>
                         <span className="text-[10px] text-[#94A3B8]">
-                          JPG, PNG, WebP (Maksimal 4MB)
+                          JPG, PNG, WebP (Folder: catatan_foto/catatan_kelas)
                         </span>
                       </div>
                     )}
@@ -1183,11 +1236,12 @@ ${
                     <div className="w-full space-y-2">
                       <button
                         type="button"
+                        disabled={isUploading}
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full py-2 px-3 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#0284C7] text-[#334155] text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        className="w-full py-2 px-3 rounded-lg bg-white border border-[#CBD5E1] hover:border-[#0284C7] text-[#334155] text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs disabled:opacity-50"
                       >
-                        <Upload className="w-3.5 h-3.5 text-[#0284C7]" />
-                        <span>Unggah Foto Sendiri</span>
+                        <CloudUpload className="w-3.5 h-3.5 text-[#0284C7]" />
+                        <span>{isUploading ? 'Sedang Mengunggah...' : 'Unggah Foto Sendiri'}</span>
                       </button>
 
                       {/* Preset Selectors */}

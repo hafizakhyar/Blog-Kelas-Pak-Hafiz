@@ -1,0 +1,103 @@
+{
+  "entities": {
+    "ClassNote": {
+      "title": "ClassNote",
+      "description": "Catatan ringkas materi, rumus cepat, dan papan tulis kelas kimia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "classGrade": { "type": "string" },
+        "content": { "type": "string" },
+        "keyPoints": { "type": "array" },
+        "imageUrl": { "type": "string" },
+        "date": { "type": "string" },
+        "authorName": { "type": "string" },
+        "isPinned": { "type": "boolean" },
+        "likes": { "type": "number" },
+        "tags": { "type": "array" }
+      },
+      "required": ["id", "title", "category", "classGrade", "content", "date", "authorName"]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "Artikel sains edukatif dan catatan pembelajaran kimia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "summary": { "type": "string" },
+        "content": { "type": "array" },
+        "category": { "type": "string" },
+        "author": { "type": "object" },
+        "date": { "type": "string" },
+        "readTime": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "tags": { "type": "array" },
+        "keyTakeaways": { "type": "array" },
+        "reactions": { "type": "number" }
+      },
+      "required": ["id", "title", "slug", "summary", "content", "category", "date"]
+    },
+    "GalleryItem": {
+      "title": "GalleryItem",
+      "description": "Dokumentasi foto eksperimen lab dan karya praktikum siswa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "date": { "type": "string" },
+        "image": { "type": "string" },
+        "badge": { "type": "string" },
+        "description": { "type": "string" },
+        "chemistryConcept": { "type": "string" },
+        "materials": { "type": "array" },
+        "steps": { "type": "array" },
+        "results": { "type": "string" },
+        "videoDuration": { "type": "string" }
+      },
+      "required": ["id", "title", "category", "date", "image", "description", "chemistryConcept"]
+    },
+    "DocumentItem": {
+      "title": "DocumentItem",
+      "description": "Modul ajar, LKPD praktikum, dan cheat sheet rumus yang dapat diunduh",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "classGrade": { "type": "string" },
+        "fileFormat": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "downloads": { "type": "number" },
+        "updatedDate": { "type": "string" },
+        "summary": { "type": "string" },
+        "topics": { "type": "array" },
+        "pages": { "type": "number" },
+        "fileUrl": { "type": "string" }
+      },
+      "required": ["id", "title", "category", "classGrade", "fileFormat", "fileSize", "updatedDate"]
+    }
+  },
+  "firestore": {
+    "/catatan_kelas/{noteId}": {
+      "schema": { "$ref": "#/entities/ClassNote" },
+      "description": "Koleksi catatan kelas kimia dan rumus cepat"
+    },
+    "/catatan_artikel/{articleId}": {
+      "schema": { "$ref": "#/entities/BlogPost" },
+      "description": "Koleksi artikel dan catatan blog edukatif"
+    },
+    "/catatan_foto/{photoId}": {
+      "schema": { "$ref": "#/entities/GalleryItem" },
+      "description": "Koleksi foto dokumentasi eksperimen dan praktikum lab"
+    },
+    "/catatan_dokumen/{docId}": {
+      "schema": { "$ref": "#/entities/DocumentItem" },
+      "description": "Koleksi modul PDF, LKPD, dan cheat sheet"
+    }
+  }
+}

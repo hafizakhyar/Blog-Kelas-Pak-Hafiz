@@ -25,6 +25,7 @@ export interface DocumentItem {
   summary: string;
   topics: string[];
   pages: number;
+  fileUrl?: string;
 }
 
 export interface BlogPost {

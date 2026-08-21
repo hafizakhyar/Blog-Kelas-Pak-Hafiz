@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
@@ -22,10 +22,13 @@ import {
   X,
   Plus,
   ShieldCheck,
-  RotateCcw
+  RotateCcw,
+  CloudUpload,
+  Loader2
 } from 'lucide-react';
 import { ClassNote } from '../../types';
 import { TEACHER_INFO } from '../../data/mockData';
+import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../../lib/firebase';
 
 interface ClassNoteDetailPageProps {
   note: ClassNote;
@@ -70,6 +73,9 @@ export const ClassNoteDetailPage: React.FC<ClassNoteDetailPageProps> = ({
   const [editTags, setEditTags] = useState(note.tags ? note.tags.join(', ') : '');
   const [editIsPinned, setEditIsPinned] = useState(!!note.isPinned);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const editFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync state if note prop changes
   useEffect(() => {
@@ -158,6 +164,46 @@ ${
       `📚 *Catatan Kimia: ${note.title}*\nJenjang: ${note.classGrade} | Topik: ${note.category}\nPengajar: ${note.authorName}\n\nPelajari rangkuman dan rumus lengkapnya di sini:\n${window.location.href}`
     );
     window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleUploadEditImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      onAddToast('Format Tidak Didukung', 'Harap pilih file gambar (JPG, PNG, WebP).', 'info');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      onAddToast('Ukuran Terlalu Besar', 'Maksimal ukuran foto adalah 10MB.', 'info');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(10);
+
+    try {
+      const downloadUrl = await uploadFileToFirebaseStorage(
+        file,
+        STORAGE_FOLDERS.NOTES_IMAGES,
+        (progress) => setUploadProgress(progress)
+      );
+      setEditImageUrl(downloadUrl);
+      onAddToast('Foto Berhasil Diunggah', 'Foto baru tersimpan di Firebase Storage.', 'success');
+    } catch (err) {
+      console.warn('Firebase Storage upload fallback:', err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setEditImageUrl(event.target?.result as string);
+        onAddToast('Foto Terlampir', 'Foto berhasil dilampirkan.', 'info');
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      e.target.value = '';
+    }
   };
 
   // Admin Save Changes
@@ -609,15 +655,59 @@ ${
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-[#0F172A] mb-1">URL Foto / Gambar</label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-[#0F172A]">Foto / Gambar Papan Tulis</label>
+                    <input
+                      type="file"
+                      ref={editFileInputRef}
+                      onChange={handleUploadEditImage}
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploading}
+                      onClick={() => editFileInputRef.current?.click()}
+                      className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <CloudUpload className="w-3.5 h-3.5" />
+                      <span>{isUploading ? 'Mengunggah...' : 'Unggah Foto Baru (Cloud)'}</span>
+                    </button>
+                  </div>
+
+                  {isUploading && (
+                    <div className="p-2.5 rounded-xl bg-[#E0F2FE] border border-[#0284C7]/30 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-[#0284C7] animate-spin shrink-0" />
+                      <div className="flex-grow">
+                        <div className="w-full bg-[#BAE6FD] h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-[#0284C7] h-full transition-all" style={{ width: `${uploadProgress}%` }} />
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-[#0369A1]">{uploadProgress}%</span>
+                    </div>
+                  )}
+
                   <input
                     type="text"
                     value={editImageUrl}
                     onChange={(e) => setEditImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A]"
+                    placeholder="URL Foto atau hasil unggahan cloud (https://...)"
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#0F172A]"
                   />
+
+                  {editImageUrl && (
+                    <div className="relative w-32 h-20 rounded-lg overflow-hidden border border-[#CBD5E1] bg-black/5 mt-1">
+                      <img src={editImageUrl} alt="Pratinjau" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setEditImageUrl('')}
+                        className="absolute top-1 right-1 p-1 rounded-full bg-black/70 text-white hover:bg-[#EF4444] text-[9px]"
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div>

@@ -27,6 +27,9 @@ interface ArticleDetailPageProps {
   onBack: () => void;
   onOpenMainPortal: () => void;
   onAddToast: (title: string, description?: string, type?: 'success' | 'info') => void;
+  onLikePost?: (postId: string) => void;
+  isAdmin?: boolean;
+  onDeletePost?: (postId: string) => void;
 }
 
 export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
@@ -36,6 +39,9 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
   onBack,
   onOpenMainPortal,
   onAddToast,
+  onLikePost,
+  isAdmin = false,
+  onDeletePost,
 }) => {
   const [likes, setLikes] = useState<number>(post.reactions || 0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
@@ -52,7 +58,10 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
       setLikes((prev) => prev + 1);
       setHasLiked(true);
       post.reactions = (post.reactions || 0) + 1;
-      onAddToast('Terima Kasih!', 'Apresiasi Anda telah tercatat.', 'success');
+      if (onLikePost) {
+        onLikePost(post.id);
+      }
+      onAddToast('Terima Kasih!', 'Apresiasi Anda telah tercatat dan tersimpan di cloud.', 'success');
     } else {
       setLikes((prev) => Math.max(0, prev - 1));
       setHasLiked(false);

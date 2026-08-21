@@ -1,20 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Play, Eye, Calendar, Clock, Filter, ArrowUpRight, Search } from 'lucide-react';
+import {
+  Sparkles,
+  Play,
+  Eye,
+  Calendar,
+  Clock,
+  Filter,
+  ArrowUpRight,
+  Search,
+  Plus,
+  Trash2,
+  Upload,
+  CloudUpload,
+  Loader2,
+  X,
+  Image as ImageIcon,
+  FlaskConical
+} from 'lucide-react';
 import { GALLERY_ITEMS } from '../data/mockData';
 import { GalleryItem } from '../types';
+import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../lib/firebase';
 
 interface GallerySectionProps {
   onSelectItem: (item: GalleryItem) => void;
+  items?: GalleryItem[];
+  isAdmin?: boolean;
+  onAddItem?: (item: GalleryItem) => void;
+  onDeleteItem?: (itemId: string) => void;
+  onAddToast?: (title: string, description?: string, type?: 'success' | 'info') => void;
 }
 
-export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) => {
+export const GallerySection: React.FC<GallerySectionProps> = ({
+  onSelectItem,
+  items = GALLERY_ITEMS,
+  isAdmin = false,
+  onAddItem,
+  onDeleteItem,
+  onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {}
+}) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Upload Photo Modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [formCategory, setFormCategory] = useState<'Indikator Alami' | 'Eksperimen Lab' | 'Karya Siswa'>('Indikator Alami');
+  const [formBadge, setFormBadge] = useState('Praktikum Siswa');
+  const [formConcept, setFormConcept] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formImageUrl, setFormImageUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [itemToDelete, setItemToDelete] = useState<GalleryItem | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const categories = ['Semua', 'Indikator Alami', 'Eksperimen Lab', 'Karya Siswa'];
 
-  const filteredItems = GALLERY_ITEMS.filter((item) => {
+  const filteredItems = items.filter((item) => {
     const matchesCategory = selectedCategory === 'Semua' || item.category === selectedCategory;
     const matchesSearch =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -22,6 +66,88 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) 
       item.chemistryConcept.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      onAddToast('Format Tidak Didukung', 'Harap pilih file gambar (JPG, PNG, WebP).', 'info');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      onAddToast('Ukuran Terlalu Besar', 'Maksimal ukuran foto adalah 10MB.', 'info');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(10);
+
+    try {
+      const downloadUrl = await uploadFileToFirebaseStorage(
+        file,
+        STORAGE_FOLDERS.GALLERY_IMAGES,
+        (progress) => setUploadProgress(progress)
+      );
+      setFormImageUrl(downloadUrl);
+      onAddToast('Foto Lab Terunggah', 'Foto berhasil disimpan di Firebase Storage (catatan_foto/galeri).', 'success');
+    } catch (err) {
+      console.warn('Firebase Storage upload error:', err);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormImageUrl(event.target?.result as string);
+        onAddToast('Foto Disimpan Lokal', 'Foto tersimpan untuk pengunggahan.', 'info');
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+      e.target.value = '';
+    }
+  };
+
+  const handleSavePhoto = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formTitle.trim()) {
+      onAddToast('Judul Diperlukan', 'Harap isi judul eksperimen.', 'info');
+      return;
+    }
+    if (!formImageUrl) {
+      onAddToast('Foto Diperlukan', 'Harap unggah foto dokumentasi praktikum terlebih dahulu.', 'info');
+      return;
+    }
+
+    const now = new Date();
+    const dateFormatted = `${now.getDate()} ${
+      ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()]
+    } ${now.getFullYear()}`;
+
+    const newItem: GalleryItem = {
+      id: `gal-${Date.now()}`,
+      title: formTitle.trim(),
+      category: formCategory,
+      badge: formBadge.trim() || 'Praktikum Kimia',
+      image: formImageUrl,
+      chemistryConcept: formConcept.trim() || 'Eksperimen & Reaksi Kimia',
+      description: formDescription.trim() || 'Dokumentasi kegiatan praktikum siswa di laboratorium kimia SMA.',
+      date: dateFormatted,
+      materials: ['Alat & Bahan Praktikum Terlampir', 'Sampel Bahan Uji'],
+      steps: ['Persiapan alat dan bahan', 'Pengamatan perubahan warna / reaksi', 'Pencatatan data pengamatan'],
+      results: 'Reaksi teramati dan terdokumentasi dengan baik.'
+    };
+
+    if (onAddItem) {
+      onAddItem(newItem);
+    }
+
+    setIsUploadModalOpen(false);
+    setFormTitle('');
+    setFormConcept('');
+    setFormDescription('');
+    setFormImageUrl('');
+    onAddToast('Dokumentasi Ditambahkan', `Foto "${newItem.title}" tersimpan di Firebase Firestore & Storage.`, 'success');
+  };
 
   return (
     <section id="galeri" className="py-20 bg-[#F4F8FC]">
@@ -42,16 +168,29 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) 
             </p>
           </div>
 
-          {/* Search bar */}
-          <div className="relative w-full md:w-72">
-            <Search className="w-4 h-4 text-[#0284C7] absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari eksperimen (kunyit, titrasi)..."
-              className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-full bg-white border border-[#E2E8F0] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] text-[#0F172A] placeholder:text-[#94A3B8] shadow-2xs transition-all"
-            />
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Search bar */}
+            <div className="relative w-full md:w-72">
+              <Search className="w-4 h-4 text-[#0284C7] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari eksperimen (kunyit, titrasi)..."
+                className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-full bg-white border border-[#E2E8F0] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] text-[#0F172A] placeholder:text-[#94A3B8] shadow-2xs transition-all"
+              />
+            </div>
+
+            {/* Admin Upload Photo Button */}
+            {isAdmin && (
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="px-4 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">Unggah Foto Lab</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -63,7 +202,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) 
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
                     ? 'bg-[#0284C7] text-white shadow-xs'
                     : 'bg-white text-[#64748B] hover:bg-[#E0F2FE] hover:text-[#0F172A] border border-[#E2E8F0]'
@@ -89,11 +228,13 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) 
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.3 }}
-                onClick={() => onSelectItem(item)}
-                className="group relative bg-white rounded-[24px] overflow-hidden border border-[#E2E8F0] shadow-[0_4px_24px_rgba(2,132,199,0.06)] hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col cursor-pointer transform hover:-translate-y-1"
+                className="group relative bg-white rounded-[24px] overflow-hidden border border-[#E2E8F0] shadow-[0_4px_24px_rgba(2,132,199,0.06)] hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col justify-between cursor-pointer transform hover:-translate-y-1"
               >
                 {/* Image Container */}
-                <div className="relative aspect-16/10 w-full overflow-hidden bg-[#E2E8F0]">
+                <div
+                  onClick={() => onSelectItem(item)}
+                  className="relative aspect-16/10 w-full overflow-hidden bg-[#E2E8F0]"
+                >
                   <img
                     src={item.image}
                     alt={item.title}
@@ -123,7 +264,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) 
 
                 {/* Content Details */}
                 <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div>
+                  <div onClick={() => onSelectItem(item)}>
                     <div className="flex items-center gap-2 text-xs text-[#64748B] mb-2">
                       <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
                       <span>{item.date}</span>
@@ -139,13 +280,34 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) 
                   </div>
 
                   <div className="pt-3.5 border-t border-[#E2E8F0] flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#0284C7] group-hover:underline flex items-center gap-1">
+                    <button
+                      onClick={() => onSelectItem(item)}
+                      className="text-xs font-semibold text-[#0284C7] group-hover:underline flex items-center gap-1 cursor-pointer"
+                    >
                       Lihat Prosedur & Data
                       <ArrowUpRight className="w-3.5 h-3.5" />
-                    </span>
-                    <span className="p-2 rounded-full bg-[#F4F8FC] text-[#64748B] group-hover:bg-[#E0F2FE] group-hover:text-[#0284C7] transition-colors">
-                      <Eye className="w-4 h-4" />
-                    </span>
+                    </button>
+                    
+                    <div className="flex items-center gap-1.5">
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setItemToDelete(item);
+                          }}
+                          className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                          title="Hapus Foto Praktikum"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onSelectItem(item)}
+                        className="p-2 rounded-full bg-[#F4F8FC] text-[#64748B] group-hover:bg-[#E0F2FE] group-hover:text-[#0284C7] transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.article>
@@ -171,6 +333,235 @@ export const GallerySection: React.FC<GallerySectionProps> = ({ onSelectItem }) 
         )}
 
       </div>
+
+      {/* Upload New Lab Photo Modal */}
+      <AnimatePresence>
+        {isUploadModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsUploadModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-lg bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-6 max-h-[90vh] overflow-y-auto z-10"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#E0F2FE] flex items-center justify-center text-[#0284C7]">
+                    <FlaskConical className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Unggah Foto Eksperimen Lab</h3>
+                    <p className="text-[11px] text-[#64748B]">Simpan foto ke Firebase Storage & Firestore</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsUploadModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-[#F1F5F9] text-[#64748B]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSavePhoto} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">
+                    Judul Praktikum / Eksperimen <span className="text-[#EF4444]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="Contoh: Identifikasi Asam Basa dengan Ekstrak Kunyit"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] font-semibold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F172A] mb-1">Kategori</label>
+                    <select
+                      value={formCategory}
+                      onChange={(e) => setFormCategory(e.target.value as any)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A]"
+                    >
+                      <option value="Indikator Alami">Indikator Alami</option>
+                      <option value="Eksperimen Lab">Eksperimen Lab</option>
+                      <option value="Karya Siswa">Karya Siswa</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#0F172A] mb-1">Badge Label</label>
+                    <input
+                      type="text"
+                      value={formBadge}
+                      onChange={(e) => setFormBadge(e.target.value)}
+                      placeholder="Praktikum Kelas XI"
+                      className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A]"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">Konsep Kimia / Reaksi</label>
+                  <input
+                    type="text"
+                    value={formConcept}
+                    onChange={(e) => setFormConcept(e.target.value)}
+                    placeholder="Contoh: Pergeseran Kesetimbangan & Ionisasi Kurkuminoid"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A]"
+                  />
+                </div>
+
+                {/* Upload Image Section */}
+                <div className="space-y-2 p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
+                      <ImageIcon className="w-3.5 h-3.5 text-[#0284C7]" />
+                      <span>Foto Dokumentasi Lab <span className="text-[#EF4444]">*</span></span>
+                    </label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <CloudUpload className="w-3.5 h-3.5" />
+                      <span>{isUploading ? 'Mengunggah...' : 'Pilih Foto dari Perangkat'}</span>
+                    </button>
+                  </div>
+
+                  {isUploading && (
+                    <div className="p-3 rounded-xl bg-[#E0F2FE] border border-[#0284C7]/30 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-[#0284C7] animate-spin shrink-0" />
+                      <div className="flex-grow">
+                        <div className="w-full bg-[#BAE6FD] h-2 rounded-full overflow-hidden">
+                          <div className="bg-[#0284C7] h-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-[#0369A1]">{uploadProgress}%</span>
+                    </div>
+                  )}
+
+                  {formImageUrl ? (
+                    <div className="relative w-full h-36 rounded-xl overflow-hidden border border-[#CBD5E1] bg-black/5">
+                      <img src={formImageUrl} alt="Pratinjau Foto" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setFormImageUrl('')}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white hover:bg-[#EF4444]"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full h-24 rounded-xl border-2 border-dashed border-[#CBD5E1] hover:border-[#0284C7] bg-white flex flex-col items-center justify-center gap-1 cursor-pointer p-3 text-center"
+                    >
+                      <Upload className="w-5 h-5 text-[#0284C7]" />
+                      <span className="font-semibold text-[#0F172A] text-xs">Klik untuk Unggah Foto Praktikum</span>
+                      <span className="text-[10px] text-[#94A3B8]">Folder Firebase Storage: catatan_foto/galeri</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">Deskripsi & Prosedur Singkat</label>
+                  <textarea
+                    rows={3}
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    placeholder="Jelaskan secara singkat tujuan praktikum dan hasil pengamatan siswa..."
+                    className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="px-4 py-2 rounded-full border border-[#CBD5E1] text-[#64748B] hover:bg-[#F1F5F9] font-semibold"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="px-5 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold shadow-xs disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <CloudUpload className="w-3.5 h-3.5" />
+                    <span>Simpan ke Cloud</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {itemToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setItemToDelete(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-sm bg-white rounded-[24px] shadow-2xl border border-[#CBD5E1] p-6 z-10 text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#FEE2E2] text-[#EF4444] flex items-center justify-center mx-auto mb-3">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-[#0F172A] mb-1">Hapus Foto Praktikum?</h3>
+              <p className="text-xs text-[#64748B] mb-5">
+                Foto "{itemToDelete.title}" akan dihapus permanen dari Firebase Firestore.
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setItemToDelete(null)}
+                  className="px-4 py-2 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B]"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    if (onDeleteItem) {
+                      onDeleteItem(itemToDelete.id);
+                    }
+                    onAddToast('Foto Dihapus', `Foto "${itemToDelete.title}" telah dihapus.`, 'info');
+                    setItemToDelete(null);
+                  }}
+                  className="px-4 py-2 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold shadow-xs"
+                >
+                  Hapus Permanen
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
