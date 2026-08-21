@@ -40,11 +40,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
           {/* Brand Logo */}
           <a
             href="#beranda"
-            className="flex items-center gap-2.5 group focus:outline-none"
+            className="flex items-center gap-3 group focus:outline-none"
             aria-label="Kelas Pak Hafiz Beranda"
           >
-            <div className="w-8 h-8 bg-[#0284C7] rounded-full flex items-center justify-center text-white font-bold text-sm shadow-xs group-hover:bg-[#0369A1] transition-colors">
-              H
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-center overflow-hidden shrink-0 group-hover:border-[#0284C7] transition-all p-0.5">
+              <img
+                src="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge"
+                alt="Logo Kelas Pak Hafiz"
+                referrerPolicy="no-referrer"
+                className="w-full h-full object-cover rounded-full"
+                onError={(e) => {
+                  // Fallback to letter icon if drive image preview fails
+                  const target = e.currentTarget;
+                  target.style.display = 'none';
+                  if (target.parentElement) {
+                    target.parentElement.classList.add('bg-[#0284C7]', 'text-white', 'font-bold', 'text-sm');
+                    target.parentElement.innerText = 'H';
+                  }
+                }}
+              />
             </div>
             <div className="flex flex-col">
               <span className="text-base sm:text-lg font-bold font-heading text-[#0F172A] tracking-tight uppercase group-hover:text-[#0284C7] transition-colors">

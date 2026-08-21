@@ -1,5 +1,17 @@
 import { GalleryItem, DocumentItem, BlogPost, NaturalIndicator, TestSolution } from '../types';
 
+export const TEACHER_INFO = {
+  name: 'Pak Hafiz Akhyar, S.Si.',
+  shortName: 'Pak Hafiz',
+  title: 'Guru Kimia & Edukator Sains SMA',
+  email: 'kelaspakhafiz@gmail.com',
+  avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi',
+  logo: 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge',
+  website: 'https://www.kelaspakhafiz.my.id/',
+  instagram: 'https://www.instagram.com/kelaspakhafiz/',
+  youtube: 'https://www.youtube.com/@KelasPakHafiz',
+};
+
 export const GALLERY_ITEMS: GalleryItem[] = [
   {
     id: 'gal-1',
@@ -241,9 +253,9 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     category: 'Kimia Sehari-hari',
     author: {
-      name: 'Pak Hafiz, S.Pd., M.Si.',
+      name: 'Pak Hafiz Akhyar, S.Si.',
       role: 'Guru Kimia & Edukator Sains SMA',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
     },
     date: '17 Agustus 2026',
     readTime: '4 menit baca',
@@ -270,9 +282,9 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     category: 'Eksperimen Kreatif',
     author: {
-      name: 'Pak Hafiz, S.Pd., M.Si.',
+      name: 'Pak Hafiz Akhyar, S.Si.',
       role: 'Guru Kimia & Edukator Sains SMA',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
     },
     date: '12 Agustus 2026',
     readTime: '5 menit baca',
@@ -299,9 +311,9 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     category: 'Tips Belajar',
     author: {
-      name: 'Pak Hafiz, S.Pd., M.Si.',
+      name: 'Pak Hafiz Akhyar, S.Si.',
       role: 'Guru Kimia & Edukator Sains SMA',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
     },
     date: '03 Agustus 2026',
     readTime: '6 menit baca',
@@ -328,9 +340,9 @@ export const BLOG_POSTS: BlogPost[] = [
     ],
     category: 'Fakta Unik',
     author: {
-      name: 'Pak Hafiz, S.Pd., M.Si.',
+      name: 'Pak Hafiz Akhyar, S.Si.',
       role: 'Guru Kimia & Edukator Sains SMA',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
     },
     date: '26 Juli 2026',
     readTime: '4 menit baca',

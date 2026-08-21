@@ -23,11 +23,19 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMainPortal, onExploreClick }) 
               transition={{ duration: 0.5, ease: 'easeOut' }}
               className="lg:col-span-7 flex flex-col items-start text-left"
             >
-              {/* Eyebrow */}
-              <div className="flex items-center gap-2 mb-4">
-                <span className="w-2 h-2 rounded-full bg-[#0284C7] animate-pulse" />
-                <span className="text-[#0284C7] font-bold text-xs uppercase tracking-widest">
-                  Inspirasi Belajar Kimia SMA
+              {/* Eyebrow with Educator Tag */}
+              <div className="flex items-center gap-2.5 mb-4 flex-wrap">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E0F2FE] border border-[#BAE6FD] text-[#0369A1] text-xs font-semibold shadow-2xs">
+                  <img
+                    src="https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi"
+                    alt="Pak Hafiz Akhyar, S.Si."
+                    referrerPolicy="no-referrer"
+                    className="w-4 h-4 rounded-full object-cover border border-[#0284C7]/30"
+                  />
+                  <span>Diasuh oleh Pak Hafiz Akhyar, S.Si.</span>
+                </div>
+                <span className="text-[#0284C7] font-bold text-xs uppercase tracking-widest hidden sm:inline">
+                  • Kimia & Sains SMA
                 </span>
               </div>
 
@@ -81,41 +89,74 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMainPortal, onExploreClick }) 
               </div>
             </motion.div>
 
-            {/* Visual Column (5 cols) with Geometric Pill Elements */}
+            {/* Visual Column (5 cols) with Educator Profile & Laboratory Visual */}
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
               className="lg:col-span-5 relative"
             >
-              <div className="relative h-[320px] sm:h-[360px] bg-[#E0F2FE]/50 rounded-[24px] overflow-hidden flex items-center justify-center shadow-inner border border-[#BAE6FD]/60">
+              <div className="relative h-[340px] sm:h-[380px] bg-[#E0F2FE]/50 rounded-[24px] overflow-hidden flex items-center justify-center shadow-inner border border-[#BAE6FD]/60 p-5">
                 {/* Background Image layer with subtle soft overlay */}
                 <img
                   src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=900&q=85"
                   alt="Eksperimen Laboratorium Kimia SMA"
                   referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-cover opacity-35"
+                  className="absolute inset-0 w-full h-full object-cover opacity-25"
                 />
                 
                 {/* Geometric color wash */}
-                <div className="absolute inset-0 bg-linear-to-tr from-[#0284C7]/20 via-white/20 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-tr from-[#0284C7]/20 via-white/40 to-transparent pointer-events-none" />
 
-                {/* Abstract Geometric Pills */}
-                <div className="relative flex gap-3 sm:gap-4 items-center z-10 select-none">
-                  <div className="w-16 sm:w-20 h-32 sm:h-40 bg-white/70 border border-white/90 rounded-full blur-[0.5px] shadow-xs" />
-                  <div className="w-18 sm:w-24 h-40 sm:h-48 bg-[#0284C7]/30 border border-white rounded-full mt-[-16px] shadow-sm backdrop-blur-xs flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-[#0284C7]" />
+                {/* Main Profile Card in Hero */}
+                <div className="relative z-10 w-full max-w-xs bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/80 flex flex-col items-center text-center">
+                  {/* Avatar Container with Official Logo Floating Badge */}
+                  <div className="relative mb-3">
+                    <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full ring-4 ring-[#BAE6FD] overflow-hidden shadow-md bg-white">
+                      <img
+                        src="https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi"
+                        alt="Pak Hafiz Akhyar, S.Si."
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {/* Official Logo Floating Badge */}
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white ring-2 ring-[#0284C7] shadow-sm flex items-center justify-center overflow-hidden p-0.5" title="Logo Resmi Kelas Pak Hafiz">
+                      <img
+                        src="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge"
+                        alt="Logo"
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    </div>
                   </div>
-                  <div className="w-16 sm:w-20 h-32 sm:h-40 bg-white/70 border border-white/90 rounded-full blur-[0.5px] shadow-xs" />
+
+                  <h3 className="text-base sm:text-lg font-bold font-heading text-[#0F172A] leading-tight">
+                    Pak Hafiz Akhyar, S.Si.
+                  </h3>
+                  <p className="text-xs text-[#0284C7] font-semibold mt-0.5">
+                    Guru Kimia & Edukator Sains SMA
+                  </p>
+                  
+                  <div className="mt-3.5 pt-3 border-t border-[#E2E8F0] w-full flex items-center justify-center gap-4 text-xs text-[#475569]">
+                    <div className="flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
+                      <span>Eksperimen Interaktif</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Modul Kurikulum</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Bottom Overlay Pill Card */}
-                <div className="absolute bottom-4 left-4 right-4 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-white/80 flex justify-between items-center shadow-xs z-20">
+                <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/80 flex justify-between items-center shadow-xs z-20">
                   <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#0284C7]" />
-                    <span className="text-xs font-semibold text-[#0F172A]">Projek: Indikator Alami Nusantara</span>
+                    <span className="w-2 h-2 rounded-full bg-[#0284C7] animate-pulse" />
+                    <span className="text-[11px] font-semibold text-[#0F172A]">Projek: Indikator Alami Nusantara</span>
                   </div>
-                  <span className="text-[10px] font-bold text-[#0284C7] uppercase tracking-wider">Terbaru</span>
+                  <span className="text-[10px] font-bold text-[#0284C7] uppercase tracking-wider">Aktif</span>
                 </div>
               </div>
             </motion.div>

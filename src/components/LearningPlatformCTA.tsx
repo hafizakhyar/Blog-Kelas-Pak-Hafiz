@@ -78,8 +78,13 @@ export const LearningPlatformCTA: React.FC<LearningPlatformCTAProps> = ({ onOpen
                 
                 <div className="flex items-center justify-between border-b border-white/15 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#0284C7] flex items-center justify-center text-white font-bold shadow-md shadow-[#0284C7]/40">
-                      H
+                    <div className="w-10 h-10 rounded-full bg-white border border-white/30 flex items-center justify-center overflow-hidden shadow-md shadow-[#0284C7]/40 p-0.5">
+                      <img
+                        src="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge"
+                        alt="Logo Kelas Pak Hafiz"
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover rounded-full"
+                      />
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-white uppercase tracking-tight font-heading">Portal Belajar Terpadu</h4>
@@ -101,8 +106,16 @@ export const LearningPlatformCTA: React.FC<LearningPlatformCTAProps> = ({ onOpen
                     <span className="font-semibold text-white">24/7 Fleksibel</span>
                   </div>
                   <div className="p-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
-                    <span>Instruktur Utama</span>
-                    <span className="font-semibold text-[#38BDF8]">Pak Hafiz, M.Si.</span>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src="https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi"
+                        alt="Pak Hafiz Akhyar, S.Si."
+                        referrerPolicy="no-referrer"
+                        className="w-5 h-5 rounded-full object-cover border border-white/30"
+                      />
+                      <span>Instruktur Utama</span>
+                    </div>
+                    <span className="font-semibold text-[#38BDF8]">Pak Hafiz Akhyar, S.Si.</span>
                   </div>
                 </div>
 

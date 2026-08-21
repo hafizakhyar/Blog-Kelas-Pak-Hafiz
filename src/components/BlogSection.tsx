@@ -119,6 +119,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ onSelectPost, onOpenMa
                     <img
                       src={featuredPost.author.avatar}
                       alt={featuredPost.author.name}
+                      referrerPolicy="no-referrer"
                       className="w-8 h-8 rounded-full object-cover border border-[#E2E8F0]"
                     />
                     <span className="text-xs font-semibold text-[#0F172A]">{featuredPost.author.name}</span>

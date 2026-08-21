@@ -114,10 +114,24 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ onSubmitSuccess 
             </div>
 
             {/* Direct Contact Info Box */}
-            <div className="mt-8 p-6 rounded-[24px] bg-white border border-[#E2E8F0] shadow-2xs space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-3">
-                Kanal Kontak Langsung
-              </h4>
+            <div className="mt-8 p-6 rounded-[24px] bg-white border border-[#E2E8F0] shadow-2xs space-y-4">
+              <div className="flex items-center gap-3 pb-3 border-b border-[#E2E8F0]">
+                <img
+                  src="https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi"
+                  alt="Pak Hafiz Akhyar, S.Si."
+                  referrerPolicy="no-referrer"
+                  className="w-11 h-11 rounded-full object-cover border-2 border-[#BAE6FD] shadow-xs"
+                />
+                <div>
+                  <h4 className="text-sm font-bold text-[#0F172A] font-heading">
+                    Pak Hafiz Akhyar, S.Si.
+                  </h4>
+                  <p className="text-xs text-[#0284C7] font-semibold">
+                    Guru Kimia & Edukator Sains SMA
+                  </p>
+                </div>
+              </div>
+
               <div className="flex items-center gap-3 text-xs sm:text-sm text-[#334155]">
                 <div className="w-8 h-8 rounded-full bg-[#F4F8FC] text-[#0284C7] border border-[#E2E8F0] flex items-center justify-center shrink-0">
                   <Mail className="w-4 h-4" />

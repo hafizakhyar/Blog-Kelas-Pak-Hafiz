@@ -20,19 +20,31 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
           {/* Brand Col (4 cols) */}
           <div className="lg:col-span-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#0284C7] text-white flex items-center justify-center shadow-md shadow-[#0284C7]/30">
-                <FlaskConical className="w-5 h-5 text-white" />
+              <div className="w-11 h-11 rounded-full bg-white border border-white/20 flex items-center justify-center overflow-hidden shrink-0 p-0.5 shadow-md shadow-[#0284C7]/20">
+                <img
+                  src="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge"
+                  alt="Logo Kelas Pak Hafiz"
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover rounded-full"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    if (target.parentElement) {
+                      target.parentElement.classList.add('bg-[#0284C7]');
+                    }
+                  }}
+                />
               </div>
               <div>
                 <h3 className="text-lg font-bold font-heading text-white">
                   Kelas Pak Hafiz
                 </h3>
-                <p className="text-xs text-[#38BDF8]">Kimia & IPA SMA Inspiratif</p>
+                <p className="text-xs text-[#38BDF8]">Pak Hafiz Akhyar, S.Si. • Kimia & IPA SMA</p>
               </div>
             </div>
 
             <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Hub dokumentasi, galeri eksperimen sains, modul ajar mandiri, dan artikel pembelajaran kimia SMA yang dibuat relevan, segar, dan aplikatif.
+              Hub dokumentasi, galeri eksperimen sains, modul ajar mandiri, dan artikel pembelajaran kimia SMA yang diasuh oleh Pak Hafiz Akhyar, S.Si.
             </p>
 
             {/* Social Media Links */}
