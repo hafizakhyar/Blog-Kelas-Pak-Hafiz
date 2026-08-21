@@ -30,6 +30,11 @@ import { INITIAL_CLASS_NOTES, TEACHER_INFO } from '../data/mockData';
 
 interface ClassNotesSectionProps {
   onAddToast: (title: string, description?: string, type?: 'success' | 'info') => void;
+  onSelectNote?: (note: ClassNote) => void;
+  notes?: ClassNote[];
+  setNotes?: React.Dispatch<React.SetStateAction<ClassNote[]>>;
+  isAdmin?: boolean;
+  setIsAdmin?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const STORAGE_KEY = 'kelaspakhafiz_class_notes_v2';
@@ -57,15 +62,25 @@ const PRESET_IMAGES = [
   { label: 'Reaksi Warna Warni', url: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80' },
 ];
 
-export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast }) => {
+export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
+  onAddToast,
+  onSelectNote,
+  notes: propNotes,
+  setNotes: propSetNotes,
+  isAdmin: propIsAdmin,
+  setIsAdmin: propSetIsAdmin,
+}) => {
   // Admin Mode Authentication State
-  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+  const [internalIsAdmin, setInternalIsAdmin] = useState<boolean>(() => {
     try {
       return localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
     } catch {
       return false;
     }
   });
+
+  const isAdmin = propIsAdmin !== undefined ? propIsAdmin : internalIsAdmin;
+  const setIsAdmin = propSetIsAdmin || setInternalIsAdmin;
 
   // Admin Passcode Modal
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -87,7 +102,7 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast
   }, [isAdmin]);
 
   // Notes State initialized from localStorage or default
-  const [notes, setNotes] = useState<ClassNote[]>(() => {
+  const [internalNotes, setInternalNotes] = useState<ClassNote[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -98,6 +113,9 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast
     }
     return INITIAL_CLASS_NOTES;
   });
+
+  const notes = propNotes || internalNotes;
+  const setNotes = propSetNotes || setInternalNotes;
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -751,7 +769,10 @@ ${
                 <div className="p-5 sm:p-6 flex-grow flex flex-col justify-between space-y-4">
                   <div>
                     {/* Note Title */}
-                    <h3 className="text-lg sm:text-xl font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#0284C7] transition-colors mb-2.5">
+                    <h3
+                      onClick={() => onSelectNote && onSelectNote(note)}
+                      className="text-lg sm:text-xl font-bold font-heading text-[#0F172A] leading-snug hover:text-[#0284C7] transition-colors mb-2.5 cursor-pointer"
+                    >
                       {note.title}
                     </h3>
 
@@ -792,6 +813,17 @@ ${
                         ))}
                       </div>
                     )}
+
+                    {/* Read Full Page Button */}
+                    <div className="pt-2">
+                      <button
+                        onClick={() => onSelectNote && onSelectNote(note)}
+                        className="text-xs font-bold text-[#0284C7] hover:text-[#0369A1] flex items-center gap-1 transition-colors cursor-pointer group/btn"
+                      >
+                        <span>Lihat Catatan & Rumus Lengkap</span>
+                        <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Note Footer with Author, Date & Action Toolbar */}
