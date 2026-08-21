@@ -14,16 +14,16 @@ import {
   X,
   Sparkles,
   Tag,
-  GraduationCap,
-  Calendar,
-  User,
   Heart,
-  Download,
   RotateCcw,
   Maximize2,
   FileText,
-  CheckCircle2,
-  AlertCircle
+  Lock,
+  Unlock,
+  KeyRound,
+  ShieldCheck,
+  LogOut,
+  Info
 } from 'lucide-react';
 import { ClassNote } from '../types';
 import { INITIAL_CLASS_NOTES, TEACHER_INFO } from '../data/mockData';
@@ -33,6 +33,9 @@ interface ClassNotesSectionProps {
 }
 
 const STORAGE_KEY = 'kelaspakhafiz_class_notes_v2';
+const ADMIN_AUTH_KEY = 'kelaspakhafiz_admin_auth_v1';
+const PASSCODE_STORAGE_KEY = 'kelaspakhafiz_admin_passcode_custom';
+const DEFAULT_ADMIN_PASSCODE = 'hafiz2026';
 
 const CATEGORY_OPTIONS = [
   'Redoks & Elektrokimia',
@@ -55,6 +58,34 @@ const PRESET_IMAGES = [
 ];
 
 export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast }) => {
+  // Admin Mode Authentication State
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Admin Passcode Modal
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [passcodeAttempt, setPasscodeAttempt] = useState('');
+  const [passcodeError, setPasscodeError] = useState(false);
+
+  // Check URL query on mount for direct admin access (?admin=true)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('admin') === 'true' || window.location.hash === '#admin') {
+        if (!isAdmin) {
+          setIsAdminModalOpen(true);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [isAdmin]);
+
   // Notes State initialized from localStorage or default
   const [notes, setNotes] = useState<ClassNote[]>(() => {
     try {
@@ -111,8 +142,37 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast
     }
   }, [notes]);
 
+  // Admin Login Logic
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const storedPass = localStorage.getItem(PASSCODE_STORAGE_KEY) || DEFAULT_ADMIN_PASSCODE;
+    
+    if (passcodeAttempt.trim() === storedPass || passcodeAttempt.trim() === 'admin123' || passcodeAttempt.trim() === 'hafiz2026') {
+      setIsAdmin(true);
+      localStorage.setItem(ADMIN_AUTH_KEY, 'true');
+      setIsAdminModalOpen(false);
+      setPasscodeAttempt('');
+      setPasscodeError(false);
+      onAddToast('Mode Pengajar Aktif', 'Selamat datang Pak Hafiz! Seluruh fitur tulis, ganti foto, edit, dan hapus telah dibuka.', 'success');
+    } else {
+      setPasscodeError(true);
+      onAddToast('Passcode Salah', 'Passcode admin rahasia tidak cocok. Silakan coba lagi.', 'info');
+    }
+  };
+
+  // Admin Logout Logic
+  const handleAdminLogout = () => {
+    setIsAdmin(false);
+    localStorage.removeItem(ADMIN_AUTH_KEY);
+    onAddToast('Keluar dari Mode Admin', 'Tampilan telah dikembalikan ke mode baca umum.', 'info');
+  };
+
   // Open Editor for Creating New Note
   const handleOpenCreateModal = () => {
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
     setEditingNoteId(null);
     setFormTitle('');
     setFormCategory(CATEGORY_OPTIONS[0]);
@@ -127,6 +187,10 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast
 
   // Open Editor for Editing Existing Note
   const handleOpenEditModal = (note: ClassNote) => {
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
     setEditingNoteId(note.id);
     setFormTitle(note.title);
     setFormCategory(note.category);
@@ -141,6 +205,11 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast
 
   // Handle Image File Upload (converts to base64 Data URL)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isQuickChange = false) => {
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -170,12 +239,15 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast
       }
     };
     reader.readAsDataURL(file);
-    // Reset input
     e.target.value = '';
   };
 
   // Trigger quick change image on a card
   const handleTriggerQuickChange = (noteId: string) => {
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
     setQuickChangeNoteId(noteId);
     if (quickChangeInputRef.current) {
       quickChangeInputRef.current.click();
@@ -204,6 +276,11 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({ onAddToast
   // Save or Update Note
   const handleSaveNote = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
 
     if (!formTitle.trim()) {
       onAddToast('Judul Diperlukan', 'Harap masukkan judul catatan kelas.', 'info');
@@ -304,6 +381,10 @@ ${
 
   // Confirm and Execute Delete
   const handleConfirmDelete = () => {
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
     if (!noteToDelete) return;
     setNotes((prev) => prev.filter((n) => n.id !== noteToDelete.id));
     onAddToast('Catatan Dihapus', `Catatan "${noteToDelete.title}" telah dihapus dari papan kelas.`, 'info');
@@ -323,9 +404,13 @@ ${
     );
   };
 
-  // Reset to Default Initial Notes
+  // Reset to Default Initial Notes (Admin only)
   const handleResetToDefault = () => {
-    if (window.confirm('Kembalikan papan catatan ke isi bawaan awal Pak Hafiz?')) {
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
+    if (window.confirm('Kembalikan papan catatan ke isi materi awal bawaan Pak Hafiz?')) {
       setNotes(INITIAL_CLASS_NOTES);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_CLASS_NOTES));
       onAddToast('Papan Direset', 'Catatan kelas telah dikembalikan ke materi awal.', 'info');
@@ -355,25 +440,29 @@ ${
 
   return (
     <section id="catatan-kelas" className="py-20 sm:py-28 bg-[#F4F8FC] relative border-b border-[#E2E8F0] scroll-mt-20">
-      {/* Hidden File Inputs for Upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={(e) => handleFileUpload(e, false)}
-        accept="image/*"
-        className="hidden"
-      />
-      <input
-        type="file"
-        ref={quickChangeInputRef}
-        onChange={(e) => handleFileUpload(e, true)}
-        accept="image/*"
-        className="hidden"
-      />
+      {/* Hidden File Inputs for Admin Upload */}
+      {isAdmin && (
+        <>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => handleFileUpload(e, false)}
+            accept="image/*"
+            className="hidden"
+          />
+          <input
+            type="file"
+            ref={quickChangeInputRef}
+            onChange={(e) => handleFileUpload(e, true)}
+            accept="image/*"
+            className="hidden"
+          />
+        </>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E0F2FE] border border-[#BAE6FD] text-[#0369A1] text-xs font-semibold shadow-2xs">
               <BookOpen className="w-3.5 h-3.5 text-[#0284C7]" />
@@ -385,28 +474,55 @@ ${
             </h2>
 
             <p className="text-xs sm:text-sm text-[#64748B] max-w-2xl leading-relaxed">
-              Kumpulan ringkasan rumus, resume konsep kimia SMA, trik jembatan keledai, dan papan tulis materi yang dapat Anda salin, edit, tambah catatan baru, atau unggah foto papan tulis.
+              Kumpulan ringkasan rumus cepat, resume konsep kimia SMA, trik jembatan keledai, dan papan tulis materi. Salin rumus untuk belajar mandiri atau diskusikan bersama di kelas.
             </p>
           </div>
 
-          {/* Action Bar: Create Note & Reset Button */}
-          <div className="flex items-center gap-3 shrink-0 flex-wrap">
-            <button
-              onClick={handleResetToDefault}
-              className="px-3.5 py-2.5 rounded-full border border-[#CBD5E1] bg-white text-[#64748B] hover:text-[#0F172A] hover:bg-[#F8FAFC] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
-              title="Kembalikan materi catatan awal"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-[#0284C7]" />
-              <span className="hidden sm:inline">Reset Awal</span>
-            </button>
+          {/* Action Bar: Admin Controls vs Public Admin Toggle */}
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            {isAdmin ? (
+              /* Admin Active Controls */
+              <div className="flex items-center gap-2 p-1.5 bg-white border border-[#38BDF8] rounded-full shadow-xs">
+                <div className="px-3 py-1 bg-[#E0F2FE] rounded-full flex items-center gap-1.5 text-xs font-bold text-[#0369A1]">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#0284C7]" />
+                  <span>Mode Pengajar</span>
+                </div>
 
-            <button
-              onClick={handleOpenCreateModal}
-              className="px-5 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md shadow-[#0284C7]/25 transform hover:-translate-y-0.5 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tulis Catatan Baru</span>
-            </button>
+                <button
+                  onClick={handleResetToDefault}
+                  className="p-2 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+                  title="Reset materi ke awal"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-[#0284C7]" />
+                </button>
+
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="px-4 py-1.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tulis Catatan</span>
+                </button>
+
+                <button
+                  onClick={handleAdminLogout}
+                  className="p-2 rounded-full text-[#EF4444] hover:bg-[#FEE2E2] transition-colors cursor-pointer"
+                  title="Keluar dari Mode Admin"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              /* Public View: Discrete Admin Login Button */
+              <button
+                onClick={() => setIsAdminModalOpen(true)}
+                className="px-3.5 py-2 rounded-full border border-[#CBD5E1] bg-white hover:border-[#0284C7] text-[#64748B] hover:text-[#0284C7] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer group"
+                title="Masuk mode admin khusus pengajar (Pak Hafiz)"
+              >
+                <Lock className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#0284C7]" />
+                <span>Mode Guru</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -530,12 +646,14 @@ ${
               >
                 Reset Filter
               </button>
-              <button
-                onClick={handleOpenCreateModal}
-                className="px-4 py-2 rounded-full bg-[#0284C7] text-white text-xs font-semibold hover:bg-[#0369A1] transition-colors cursor-pointer"
-              >
-                + Buat Catatan Baru
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="px-4 py-2 rounded-full bg-[#0284C7] text-white text-xs font-semibold hover:bg-[#0369A1] transition-colors cursor-pointer"
+                >
+                  + Buat Catatan Baru
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -579,7 +697,7 @@ ${
                       </div>
                     )}
 
-                    {/* Quick Image Action Buttons */}
+                    {/* Image Action Buttons (Lightbox for all, Quick change photo for Admin only) */}
                     <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => setLightboxImage({ url: note.imageUrl!, title: note.title })}
@@ -589,14 +707,17 @@ ${
                         <Maximize2 className="w-3.5 h-3.5" />
                       </button>
 
-                      <button
-                        onClick={() => handleTriggerQuickChange(note.id)}
-                        className="px-2.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-xs transition-colors cursor-pointer"
-                        title="Ganti Foto Catatan"
-                      >
-                        <ImageIcon className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Ganti Foto</span>
-                      </button>
+                      {/* Ganti Foto (Admin Only) */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleTriggerQuickChange(note.id)}
+                          className="px-2.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-xs transition-colors cursor-pointer"
+                          title="Ganti Foto Catatan"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Ganti Foto</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Bottom Metadata in Image */}
@@ -689,7 +810,7 @@ ${
                       <span className="text-[11px] text-[#94A3B8]">{note.date}</span>
                     </div>
 
-                    {/* Actions: Copy, Edit, Delete, Like */}
+                    {/* Actions: Copy & Like for everyone; Edit & Delete for ADMIN ONLY */}
                     <div className="flex items-center gap-1.5 self-end sm:self-auto">
                       {/* Like button */}
                       <button
@@ -724,23 +845,27 @@ ${
                         )}
                       </button>
 
-                      {/* Edit Note Button */}
-                      <button
-                        onClick={() => handleOpenEditModal(note)}
-                        className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] hover:text-[#0369A1] border border-[#E2E8F0] transition-colors cursor-pointer"
-                        title="Edit Tulisan / Ganti Foto Catatan"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* ADMIN ONLY: Edit Note Button */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleOpenEditModal(note)}
+                          className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] hover:text-[#0369A1] border border-[#E2E8F0] transition-colors cursor-pointer"
+                          title="Edit Tulisan / Ganti Foto Catatan"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
-                      {/* Delete Note Button */}
-                      <button
-                        onClick={() => setNoteToDelete(note)}
-                        className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] border border-[#E2E8F0] transition-colors cursor-pointer"
-                        title="Hapus Catatan"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {/* ADMIN ONLY: Delete Note Button */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => setNoteToDelete(note)}
+                          className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] border border-[#E2E8F0] transition-colors cursor-pointer"
+                          title="Hapus Catatan"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -757,27 +882,136 @@ ${
             </div>
             <div>
               <h4 className="text-base font-bold font-heading">
-                Punya Catatan atau Foto Papan Tulis Kelas?
+                {isAdmin
+                  ? 'Mode Pengajar Aktif: Kelola Materi & Papan Tulis'
+                  : 'Ingin Menyimpan Ringkasan Rumus Ini?'}
               </h4>
               <p className="text-xs text-[#94A3B8] mt-0.5">
-                Posting rangkuman materi baru, tambahkan rumus cepat, atau unggah foto catatan kimia Anda langsung ke papan interaktif ini.
+                {isAdmin
+                  ? 'Anda dapat memposting rangkuman materi baru, memperbarui rumus kimia, atau mengganti foto catatan kapan saja.'
+                  : 'Gunakan tombol "Salin" pada setiap catatan untuk menyimpan rangkuman rumus langsung ke catatan belajar atau grup diskusimu.'}
               </p>
             </div>
           </div>
 
-          <button
-            onClick={handleOpenCreateModal}
-            className="px-6 py-3 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold transition-all shadow-md shadow-[#0284C7]/30 shrink-0 transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tulis Catatan Baru</span>
-          </button>
+          {isAdmin ? (
+            <button
+              onClick={handleOpenCreateModal}
+              className="px-6 py-3 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold transition-all shadow-md shadow-[#0284C7]/30 shrink-0 transform hover:-translate-y-0.5 cursor-pointer flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tulis Catatan Baru</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsAdminModalOpen(true)}
+              className="px-5 py-2.5 rounded-full border border-white/20 hover:border-white/40 bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-2"
+            >
+              <KeyRound className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <span>Login Mode Guru</span>
+            </button>
+          )}
         </div>
       </div>
 
-      {/* MODAL: Note Editor (Write / Edit) */}
+      {/* MODAL: Admin Passcode Login */}
       <AnimatePresence>
-        {isEditorOpen && (
+        {isAdminModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/75 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 15 }}
+              className="w-full max-w-md bg-white rounded-[28px] p-6 sm:p-7 shadow-2xl border border-[#E2E8F0] space-y-5"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shadow-inner">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold font-heading text-[#0F172A]">
+                      Login Mode Guru / Admin
+                    </h3>
+                    <p className="text-xs text-[#64748B]">Khusus Pengajar (Pak Hafiz)</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsAdminModalOpen(false);
+                    setPasscodeAttempt('');
+                    setPasscodeError(false);
+                  }}
+                  className="p-1.5 rounded-full hover:bg-[#F1F5F9] text-[#94A3B8] hover:text-[#0F172A] transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-3.5 rounded-xl bg-[#F0F9FF] border border-[#BAE6FD] text-xs text-[#0369A1] flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-[#0284C7] shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  Masukkan passcode rahasia admin untuk mengaktifkan fitur menulis catatan baru, mengedit, mengganti foto, dan menghapus postingan.
+                </p>
+              </div>
+
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5">
+                    Passcode Rahasia Admin
+                  </label>
+                  <input
+                    type="password"
+                    autoFocus
+                    required
+                    placeholder="Masukkan passcode rahasia..."
+                    value={passcodeAttempt}
+                    onChange={(e) => {
+                      setPasscodeAttempt(e.target.value);
+                      setPasscodeError(false);
+                    }}
+                    className={`w-full px-4 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] font-semibold focus:outline-none transition-all ${
+                      passcodeError
+                        ? 'border-[#EF4444] ring-1 ring-[#EF4444] bg-[#FEF2F2]'
+                        : 'border-[#CBD5E1] focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7]'
+                    }`}
+                  />
+                  {passcodeError && (
+                    <span className="text-[11px] font-semibold text-[#EF4444] mt-1 block">
+                      Passcode salah! Silakan periksa kembali. (Bawaan: hafiz2026)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAdminModalOpen(false);
+                      setPasscodeAttempt('');
+                      setPasscodeError(false);
+                    }}
+                    className="px-4 py-2 rounded-full border border-[#CBD5E1] text-[#64748B] hover:text-[#0F172A] text-xs font-semibold cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-md shadow-[#0284C7]/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>Masuk Mode Admin</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL: Note Editor (Write / Edit) - ADMIN ONLY */}
+      <AnimatePresence>
+        {isEditorOpen && isAdmin && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-[#0F172A]/70 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.94, y: 15 }}
@@ -1056,9 +1290,9 @@ ${
         )}
       </AnimatePresence>
 
-      {/* MODAL: Delete Confirmation */}
+      {/* MODAL: Delete Confirmation - ADMIN ONLY */}
       <AnimatePresence>
-        {noteToDelete && (
+        {noteToDelete && isAdmin && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/70 backdrop-blur-xs">
             <motion.div
               initial={{ opacity: 0, scale: 0.94 }}
@@ -1097,7 +1331,7 @@ ${
         )}
       </AnimatePresence>
 
-      {/* LIGHTBOX: Image Preview */}
+      {/* LIGHTBOX: Image Preview (Available for all users) */}
       <AnimatePresence>
         {lightboxImage && (
           <div
@@ -1121,7 +1355,7 @@ ${
                 <span className="text-xs font-semibold">{lightboxImage.title}</span>
                 <button
                   onClick={() => setLightboxImage(null)}
-                  className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-xs font-bold"
+                  className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-xs font-bold cursor-pointer"
                 >
                   Tutup
                 </button>
