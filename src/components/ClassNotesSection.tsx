@@ -51,6 +51,7 @@ const PASSCODE_STORAGE_KEY = 'kelaspakhafiz_admin_passcode_custom';
 const DEFAULT_ADMIN_PASSCODE = 'hafiz2026';
 
 const CATEGORY_OPTIONS = [
+  'Tips Belajar di Kelas',
   'Redoks & Elektrokimia',
   'Kimia Organik',
   'Stoikiometri',
@@ -63,9 +64,10 @@ const CATEGORY_OPTIONS = [
 ];
 
 const PRESET_IMAGES = [
+  { label: 'Tips & Meja Belajar', url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80' },
   { label: 'Papan Tulis Kimia', url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80' },
   { label: 'Molekul & Struktur', url: 'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b4?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Buku & Rumus', url: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=800&q=80' },
+  { label: 'Buku & Catatan', url: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80' },
   { label: 'Laboratorium & Beaker', url: 'https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=800&q=80' },
   { label: 'Reaksi Warna Warni', url: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80' },
 ];
@@ -114,7 +116,13 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return JSON.parse(saved);
+        const parsed: ClassNote[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map((n) => n.id));
+        const missing = INITIAL_CLASS_NOTES.filter((n) => !existingIds.has(n.id));
+        if (missing.length > 0) {
+          return [...parsed, ...missing];
+        }
+        return parsed;
       }
     } catch {
       // Fallback
@@ -159,7 +167,9 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
   const quickChangeInputRef = useRef<HTMLInputElement | null>(null);
   const [quickChangeNoteId, setQuickChangeNoteId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
 
   // Save to LocalStorage whenever notes change
   useEffect(() => {
@@ -208,6 +218,7 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
     setFormContent('');
     setFormKeyPoints(['']);
     setFormImageUrl(PRESET_IMAGES[0].url);
+    setPendingImageFile(null);
     setFormTags('');
     setFormIsPinned(false);
     setIsEditorOpen(true);
@@ -226,12 +237,13 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
     setFormContent(note.content);
     setFormKeyPoints(note.keyPoints && note.keyPoints.length > 0 ? [...note.keyPoints] : ['']);
     setFormImageUrl(note.imageUrl || '');
+    setPendingImageFile(null);
     setFormTags(note.tags ? note.tags.join(', ') : '');
     setFormIsPinned(!!note.isPinned);
     setIsEditorOpen(true);
   };
 
-  // Handle Image File Upload (uploads to Firebase Storage with fallback to base64)
+  // Handle Image File Upload (uploads to Firebase Storage folder: catatan_foto/catatan_kelas/)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, isQuickChange = false) => {
     if (!isAdmin) {
       setIsAdminModalOpen(true);
@@ -252,11 +264,13 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
       return;
     }
 
+    setPendingImageFile(file);
     setIsUploading(true);
     setUploadProgress(10);
 
     try {
-      // 1. Attempt upload to Firebase Storage folder: catatan_foto/catatan_kelas
+      console.log(`[Catatan Kelas] Mengunggah foto "${file.name}" ke Firebase Storage: ${STORAGE_FOLDERS.NOTES_IMAGES}`);
+      // 1. Upload to Firebase Storage folder: catatan_foto/catatan_kelas
       const downloadUrl = await uploadFileToFirebaseStorage(
         file,
         STORAGE_FOLDERS.NOTES_IMAGES,
@@ -270,15 +284,16 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
           setNotes((prev) => prev.map((n) => (n.id === quickChangeNoteId ? updated : n)));
           await saveClassNoteToFirestore(updated);
         }
-        onAddToast('Gambar Cloud Tersimpan', 'Foto catatan berhasil diunggah ke Firebase Storage & Firestore.', 'success');
+        onAddToast('Foto Cloud Tersimpan', 'Foto catatan berhasil diunggah ke Firebase Storage & Firestore.', 'success');
         setQuickChangeNoteId(null);
       } else {
         setFormImageUrl(downloadUrl);
-        onAddToast('Foto Siap di Cloud', 'Foto berhasil diunggah ke Firebase Storage dan siap disimpan.', 'success');
+        setPendingImageFile(null);
+        onAddToast('Foto Siap di Cloud', 'Foto berhasil diunggah ke Firebase Storage dan URL publik siap disimpan.', 'success');
       }
     } catch (storageErr) {
-      console.warn('Firebase Storage upload fallback to local reader:', storageErr);
-      // Fallback to FileReader if storage network error
+      console.error('[Firebase Storage ERROR] Gagal mengunggah foto catatan kelas:', storageErr);
+      // Fallback preview
       const reader = new FileReader();
       reader.onload = async (event) => {
         const dataUrl = event.target?.result as string;
@@ -287,13 +302,17 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
           if (targetNote) {
             const updated = { ...targetNote, imageUrl: dataUrl };
             setNotes((prev) => prev.map((n) => (n.id === quickChangeNoteId ? updated : n)));
-            await saveClassNoteToFirestore(updated);
+            try {
+              await saveClassNoteToFirestore(updated);
+            } catch (err) {
+              console.error('[Firebase Firestore ERROR] Gagal sync foto lokal:', err);
+            }
           }
-          onAddToast('Gambar Diperbarui', 'Foto catatan kelas berhasil diganti.', 'success');
+          onAddToast('Gambar Diperbarui (Lokal)', 'Foto catatan kelas berhasil diganti.', 'info');
           setQuickChangeNoteId(null);
         } else {
           setFormImageUrl(dataUrl);
-          onAddToast('Gambar Terunggah', 'Gambar siap dilampirkan pada catatan.', 'success');
+          onAddToast('Gambar Siap', 'Pratinjau gambar siap dilampirkan.', 'info');
         }
       };
       reader.readAsDataURL(file);
@@ -354,60 +373,89 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
       return;
     }
 
-    const cleanedPoints = formKeyPoints.map((p) => p.trim()).filter(Boolean);
-    const cleanedTags = formTags
-      .split(',')
-      .map((t) => t.trim().replace(/^#/, ''))
-      .filter(Boolean);
+    setIsSaving(true);
 
-    const now = new Date();
-    const dateFormatted = `${now.getDate()} ${
-      ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][
-        now.getMonth()
-      ]
-    } ${now.getFullYear()}`;
+    try {
+      let finalImageUrl = formImageUrl.trim();
 
-    if (editingNoteId) {
-      // Update existing
-      const updatedNote: ClassNote = {
-        id: editingNoteId,
-        title: formTitle.trim(),
-        category: formCategory,
-        classGrade: formClassGrade,
-        content: formContent.trim(),
-        keyPoints: cleanedPoints,
-        imageUrl: formImageUrl.trim() || undefined,
-        tags: cleanedTags,
-        isPinned: formIsPinned,
-        date: dateFormatted + ' (Diedit)',
-        authorName: TEACHER_INFO.name,
-      };
+      // If there is a pending file that hasn't been uploaded yet, upload to Firebase Storage now
+      if (pendingImageFile) {
+        setIsUploading(true);
+        try {
+          console.log(`[Catatan Kelas] Mengunggah file tertunda "${pendingImageFile.name}" sebelum menyimpan...`);
+          finalImageUrl = await uploadFileToFirebaseStorage(
+            pendingImageFile,
+            STORAGE_FOLDERS.NOTES_IMAGES,
+            (progress) => setUploadProgress(progress)
+          );
+        } catch (uploadErr) {
+          console.error('[Firebase Storage ERROR] Gagal mengunggah file tertunda:', uploadErr);
+        } finally {
+          setIsUploading(false);
+        }
+      }
 
-      setNotes((prev) => prev.map((n) => (n.id === editingNoteId ? updatedNote : n)));
-      await saveClassNoteToFirestore(updatedNote);
-      onAddToast('Catatan Disimpan di Cloud', `Perubahan pada "${formTitle}" telah tersimpan di Firebase Firestore.`, 'success');
-    } else {
-      // Create new
-      const newNote: ClassNote = {
-        id: `note-${Date.now()}`,
-        title: formTitle.trim(),
-        category: formCategory,
-        classGrade: formClassGrade,
-        content: formContent.trim(),
-        keyPoints: cleanedPoints,
-        imageUrl: formImageUrl.trim() || undefined,
-        date: dateFormatted,
-        authorName: TEACHER_INFO.name,
-        isPinned: formIsPinned,
-        likes: 0,
-        tags: cleanedTags.length > 0 ? cleanedTags : [formCategory.replace(/\s+/g, '')],
-      };
-      setNotes((prev) => [newNote, ...prev]);
-      await saveClassNoteToFirestore(newNote);
-      onAddToast('Catatan Baru Tersimpan di Cloud', `Catatan "${formTitle}" berhasil diposting ke Firebase Firestore & Storage.`, 'success');
+      const cleanedPoints = formKeyPoints.map((p) => p.trim()).filter(Boolean);
+      const cleanedTags = formTags
+        .split(',')
+        .map((t) => t.trim().replace(/^#/, ''))
+        .filter(Boolean);
+
+      const now = new Date();
+      const dateFormatted = `${now.getDate()} ${
+        ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'][
+          now.getMonth()
+        ]
+      } ${now.getFullYear()}`;
+
+      if (editingNoteId) {
+        // Update existing note in Firestore
+        const updatedNote: ClassNote = {
+          id: editingNoteId,
+          title: formTitle.trim(),
+          category: formCategory,
+          classGrade: formClassGrade,
+          content: formContent.trim(),
+          keyPoints: cleanedPoints,
+          imageUrl: finalImageUrl || undefined,
+          tags: cleanedTags,
+          isPinned: formIsPinned,
+          date: dateFormatted + ' (Diedit)',
+          authorName: TEACHER_INFO.name,
+        };
+
+        setNotes((prev) => prev.map((n) => (n.id === editingNoteId ? updatedNote : n)));
+        await saveClassNoteToFirestore(updatedNote);
+        onAddToast('Catatan Disimpan di Cloud', `Perubahan pada "${formTitle}" telah tersimpan di Firebase Firestore.`, 'success');
+      } else {
+        // Create new note in Firestore collection catatan_kelas
+        const newNote: ClassNote = {
+          id: `note-${Date.now()}`,
+          title: formTitle.trim(),
+          category: formCategory,
+          classGrade: formClassGrade,
+          content: formContent.trim(),
+          keyPoints: cleanedPoints,
+          imageUrl: finalImageUrl || undefined,
+          date: dateFormatted,
+          authorName: TEACHER_INFO.name,
+          isPinned: formIsPinned,
+          likes: 0,
+          tags: cleanedTags.length > 0 ? cleanedTags : [formCategory.replace(/\s+/g, '')],
+        };
+        setNotes((prev) => [newNote, ...prev]);
+        await saveClassNoteToFirestore(newNote);
+        onAddToast('Catatan Baru Tersimpan di Cloud', `Catatan "${formTitle}" berhasil diposting ke Firebase Firestore & Storage.`, 'success');
+      }
+
+      setIsEditorOpen(false);
+      setPendingImageFile(null);
+    } catch (saveError) {
+      console.error('[Firebase Firestore ERROR] Gagal memposting catatan kelas:', saveError);
+      onAddToast('Gagal Menyimpan ke Cloud', 'Terjadi kesalahan saat menyimpan ke Firestore. Periksa koneksi atau izin Firebase.', 'info');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsEditorOpen(false);
   };
 
   // Copy Note Content to Clipboard
@@ -463,15 +511,24 @@ ${
   };
 
   // Reset to Default Initial Notes (Admin only)
-  const handleResetToDefault = () => {
+  const handleResetToDefault = async () => {
     if (!isAdmin) {
       setIsAdminModalOpen(true);
       return;
     }
-    if (window.confirm('Kembalikan papan catatan ke isi materi awal bawaan Pak Hafiz?')) {
-      setNotes(INITIAL_CLASS_NOTES);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_CLASS_NOTES));
-      onAddToast('Papan Direset', 'Catatan kelas telah dikembalikan ke materi awal.', 'info');
+    if (window.confirm('Kembalikan papan catatan ke isi materi awal bawaan Pak Hafiz di Cloud Firestore?')) {
+      try {
+        setNotes(INITIAL_CLASS_NOTES);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_CLASS_NOTES));
+        // Push initial notes to Firestore
+        for (const note of INITIAL_CLASS_NOTES) {
+          await saveClassNoteToFirestore(note);
+        }
+        onAddToast('Papan Direset di Cloud', 'Catatan kelas telah dikembalikan ke materi awal di Firebase Firestore.', 'info');
+      } catch (err) {
+        console.error('[Firebase Firestore ERROR] Gagal mereset catatan awal:', err);
+        onAddToast('Papan Direset Lokal', 'Catatan kelas telah dikembalikan ke materi awal.', 'info');
+      }
     }
   };
 
@@ -1358,16 +1415,30 @@ ${
                 <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-end gap-3">
                   <button
                     type="button"
+                    disabled={isSaving || isUploading}
                     onClick={() => setIsEditorOpen(false)}
-                    className="px-5 py-2.5 rounded-full border border-[#CBD5E1] text-[#64748B] hover:text-[#0F172A] font-semibold text-xs transition-colors cursor-pointer"
+                    className="px-5 py-2.5 rounded-full border border-[#CBD5E1] text-[#64748B] hover:text-[#0F172A] font-semibold text-xs transition-colors cursor-pointer disabled:opacity-50"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-xs shadow-md shadow-[#0284C7]/30 transition-all cursor-pointer"
+                    disabled={isSaving || isUploading}
+                    className="px-6 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-xs shadow-md shadow-[#0284C7]/30 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-2"
                   >
-                    {editingNoteId ? 'Simpan Perubahan' : 'Posting Catatan'}
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Menyimpan ke Cloud...</span>
+                      </>
+                    ) : isUploading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Mengunggah Foto ({uploadProgress}%)...</span>
+                      </>
+                    ) : (
+                      <span>{editingNoteId ? 'Simpan Perubahan' : 'Posting Catatan'}</span>
+                    )}
                   </button>
                 </div>
               </form>

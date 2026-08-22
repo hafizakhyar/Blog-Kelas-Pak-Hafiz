@@ -9,7 +9,9 @@ import {
   getDocs,
   updateDoc,
   increment,
-  writeBatch
+  writeBatch,
+  serverTimestamp,
+  Timestamp
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -68,6 +70,8 @@ export async function uploadFileToFirebaseStorage(
   const storagePath = `${folder}/${timestamp}_${sanitizedName}`;
   const storageReference = ref(storage, storagePath);
 
+  console.log(`[Firebase Storage] Memulai unggah berkas "${file.name}" (${file.size} bytes) ke: ${storagePath}`);
+
   return new Promise((resolve, reject) => {
     const uploadTask = uploadBytesResumable(storageReference, file);
 
@@ -80,14 +84,16 @@ export async function uploadFileToFirebaseStorage(
         }
       },
       (error) => {
-        console.error('Firebase Storage upload error:', error);
+        console.error(`[Firebase Storage ERROR] Gagal mengunggah file ke ${storagePath}:`, error);
         reject(error);
       },
       async () => {
         try {
           const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          console.log(`[Firebase Storage SUCCESS] Foto/Berkas berhasil diunggah! URL: ${downloadUrl}`);
           resolve(downloadUrl);
         } catch (err) {
+          console.error('[Firebase Storage ERROR] Gagal mendapatkan URL publik getDownloadURL():', err);
           reject(err);
         }
       }
@@ -104,38 +110,49 @@ export async function seedFirestoreIfEmpty() {
   isSeeding = true;
 
   try {
-    // 1. Seed Class Notes (catatan_kelas)
-    const notesSnap = await getDocs(collection(db, COLLECTIONS.NOTES));
-    if (notesSnap.empty) {
-      console.log('Seeding initial Catatan Kelas to Firestore...');
-      const batch = writeBatch(db);
-      INITIAL_CLASS_NOTES.forEach((note) => {
-        const docRef = doc(db, COLLECTIONS.NOTES, note.id);
-        batch.set(docRef, note);
-      });
-      await batch.commit();
-    }
+    // 1. Seed & Sync Class Notes (catatan_kelas)
+    const notesBatch = writeBatch(db);
+    INITIAL_CLASS_NOTES.forEach((note) => {
+      const docRef = doc(db, COLLECTIONS.NOTES, note.id);
+      notesBatch.set(
+        docRef,
+        {
+          ...note,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    });
+    await notesBatch.commit();
+    console.log(`[Firebase Firestore] Berhasil menyinkronkan ${INITIAL_CLASS_NOTES.length} catatan kelas ke Firestore.`);
 
-    // 2. Seed Articles (catatan_artikel)
-    const articlesSnap = await getDocs(collection(db, COLLECTIONS.ARTICLES));
-    if (articlesSnap.empty) {
-      console.log('Seeding initial Artikel to Firestore...');
-      const batch = writeBatch(db);
-      BLOG_POSTS.forEach((post) => {
-        const docRef = doc(db, COLLECTIONS.ARTICLES, post.id);
-        batch.set(docRef, post);
-      });
-      await batch.commit();
-    }
+    // 2. Seed & Sync Articles (catatan_artikel)
+    const articlesBatch = writeBatch(db);
+    BLOG_POSTS.forEach((post) => {
+      const docRef = doc(db, COLLECTIONS.ARTICLES, post.id);
+      articlesBatch.set(
+        docRef,
+        {
+          ...post,
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    });
+    await articlesBatch.commit();
+    console.log(`[Firebase Firestore] Berhasil menyinkronkan ${BLOG_POSTS.length} artikel ke catatan_artikel.`);
 
     // 3. Seed Photos/Gallery (catatan_foto)
     const photosSnap = await getDocs(collection(db, COLLECTIONS.PHOTOS));
     if (photosSnap.empty) {
-      console.log('Seeding initial Galeri Foto to Firestore...');
+      console.log('[Firebase Firestore] Mengisi data awal galeri ke catatan_foto...');
       const batch = writeBatch(db);
       GALLERY_ITEMS.forEach((item) => {
         const docRef = doc(db, COLLECTIONS.PHOTOS, item.id);
-        batch.set(docRef, item);
+        batch.set(docRef, {
+          ...item,
+          createdAt: serverTimestamp()
+        });
       });
       await batch.commit();
     }
@@ -143,16 +160,19 @@ export async function seedFirestoreIfEmpty() {
     // 4. Seed Documents (catatan_dokumen)
     const docsSnap = await getDocs(collection(db, COLLECTIONS.DOCUMENTS));
     if (docsSnap.empty) {
-      console.log('Seeding initial Dokumen to Firestore...');
+      console.log('[Firebase Firestore] Mengisi data awal dokumen ke catatan_dokumen...');
       const batch = writeBatch(db);
       DOCUMENT_ITEMS.forEach((docItem) => {
         const docRef = doc(db, COLLECTIONS.DOCUMENTS, docItem.id);
-        batch.set(docRef, docItem);
+        batch.set(docRef, {
+          ...docItem,
+          createdAt: serverTimestamp()
+        });
       });
       await batch.commit();
     }
   } catch (err) {
-    console.warn('Firestore initial seeding skipped or failed (offline/permission):', err);
+    console.warn('[Firebase Firestore] Auto-seeding dilewati atau terjadi kendala jaringan/izin:', err);
   } finally {
     isSeeding = false;
   }
@@ -178,31 +198,85 @@ export function subscribeToClassNotes(
       }
       const items: ClassNote[] = [];
       snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as ClassNote);
+        const data = docSnap.data();
+        items.push({
+          id: docSnap.id,
+          title: data.title || '',
+          category: data.category || 'Materi Kimia',
+          classGrade: data.classGrade || 'Semua Tingkat',
+          content: data.content || '',
+          keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints : [],
+          imageUrl: data.imageUrl || undefined,
+          date: data.date || '',
+          authorName: data.authorName || 'Pak Hafiz, S.Pd., M.Si.',
+          isPinned: !!data.isPinned,
+          likes: typeof data.likes === 'number' ? data.likes : 0,
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as ClassNote);
       });
-      // Sort pinned first, then by date/id
+
+      // Sort pinned first, then by timestamp or id
       items.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
         return 0;
       });
+
+      console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} catatan kelas secara real-time.`);
       onData(items);
     },
     (err) => {
-      console.error('Error subscribing to catatan_kelas:', err);
+      console.error('[Firebase Firestore ERROR] Gagal berlangganan real-time koleksi catatan_kelas:', err);
       if (onError) onError(err);
     }
   );
 }
 
 export async function saveClassNoteToFirestore(note: ClassNote): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.NOTES, note.id);
-  await setDoc(docRef, note, { merge: true });
+  try {
+    const docRef = doc(db, COLLECTIONS.NOTES, note.id);
+    
+    // Clean object without undefined fields for safe Firestore serialization
+    const payload: Record<string, any> = {
+      id: note.id,
+      title: note.title || '',
+      category: note.category || 'Materi Kimia',
+      classGrade: note.classGrade || 'Semua Tingkat',
+      content: note.content || '',
+      keyPoints: Array.isArray(note.keyPoints) ? note.keyPoints : [],
+      imageUrl: note.imageUrl || '',
+      date: note.date || '',
+      authorName: note.authorName || 'Pak Hafiz, S.Pd., M.Si.',
+      isPinned: !!note.isPinned,
+      likes: typeof note.likes === 'number' ? note.likes : 0,
+      tags: Array.isArray(note.tags) ? note.tags : [],
+      updatedAt: serverTimestamp()
+    };
+
+    // If new note or doesn't have createdAt, set server timestamp
+    if (!(note as any).createdAt) {
+      payload.createdAt = serverTimestamp();
+    }
+
+    await setDoc(docRef, payload, { merge: true });
+    console.log(`[Firebase Firestore SUCCESS] Dokumen catatan_kelas "${note.title}" (ID: ${note.id}) tersimpan dengan serverTimestamp().`);
+  } catch (error) {
+    console.error(`[Firebase Firestore ERROR] Gagal menyimpan dokumen catatan_kelas "${note.title}":`, error);
+    throw error;
+  }
 }
 
 export async function deleteClassNoteFromFirestore(noteId: string): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.NOTES, noteId);
-  await deleteDoc(docRef);
+  try {
+    const docRef = doc(db, COLLECTIONS.NOTES, noteId);
+    await deleteDoc(docRef);
+    console.log(`[Firebase Firestore SUCCESS] Dokumen catatan_kelas ID: ${noteId} berhasil dihapus.`);
+  } catch (error) {
+    console.error(`[Firebase Firestore ERROR] Gagal menghapus dokumen catatan_kelas ID: ${noteId}:`, error);
+    throw error;
+  }
 }
 
 // --- Artikel & Catatan Belajar ---

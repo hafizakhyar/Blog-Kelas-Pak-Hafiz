@@ -59,7 +59,15 @@ export default function App() {
   const [notes, setNotes] = useState<ClassNote[]>(() => {
     try {
       const saved = localStorage.getItem(NOTES_STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: ClassNote[] = JSON.parse(saved);
+        const existingIds = new Set(parsed.map((n) => n.id));
+        const missing = INITIAL_CLASS_NOTES.filter((n) => !existingIds.has(n.id));
+        if (missing.length > 0) {
+          return [...parsed, ...missing];
+        }
+        return parsed;
+      }
     } catch (e) {
       console.error('Failed to load local notes', e);
     }

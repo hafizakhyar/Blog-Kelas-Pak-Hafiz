@@ -354,6 +354,297 @@ export const BLOG_POSTS: BlogPost[] = [
       'Pemanfaatan teknologi tradisional berbasis sains presisi.'
     ],
     reactions: 189
+  },
+  {
+    id: 'post-5',
+    title: 'Mengapa Minum Obat Tidak Boleh Bersamaan dengan Susu atau Teh Pekat? Rahasia Reaksi Khelasi & Penyerapan',
+    slug: 'bahaya-minum-obat-dengan-susu-dan-teh-khelasi-kimia',
+    summary: 'Sering mendengar larangan minum obat dengan susu atau teh? Ini bukan sekadar mitos, melainkan reaksi khelasi ion logam dan presipitasi tanin yang bisa menonaktifkan khasiat obat di dalam tubuhmu!',
+    content: [
+      'Pernahkah kamu disarankan untuk tidak meminum antibiotik atau suplemen penambah darah bersamaan dengan segelas susu sapi atau secangkir teh kental? Di balik anjuran medis ini, terdapat prinsip kimia koordinasi dan termodinamika larutan yang sangat krusial.',
+      'Pertama, fenomena Pembentukan Senyawa Kompleks (Khelasi). Susu kaya akan kation divalen seperti Kalsium (Ca²⁺) dan Magnesium (Mg²⁺). Beberapa jenis antibiotik (seperti golongan Tetrasiklin dan Fluoroquinolon / Siprofloksasin) memiliki gugus fungsional yang mampu mengapit kation Ca²⁺ membentuk senyawa kompleks khelat tak larut. Akibatnya, molekul obat mengendap di saluran cerna dan tidak dapat diserap dinding usus ke aliran darah.',
+      'Kedua, pengaruh Asam Tanat pada Teh. Daun teh mengandung senyawa polifenol tanin yang bersifat astringen dan memiliki kemampuan mengikat kation Besi (Fe²⁺) pada tablet suplemen anemia. Reaksi ini menghasilkan endapan besi-tanat berwarna gelap yang tidak larut, membatalkan terapi penambah darah yang sedang dijalani.',
+      'Ketiga, perubahan pH Lambung. Susu bersifat sedikit basa penyangga (buffer) yang dapat menaikkan pH lambung seketika. Bagi obat-obatan bersalut enterik (enteric-coated) yang dirancang baru pecah di usus halus, hilangnya suasana asam lambung justru membuat lapisan pelindungnya pecah lebih awal di lambung, memicu iritasi lambung dan merusak zat aktif obat.',
+      'Kesimpulannya, minumlah obat dengan air putih netral bersuhu ruang, dan beri jeda minimal 2 jam jika kamu ingin menikmati susu segar atau teh hangat favoritmu!'
+    ],
+    category: 'Kimia Sehari-hari',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '21 Agustus 2026',
+    readTime: '5 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1000&q=80',
+    tags: ['KimiaFarmasi', 'ReaksiKhelasi', 'SusuDanObat', 'TaninTeh', 'Kesehatan'],
+    keyTakeaways: [
+      'Kation Ca²⁺ dan Mg²⁺ pada susu membentuk senyawa khelat tak larut dengan antibiotik tertentu.',
+      'Tanin pada teh mengendapkan ion besi Fe²⁺ sehingga menggagalkan penyerapan suplemen darah.',
+      'Air putih netral adalah media pelarut obat paling aman tanpa risiko interaksi kimiawi.'
+    ],
+    reactions: 276
+  },
+  {
+    id: 'post-6',
+    title: 'Nasi Dingin atau Nasi Kemarin Lebih Aman untuk Gula Darah? Fakta Sains di Balik "Pati Resisten"',
+    slug: 'rahasia-nasi-dingin-pati-resisten-retrogradasi-kimia',
+    summary: 'Banyak ahli gizi menyarankan nasi yang didinginkan untuk penderita diabetes. Bagaimana struktur rantai amilosa berubah menjadi kristal retrogradasi yang ramah indeks glikemik?',
+    content: [
+      'Beras mentah tersusun atas dua polimer glukosa utama: Amilosa (rantai lurus heliks) dan Amilopektin (rantai bercabang banyak). Ketika beras dimasak dengan air mendidih, molekul air menyusup ke sela-sela rantai polimer, memutus ikatan hidrogen intermolekul, dan menyebabkan butiran pati membengkak dalam proses yang disebut Gelatinisasi.',
+      'Pada kondisi nasi panas baru matang, rantai pati dalam kondisi longgar dan terurai, sehingga enzim alfa-amilase di air liur dan pankreas kita dengan sangat cepat memotongnya menjadi glukosa sederhana yang langsung diserap ke darah, memicu lonjakan gula darah (Indeks Glikemik tinggi).',
+      'Namun, saat nasi matang didinginkan di dalam lemari es (suhu 4°C) selama 12 hingga 24 jam, terjadi fenomena kimia fisik bernama Retrogradasi Pati. Rantai-rantai amilosa yang longgar mulai merapat kembali, saling berikatan hidrogen dengan sangat rapat dan membentuk kisi-kisi mikrokristalin teratur.',
+      'Kisi kristal ini mengubah pati biasa menjadi Resistant Starch Tipe 3 (Pati Resisten). Karena strukturnya yang begitu rapat, enzim pencernaan kita tidak mampu memutus rantai tersebut di lambung maupun usus halus.',
+      'Pati resisten ini lolos menuju usus besar tanpa menaikkan gula darah, di mana bakteri baik (mikrobioma) memfermentasinya menjadi Asam Lemak Rantai Pendek (SCFA) seperti butirat yang sangat menyehatkan usus. Menariknya, bahkan jika nasi dingin tersebut dihangatkan kembali, struktur pati resisten tersebut sebagian besar tetap bertahan!'
+    ],
+    category: 'Fakta Unik',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '20 Agustus 2026',
+    readTime: '5 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1516684732162-798a0062be99?auto=format&fit=crop&w=1000&q=80',
+    tags: ['PatiResisten', 'Retrogradasi', 'KimiaKarbohidrat', 'Diabetes', 'Gizi'],
+    keyTakeaways: [
+      'Pendinginan nasi memicu retrogradasi rantai amilosa menjadi struktur mikrokristalin padat.',
+      'Resistant Starch Tipe 3 sulit dihidrolisis oleh enzim amilase, menurunkan respons insulin.',
+      'Bertindak sebagai prebiotik alami di usus besar yang menghasilkan asam lemak rantai pendek (SCFA).'
+    ],
+    reactions: 341
+  },
+  {
+    id: 'post-7',
+    title: 'Mengapa Pagar & Kendaraan Berkarat Lebih Cepat di Musim Hujan? Bedah Reaksi Korosi Elektrokimia',
+    slug: 'mekanisme-korosi-besi-elektrokimia-dan-pencegahan',
+    summary: 'Karat bukan sekadar kotoran merah, melainkan sel galvanik mini yang memakan logam berharga triliunan rupiah tiap tahun. Pelajari siklus redoksnya dan teknik perlindungan katodik modern!',
+    content: [
+      'Setiap kali kita melihat karat cokelat kemerahan pada pagar besi atau rantai sepeda, kita sebenarnya sedang menyaksikan proses elektrokimia spontan yang berjalan lambat namun destruktif.',
+      'Besi murni (Fe) pada dasarnya tidak akan berkarat jika hanya berada di udara kering tanpa kelembapan, atau di dalam air murni tanpa oksigen terlarut. Korosi memerlukan kehadiran simultan dari dua komponen: Oksigen (O₂) dan Air (H₂O) yang bertindak sebagai jembatan elektrolit.',
+      'Di titik cacat permukaan besi, terbentuk sel volta mikro. Daerah besi yang kurang kontak dengan udara bertindak sebagai Anoda: Fe(s) → Fe²⁺(aq) + 2e⁻ (E° = -0.44 V). Elektron yang dilepaskan mengalir melalui logam menuju bagian tepi tetesan air yang kaya oksigen, yang bertindak sebagai Katoda: O₂(g) + 2H₂O(l) + 4e⁻ → 4OH⁻(aq) (E° = +0.40 V).',
+      'Ion Fe²⁺ kemudian bereaksi dengan ion OH⁻ membentuk endapan Fe(OH)₂, yang selanjutnya teroksidasi lebih lanjut oleh oksigen terlarut menjadi Karat Besi terhidrasi: Fe₂O₃·xH₂O yang rapuh dan berpori. Karena berpori, karat tidak melindungi lapisan besi di bawahnya, sehingga korosi terus menggerogoti hingga logam keropos.',
+      'Bagaimana para insinyur mengatasinya? Melalui 3 metode utama: Pelapisan Fisik (cat, oli, plastik), Pelapisan Logam Pasif (pelapisan timah / tin plating), dan Proteksi Katodik Anoda Korban (Galvanisasi dengan Seng / Zn atau penempelan batang Magnesium pada pipa bawah tanah). Karena Zn dan Mg memiliki potensial reduksi lebih negatif dari Fe, mereka rela teroksidasi duluan demi menyelamatkan besi induknya.'
+    ],
+    category: 'Kimia Sehari-hari',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '19 Agustus 2026',
+    readTime: '6 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=1000&q=80',
+    tags: ['Korosi', 'Elektrokimia', 'Redoks', 'SelVolta', 'KimiaXII'],
+    keyTakeaways: [
+      'Korosi besi adalah reaksi redoks spontan yang membentuk sel elektrokimia mikroskopis.',
+      'Air bertindak sebagai medium transfer ion sedangkan oksigen sebagai oksidator utama.',
+      'Metode anoda korban (galvanisasi Zn/Mg) memanfaatkan deret volta untuk melindungi besi.'
+    ],
+    reactions: 289
+  },
+  {
+    id: 'post-8',
+    title: 'Rahasia di Balik Wangi "Petrichor" Hujan Pertama: Simfoni Molekul Geosmin & Ozon',
+    slug: 'aroma-petrichor-hujan-pertama-senyawa-geosmin',
+    summary: 'Pernahkah kamu menghirup aroma khas tanah yang begitu menenangkan saat tetesan hujan pertama menyentuh bumi kering? Inilah kimia di balik wangi "Petrichor" yang begitu dicintai manusia!',
+    content: [
+      'Istilah "Petrichor" pertama kali dicetuskan pada tahun 1964 oleh dua ilmuwan mineralogi Australia, Isabel Joy Bear dan Richard Thomas. Kata ini berasal dari bahasa Yunani: petra (batu) dan ichor (cairan yang mengalir dalam pembuluh darah para dewa mitologi).',
+      'Aroma magis ini sebenarnya merupakan kombinasi dari tiga kelompok senyawa kimia organik dan anorganik:',
+      '1. Geosmin (C₁₂H₂₂O): Senyawa bisiklik alkohol yang diproduksi oleh bakteri tanah filamen Streptomyces dan mikroalga biru-hijau (Cyanobacteria). Hidung manusia memiliki sensitivitas luar biasa terhadap Geosmin—kita dapat mendeteksinya bahkan pada konsentrasi sekecil 5 bagian per triliun (5 ppt)! Secara evolusioner, kemampuan ini membantu nenek moyang kita mendeteksi sumber air dan kesuburan tanah dari jarak bermil-mil.',
+      '2. Minyak Tumbuhan Volatil: Selama musim kemarau kering, tanaman mengeluarkan asam lemak rantai panjang (seperti asam stearat dan asam palmitat) ke tanah dan celah bebatuan untuk menahan penguapan air.',
+      '3. Ozon (O₃): Kilatan petir di awan memecah molekul O₂ dan N₂ di atmosfer, membentuk gas ozon segar yang terdorong turun oleh embusan angin sebelum hujan tiba.',
+      'Ketika tetesan hujan menghantam tanah berpori dengan kecepatan tertentu, gelembung udara mikro terperangkap di dasar tetesan, melesat ke atas, dan meletus menjadi kabut aerosol halus yang menerbangkan jutaan molekul Geosmin ke udara bebas tepat di depan indera penciuman kita!'
+    ],
+    category: 'Fakta Unik',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '18 Agustus 2026',
+    readTime: '4 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=1000&q=80',
+    tags: ['Petrichor', 'Geosmin', 'Aromaterapi', 'FenomenaAlam', 'KimiaOrganik'],
+    keyTakeaways: [
+      'Molekul Geosmin diproduksi oleh mikroorganisme tanah Streptomyces saat musim kering.',
+      'Hidung manusia mampu mendeteksi geosmin pada batas konsentrasi ultra-rendah (5 ppt).',
+      'Tetesan hujan bekerja seperti penyemprot aerosol alami yang melepaskan partikel aroma ke udara.'
+    ],
+    reactions: 382
+  },
+  {
+    id: 'post-9',
+    title: 'Baking Soda vs Baking Powder: Kenapa Salah Pilih Bisa Bikin Kue Bantat & Pahit?',
+    slug: 'perbedaan-kimia-baking-soda-dan-baking-powder',
+    summary: 'Keduanya tampak seperti serbuk putih serupa, namun mekanisme reaksi asam-basanya sangat berbeda! Ketahui kapan resep membutuhkan soda kue murni atau pengembang ganda (double-acting).',
+    content: [
+      'Di dunia kuliner dan tata boga, memahami reaksi asam-basa adalah kunci utama keberhasilan tekstur kue bolu, martabak manis, pancake, dan cookies.',
+      '1. Baking Soda (Soda Kue) adalah 100% Natrium Bikarbonat murni (NaHCO₃). Senyawa ini bersifat basa. Agar dapat menghasilkan gelembung gas karbon dioksida (CO₂) yang mengembangkan adonan, ia HARUS bertemu dengan bahan asam dalam resep (seperti asam laktat buttermilk/yogurt, asam sitrat lemon, asam asetat cuka, asam tartrat bubuk cokelat alami, atau gula merah/molase).',
+      'Reaksi kimianya: NaHCO₃ + H⁺ (dari asam resep) → Na⁺ + H₂O + CO₂(g). Jika kamu memasukkan baking soda ke adonan tanpa bahan asam yang cukup, sisa baking soda yang tidak bereaksi akan terurai secara termal menjadi Natrium Karbonat (Na₂CO₃) yang membuat kue berasa getir/pahit seperti sabun dan berwarna kekuningan tak sedap!',
+      '2. Baking Powder adalah campuran lengkap yang sudah terkalibrasi antara Natrium Bikarbonat (NaHCO₃), zat asam kering padat (seperti Monokalsium Fosfat atau Sodium Asam Pirofosfat), dan pati jagung (maizena) sebagai penyerap kelembapan agar tidak bereaksi di dalam kemasan.',
+      'Baking powder komersial modern umumnya bertipe Double-Acting (Aksi Ganda): Reaksi pertama terjadi seketika saat terkena cairan adonan basah pada suhu ruang, dan reaksi kedua terjadi saat adonan terpapar panas oven di atas 60°C. Sangat ideal untuk kue yang adonannya tidak mengandung bahan asam alami.',
+      'Ingat aturan praktisnya: Jika resepmu mengandung bahan asam (seperti martabak dengan ragi/susu asam atau kue pisang), gunakan Baking Soda. Jika adonanmu netral (seperti bolu vanila atau biskuit mentega), gunakan Baking Powder!'
+    ],
+    category: 'Eksperimen Kreatif',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '16 Agustus 2026',
+    readTime: '5 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1000&q=80',
+    tags: ['BakingSoda', 'BakingPowder', 'AsamBasa', 'KimiaDapur', 'PengembangKue'],
+    keyTakeaways: [
+      'Baking soda murni memerlukan aktivator asam dari bahan resep untuk melepas gas CO₂.',
+      'Kelebihan baking soda tanpa asam menyisakan Na₂CO₃ basa yang berasa getir/pahit.',
+      'Baking powder double-acting bekerja dua tahap: saat terkena air dan saat dipanggang di oven.'
+    ],
+    reactions: 312
+  },
+  {
+    id: 'post-10',
+    title: 'Mengapa Bawang Merah Bikin Menangis saat Diiris? Sains di Balik Gas Lakrimatori & Trik Kimia Mengatasinya',
+    slug: 'mengapa-bawang-merah-bikin-menangis-gas-lakrimatori',
+    summary: 'Setiap mengiris bawang merah, mata tiba-tiba perih dan air mata bercucuran. Bagaimana reaksi enzimatis membentuk asam sulfat mikro di kornea matamu, dan bagaimana cara kimiawi menghentikannya?',
+    content: [
+      'Memotong bawang merah sering kali berakhir dengan tetesan air mata bukan karena kesedihan, melainkan sebuah senjata pertahanan kimia alami tumbuhan yang sangat canggih.',
+      'Di dalam sel-sel bawang utuh yang belum terpotong, terdapat dua kompartemen terpisah: senyawa asam amino sulfoksida dan enzim alliinase (allinase). Ketika mata pisau merusak dinding sel, kedua zat ini bercampur seketika.',
+      'Enzim alliinase menghidrolisis asam amino sulfoksida menjadi Asam Sulfenat. Selanjutnya, enzim kedua bernama lachrymatory factor synthase mengubah asam sulfenat menjadi gas syn-propanethial-S-oxide (C₃H₆OS) yang sangat volatil (mudah menguap ke udara).',
+      'Ketika gas ini melayang dan menyentuh lapisan air pelindung kornea mata kita, terjadi reaksi hidrolisis lanjutan: C₃H₆OS + H₂O → H₂SO₄ (asam sulfat dalam konsentrasi sangat encer) + propanal. Asam sulfat mikro inilah yang mengiritasi ujung saraf sensorik kornea (saraf trigeminal). Otak kemudian merespons dengan memicu kelenjar lakrimalis untuk memproduksi air mata sebanyak mungkin guna membilas zat iritan tersebut.',
+      'Bagaimana trik kimia untuk mencegahnya? 1) Dinginkan bawang di lemari es sebelum diiris: suhu rendah menurunkan energi kinetik molekul dan memperlambat laju reaksi enzimatis. 2) Gunakan pisau yang sangat tajam: pisau tumpul meremukkan lebih banyak dinding sel sehingga gas yang lepas berlipat ganda. 3) Potong di dekat aliran air atau nyalakan lilin di dekat talenan karena panas nyala api dapat mengoksidasi senyawa belerang volatil sebelum mencapai matamu.'
+    ],
+    category: 'Kimia Sehari-hari',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '21 Agustus 2026',
+    readTime: '4 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=1000&q=80',
+    tags: ['KimiaDapur', 'BawangMerah', 'GasLakrimatori', 'Enzimatis', 'KinetikaKimia'],
+    keyTakeaways: [
+      'Pecahnya dinding sel bawang mempertemukan asam amino sulfoksida dengan enzim alliinase.',
+      'Gas syn-propanethial-S-oxide terhidrolisis menjadi asam sulfat mikro pada air kornea mata.',
+      'Mendinginkan bawang dan pisau tajam secara signifikan menurunkan pembentukan gas lakrimatori.'
+    ],
+    reactions: 325
+  },
+  {
+    id: 'post-11',
+    title: 'Mengapa Air Dingin Gagal Meredakan Pedas Cabai? Rahasia Molekul Kapsaisin & Protein Kasein',
+    slug: 'mengapa-air-dingin-gagal-meredakan-pedas-kapsaisin-kasein',
+    summary: 'Meneguk bergelas-gelas air es saat kepedasan justru membuat lidah makin terbakar. Pahami konsep polaritas kelarutan "Like Dissolves Like" dan alasan mengapa susu adalah penawar sejatinya!',
+    content: [
+      'Sensasi terbakar saat memakan cabai rawit atau sambal bukan sensasi rasa gustatori dasar, melainkan respon termal dan nyeri yang dipicu oleh senyawa alkaloid Kapsaisin (8-metil-N-vanilil-6-nonenamida, C₁₈H₂₇NO₃).',
+      'Molekul kapsaisin berikatan kuat dengan reseptor sensorik TRPV1 (Transient Receptor Potential Vanilloid 1) pada membran sel saraf sensorik lidah kita. Reseptor ini sejatinya bertugas mendeteksi suhu panas fisik di atas 43°C, sehingga ikatan kapsaisin membohongi otak seolah-olah lidah sedang terpanggang api nyata.',
+      'Mengapa air putih dingin tidak mempan? Struktur kimia kapsaisin memiliki cincin vanilil hidrofilik kecil namun didominasi oleh ekor hidrokarbon non-polar alifatik yang panjang (sangat hidrofobik/lipofilik). Berdasarkan kaidah kelarutan universal "Like Dissolves Like", air murni yang bersifat sangat polar tidak mampu melarutkan atau melepas ikatan kapsaisin dari reseptor TRPV1. Minum air hanya meredakan nyeri beberapa detik akibat efek dingin termal, namun setelahnya air justru menyebarkan molekul kapsaisin ke seluruh penjuru rongga mulut.',
+      'Solusi kimiawi paling efektif adalah Susu, Es Krim, atau Keju. Susu sapi mengandung protein Kasein yang memiliki domain molekul non-polar hidrofobik. Protein kasein menyelubungi molekul kapsaisin seperti detergen mengangkat lemak, mencabutnya dari reseptor TRPV1, dan membilasnya ke saluran cerna.'
+    ],
+    category: 'Fakta Unik',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '20 Agustus 2026',
+    readTime: '5 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1588252303782-cb80119abd6d?auto=format&fit=crop&w=1000&q=80',
+    tags: ['Kapsaisin', 'Kepolaran', 'LikeDissolvesLike', 'KaseinSusu', 'SarafTRPV1'],
+    keyTakeaways: [
+      'Kapsaisin bersifat non-polar lipofilik dan berikatan kuat dengan reseptor panas TRPV1 lidah.',
+      'Air yang bersifat polar tidak bisa melarutkan kapsaisin dan hanya menyebarkannya.',
+      'Protein kasein pada produk susu mengikat kapsaisin dan mencabutnya dari reseptor saraf.'
+    ],
+    reactions: 394
+  },
+  {
+    id: 'post-12',
+    title: 'Mengapa Minuman Bersoda Berdesis & Cepat Hambar saat Hangat? Menyingkap Hukum Henry & Karbonasi',
+    slug: 'minuman-bersoda-hukum-henry-kesetimbangan-karbonasi',
+    summary: 'Suara mendesis saat membuka kaleng soda adalah demonstrasi nyata Hukum Henry dan kesetimbangan kimia asam karbonat. Mengapa suhu hangat membuat soda kehilangan rasa "gigitan"-nya?',
+    content: [
+      'Minuman berkarbonasi modern dibuat di pabrik dengan menginjeksikan gas Karbon Dioksida (CO₂) ke dalam cairan sirup pada tekanan tinggi antara 3 hingga 5 atmosfer serta suhu mendekati 0°C.',
+      'Dasar ilmiah proses ini dijelaskan oleh Hukum Henry: Kelarutan suatu gas dalam cairan berbanding lurus dengan tekanan parsial gas tersebut di atas permukaan cairan (C = k_H × P_gas). Pada tekanan tinggi di dalam kaleng tersegel, sejumlah besar gas CO₂ terpaksa larut dan bereaksi dengan molekul air membentuk Asam Karbonat: CO₂(g) + H₂O(l) ⇌ H₂CO₃(aq) ⇌ H⁺(aq) + HCO₃⁻(aq).',
+      'Ion H⁺ dari asam karbonat inilah yang menstimulasi reseptor rasa asam dan memicu sensasi "menggigit" (sharp fizzy bite) di lidah yang menyegarkan.',
+      'Ketika penutup botol dibuka, tekanan dalam ruang gas botol anjlok seketika dari ~4 atm ke tekanan atmosfer 1 atm. Sesuai Asas Le Chatelier dan Hukum Henry, penurunan tekanan memaksa kesetimbangan bergeser ke kiri, melepaskan gas CO₂ terlarut dalam bentuk gelembung desisan cepat.',
+      'Mengapa soda hangat cepat menjadi hambar ("flat")? Pelarutan gas ke dalam air selalu merupakan proses eksotermik (ΔH < 0). Ketika suhu naik, kesetimbangan semakin terdorong ke arah pelepasan gas CO₂ ke udara bebas, sehingga konsentrasi asam karbonat dalam larutan turun drastis dan sensasi tajamnya hilang.'
+    ],
+    category: 'Kimia Sehari-hari',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '19 Agustus 2026',
+    readTime: '5 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=1000&q=80',
+    tags: ['HukumHenry', 'AsamKarbonat', 'KesetimbanganKimia', 'LeChatelier', 'KimiaXI'],
+    keyTakeaways: [
+      'Kelarutan gas CO₂ bergantung pada tekanan parsial (Hukum Henry) dan suhu cairan.',
+      'Rasa menggigit soda berasal dari ion H⁺ asam karbonat (H₂CO₃) yang terbentuk.',
+      'Proses pelarutan gas bersifat eksotermik sehingga suhu hangat memicu hilangnya gas CO₂.'
+    ],
+    reactions: 310
+  },
+  {
+    id: 'post-13',
+    title: 'Mengapa Roti Mengembang Empuk & Berkerak Cokelat Harum? Perpaduan Fermentasi Ragi & Reaksi Maillard',
+    slug: 'kimia-roti-fermentasi-ragi-dan-reaksi-maillard',
+    summary: 'Dari tepung mentah menjadi roti empuk beraroma menggoda, pembuatan roti adalah laboratorium biokimia termal paling lezat di dunia!',
+    content: [
+      'Proses pembuatan sepotong roti yang sempurna menggabungkan dua tonggak penting ilmu kimia: biokimia fermentasi mikrobiologis dan reaksi browning non-enzimatik pada temperatur tinggi.',
+      'Tahap pertama adalah Fermentasi oleh Ragi (Saccharomyces cerevisiae). Enzim invertase dan zymase pada ragi memecah karbohidrat tepung (glukosa) menjadi alkohol dan gas: C₆H₁₂O₆ → 2 C₂H₅OH (etanol) + 2 CO₂(g). Gas CO₂ yang terlepas tidak langsung terbang ke udara bebas karena terperangkap di dalam anyaman jaring protein gluten (gliadin dan glutenin) yang elastis.',
+      'Tahap kedua berlangsung di dalam oven pemanggang. Berdasarkan Hukum Charles (V₁/T₁ = V₂/T₂), pemanasan hingga 200°C menyebabkan gas CO₂ dan uap etanol memuai dengan sangat kuat, mendorong dinding gluten mengembang hingga membentuk pori-pori rongga roti yang empuk.',
+      'Tahap ketiga adalah Reaksi Maillard pada permukaan luar roti saat suhu melampaui 140°C. Gugus amina (-NH₂) dari asam amino protein tepung bereaksi dengan gugus karbonil (C=O) dari gula pereduksi, menghasilkan senyawa polimer melanoidin yang memberi warna cokelat keemasan serta ratusan senyawa pirazin dan furan yang menghasilkan aroma wangi khas bakery!'
+    ],
+    category: 'Eksperimen Kreatif',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '18 Agustus 2026',
+    readTime: '6 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1000&q=80',
+    tags: ['Fermentasi', 'ReaksiMaillard', 'BiokimiaPangan', 'Gluten', 'HukumCharles'],
+    keyTakeaways: [
+      'Ragi Saccharomyces cerevisiae memfermentasi gula menjadi gas CO₂ dan etanol.',
+      'Anyaman gluten memerangkap gas CO₂ yang kemudian memuai saat terkena panas oven.',
+      'Reaksi Maillard antara asam amino dan gula pereduksi menghasilkan warna cokelat dan aroma harum.'
+    ],
+    reactions: 356
+  },
+  {
+    id: 'post-14',
+    title: 'Bagaimana Sabun Mengangkat Lemak Minyak Membandel? Arsitektur Misel & Kimia Surfaktan',
+    slug: 'bagaimana-sabun-mengangkat-minyak-misel-surfaktan',
+    summary: 'Air dan minyak secara termodinamika bermusuhan dan tidak dapat bersatu. Mengapa sebatang sabun mampu mendamaikan keduanya dan membilas noda minyak tanpa sisa?',
+    content: [
+      'Secara mendasar, molekul air (H₂O) bersifat sangat polar dan saling terikat kuat melalui ikatan hidrogen intermolekuler. Di sisi lain, minyak dan lemak gorengan tersusun atas rantai hidrokarbon trigliserida yang bersifat non-polar. Karena perbedaan gaya antarmolekul ini, minyak selalu terpisah dan mengapung di atas air.',
+      'Sabun adalah garam natrium atau kalium dari asam lemak rantai panjang (contohnya Natrium Stearat, C₁₇H₃₅COONa). Molekul sabun memiliki anatomi amfifilik yang brilian:',
+      '1. Kepala Polar (-COO⁻ Na⁺): Mengandung muatan ionik yang bersifat hidrofilik (suka air / larut dalam air).',
+      '2. Ekor Non-polar rantai karbon panjang (-C₁₇H₃₅): Bersifat hidrofobik / lipofilik (takut air, tetapi sangat suka minyak dan lemak).',
+      'Ketika sabun dilarutkan dalam air cucian yang kotor oleh lemak, ekor hidrofobik dari ratusan molekul sabun akan menusuk dan menenggelamkan diri ke dalam gumpalan minyak. Kepala polar mereka tetap berada di permukaan luar menghadap ke molekul air.',
+      'Susunan ini membentuk struktur bola mikroskopis bernama Misel (Micelle). Minyak lemak terkurung rapat di inti tengah misel, sedangkan permukaan luar misel yang bermuatan negatif saling tolak-menolak mencegah minyak menyatu kembali. Saat dibilas dengan air mengalir, seluruh bola misel beserta kotoran minyaknya hanyut dengan mudah!'
+    ],
+    category: 'Kimia Sehari-hari',
+    author: {
+      name: 'Pak Hafiz Akhyar, S.Si.',
+      role: 'Guru Kimia & Edukator Sains SMA',
+      avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi'
+    },
+    date: '17 Agustus 2026',
+    readTime: '5 menit baca',
+    coverImage: 'https://images.unsplash.com/photo-1607006483702-33225a17684a?auto=format&fit=crop&w=1000&q=80',
+    tags: ['Misel', 'Surfaktan', 'KoloidEmulsi', 'TeganganPermukaan', 'KimiaXI'],
+    keyTakeaways: [
+      'Molekul sabun memiliki struktur amfifilik: kepala polar hidrofilik dan ekor non-polar lipofilik.',
+      'Misel memerangkap partikel lemak di bagian tengah inti hidrofobik.',
+      'Muatan seragam pada permukaan luar misel mencegah gumpalan minyak bersatu kembali.'
+    ],
+    reactions: 367
   }
 ];
 
@@ -550,6 +841,106 @@ export const INITIAL_CLASS_NOTES: ClassNote[] = [
     isPinned: false,
     likes: 34,
     tags: ['AsamBasa', 'Buffer', 'pH', 'KelasXI']
+  },
+  {
+    id: 'note-5',
+    title: '5 Langkah Metode Feynman untuk Menaklukkan Konsep Kimia Abstrak',
+    category: 'Tips Belajar di Kelas',
+    classGrade: 'Semua Tingkat',
+    content: 'Metode Feynman adalah teknik belajar berbasis metakognisi paling terbukti untuk memahami konsep kimia abstrak (seperti orbital atom, hibridisasi, larutan penyangga, atau hukum termodinamika) tanpa terjebak hafalan buta.',
+    keyPoints: [
+      'Langkah 1 (Pilih Konsep): Tulis 1 topik kimia spesifik (misal: "Larutan Penyangga/Buffer") di bagian atas kertas kosong.',
+      'Langkah 2 (Ajarkan ke Orang Awam): Jelaskan konsep tersebut seolah kamu mengajar anak SMP usia 12 tahun tanpa istilah jargon rumit.',
+      'Langkah 3 (Identifikasi Lubang Pemahaman): Saat kamu tersendat atau tergoda memakai istilah asing tanpa paham maknanya, tandai bagian itu.',
+      'Langkah 4 (Buka Catatan & Klarifikasi): Pelajari kembali modul atau tanyakan ke Pak Hafiz untuk menambal bagian yang belum jelas.',
+      'Langkah 5 (Sederhanakan & Buat Analogi): Buat analogi konkret (misal: Larutan Buffer dianalogikan seperti spons penyerap tumpahan asam/basa).'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80',
+    date: '21 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: true,
+    likes: 58,
+    tags: ['TipsBelajar', 'MetodeFeynman', 'BelajarEfektif', 'Metakognisi', 'KimiaSMA']
+  },
+  {
+    id: 'note-6',
+    title: 'Sistem Catatan Cornell: Format Khusus Reaksi & Rumus Hitungan Kimia',
+    category: 'Tips Belajar di Kelas',
+    classGrade: 'Semua Tingkat',
+    content: 'Mencatat di kelas kimia membutuhkan struktur yang memudahkan review saat menjelang ujian. Bagi halaman buku catatanmu menjadi 3 zona strategis: Kolom Kiri (Pemicu Pertanyaan), Kolom Kanan (Catatan Utama), dan Baris Bawah (Ringkasan).',
+    keyPoints: [
+      'Kolom Kanan (65% Lebar): Catat penurunan rumus, grafik laju reaksi, persamaan reaksi redoks, dan contoh soal dari guru.',
+      'Kolom Kiri (25% Lebar): Tulis kata pemicu & pertanyaan kilat (Contoh: "Syarat Buffer?", "Mengapa eksoterm?", "Satuan Konstanta R?").',
+      'Baris Bawah (10% Tinggi): Tulis kesimpulan inti pembelajaran hari ini dalam 1-2 kalimat dengan bahasamu sendiri.',
+      'Metode Uji Mandiri: Tutup kolom kanan dengan telapak tangan, lalu uji apakah kamu bisa menjawab semua pertanyaan pemicu di kolom kiri.',
+      'Kode Warna Tint: Biru untuk penjelasan umum, Merah untuk jebakan/pengecualian soal, Hijau untuk satuan fisika/konstanta.'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80',
+    date: '21 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: false,
+    likes: 52,
+    tags: ['CornellNote', 'TipsMencatat', 'CatatanKelas', 'ManajemenBelajar']
+  },
+  {
+    id: 'note-7',
+    title: 'Trik Active Recall & Spaced Repetition Menghafal Sifat Periodik Unsur',
+    category: 'Tips Belajar di Kelas',
+    classGrade: 'Kelas X',
+    content: 'Menghafal tren periodik unsur (Jari-jari atom, Energi Ionisasi, Afinitas Elektron, Elektronegativitas) sering kali terbalik jika hanya dibaca pasif berulang-ulang. Gunakan teknik active recall visual dan interval pengulangan terprogram.',
+    keyPoints: [
+      'Hukum Visual Jari-Jari Atom: "Makin ke KIRI dan ke BAWAH makin BESAR" (Visualisasikan manusia salju yang makin gendut ke bawah).',
+      'Tren Energi Ionisasi & Elektronegativitas: Berbanding terbalik dengan jari-jari atom ("Makin ke KANAN dan ke ATAS makin KUAT").',
+      'Flashcard Unsur: Sisi depan tulis simbol kimia & golongan (misal: "Na, Golongan IA"), sisi belakang tulis jumlah proton, konfigurasi, dan sifat reaksinya.',
+      'Jadwal Spaced Repetition: Ulangi pengujian flashcard pada interval Hari ke-1, Hari ke-3, Hari ke-7, dan Hari ke-21.',
+      'Hubungkan ke Fakta Nyata: Logam alkali (Na/K) sangat reaktif meletup di air, Gas mulia (He/Ne) stabil tidak reaktif.'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
+    date: '20 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: false,
+    likes: 64,
+    tags: ['TabelPeriodik', 'ActiveRecall', 'SpacedRepetition', 'TipsBelajar', 'KelasX']
+  },
+  {
+    id: 'note-8',
+    title: 'Strategi Manajemen Waktu & Anti-Blunder Menghadapi Ujian Hitungan Kimia',
+    category: 'Tips Belajar di Kelas',
+    classGrade: 'Kelas XII',
+    content: 'Banyak siswa kehilangan poin berharga dalam ujian kimia bukan karena tidak mengerti rumus, melainkan akibat kesalahan sepele seperti lupa menyetarakan koefisien reaksi, salah konversi satuan suhu, atau pembulatan angka prematur.',
+    keyPoints: [
+      'Aturan Emas 1 (Cek Kesetaraan Reaksi): Sebelum menghitung stoikiometri mol, SELALU pastikan persamaan reaksi sudah setara!',
+      'Aturan Emas 2 (Lingkari Satuan Soal): Waspadai jebakan satuan mL vs Liter, gram vs kilogram, dan Celcius vs Kelvin (T = °C + 273).',
+      'Strategi 15 Menit Awal: Kerjakan seluruh soal teori deskriptif dan tata nama terlebih dahulu untuk mengamankan poin cepat.',
+      'Tuliskan Rumus Dasar: Selalu tulis rumus sebelum memasukkan angka (guru biasanya memberi poin langkah pengerjaan).',
+      'Uji Kelayakan Jawaban: pH larutan asam tidak boleh > 7, mol tidak mungkin negatif, dan massa produk tidak boleh melebihi massa total reaktan.'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80',
+    date: '19 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: false,
+    likes: 71,
+    tags: ['StrategiUjian', 'AntiBlunder', 'Stoikiometri', 'UTBK', 'TipsUjian']
+  },
+  {
+    id: 'note-9',
+    title: 'Etika & Prosedur Praktikum Laboratorium Kimia SMA agar Aman & Presisi',
+    category: 'Tips Belajar di Kelas',
+    classGrade: 'Semua Tingkat',
+    content: 'Laboratorium sains adalah tempat yang sangat seru untuk membuktikan teori, namun menuntut disiplin keselamatan tinggi. Pahami tata cara membaca alat ukur dan penanganan bahan kimia dengan benar.',
+    keyPoints: [
+      'Kelengkapan APD: Jas laboratorium lengan panjang berkancing rapi, kacamata pelindung (goggles), dan sepatu tertutup.',
+      'Aturan Asam Pekat: "JANGAN PERNAH menuangkan air ke dalam asam pekat!" Selalu tuangkan asam perlahan ke dalam air lewat dinding gelas.',
+      'Cara Mencium Aroma Zat: Jangan menghirup langsung di mulut tabung reaksi! Kibaskan uap ke arah hidung dengan telapak tangan (metode wafting).',
+      'Membaca Meniskus Buret/Gelas Ukur: Untuk cairan bening baca garis batas dasar cekungan (meniskus bawah) tepat sejajar dengan pandangan mata.',
+      'Pengelolaan Limbah: Sisa larutan logam berat dan asam/basa kuat harus dibuang ke jeriken penampungan limbah khusus, bukan ke wastafel.'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80',
+    date: '18 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: false,
+    likes: 49,
+    tags: ['KeselamatanLab', 'PraktikumKimia', 'EtikaLab', 'Meniskus', 'TipsSains']
   }
 ];
 
