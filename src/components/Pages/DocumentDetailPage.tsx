@@ -161,13 +161,25 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({
             {/* Primary Action Buttons Bar */}
             <div className="flex items-center justify-between flex-wrap gap-4 mt-6 pt-6 border-t border-[#E2E8F0]">
               <div className="flex items-center gap-3 flex-wrap">
-                <button
-                  onClick={() => onDownload(doc)}
-                  className="px-6 py-3 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md shadow-[#0284C7]/30 transition-all transform hover:-translate-y-0.5 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Unduh File PDF Sekarang</span>
-                </button>
+                {doc.driveUrl ? (
+                  <a
+                    href={doc.driveUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md shadow-[#0284C7]/30 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Buka / Unduh di Google Drive</span>
+                  </a>
+                ) : (
+                  <button
+                    onClick={() => onDownload(doc)}
+                    className="px-6 py-3 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md shadow-[#0284C7]/30 transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Unduh File Sekarang</span>
+                  </button>
+                )}
 
                 <button
                   onClick={handlePrint}

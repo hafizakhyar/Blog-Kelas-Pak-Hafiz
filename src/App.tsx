@@ -12,6 +12,7 @@ import { GalleryDetailModal } from './components/Modals/GalleryDetailModal';
 import { MainPlatformModal } from './components/Modals/MainPlatformModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { ClassNoteDetailPage } from './components/Pages/ClassNoteDetailPage';
+import { PraktikumDetailPage } from './components/Pages/PraktikumDetailPage';
 import { DocumentDetailPage } from './components/Pages/DocumentDetailPage';
 import { ArticleDetailPage } from './components/Pages/ArticleDetailPage';
 import { GalleryItem, BlogPost, DocumentItem, ClassNote } from './types';
@@ -36,7 +37,7 @@ import {
 const NOTES_STORAGE_KEY = 'kelaspakhafiz_class_notes_v2';
 const ADMIN_AUTH_KEY = 'kelaspakhafiz_admin_auth_v1';
 
-type RouteView = 'main' | 'catatan-detail' | 'document-detail' | 'article-detail';
+type RouteView = 'main' | 'praktikum-detail' | 'catatan-detail' | 'document-detail' | 'article-detail';
 
 export default function App() {
   // Navigation & View Route State
@@ -44,6 +45,7 @@ export default function App() {
   const [activeSection, setActiveSection] = useState<string>('beranda');
 
   // Active items for dedicated detail pages
+  const [activeGalleryItem, setActiveGalleryItem] = useState<GalleryItem | null>(null);
   const [activeNote, setActiveNote] = useState<ClassNote | null>(null);
   const [activeDocument, setActiveDocument] = useState<DocumentItem | null>(null);
   const [activeBlogPost, setActiveBlogPost] = useState<BlogPost | null>(null);
@@ -130,6 +132,11 @@ export default function App() {
     const unsubPhotos = subscribeToGalleryPhotos((cloudPhotos) => {
       if (cloudPhotos && cloudPhotos.length > 0) {
         setGalleryItems(cloudPhotos);
+        setActiveGalleryItem((prev) => {
+          if (!prev) return null;
+          const found = cloudPhotos.find((p) => p.id === prev.id);
+          return found || prev;
+        });
       }
     });
 
@@ -172,7 +179,31 @@ export default function App() {
       return;
     }
 
-    // 1. Check Catatan Kelas detail: #catatan-... (excluding #catatan-kelas)
+    // 1. Check Praktikum detail: #praktikum-... or #galeri-... (excluding #galeri and #praktikum)
+    if (
+      (hash.startsWith('#praktikum-') || hash.startsWith('#galeri-')) &&
+      hash !== '#galeri' &&
+      hash !== '#praktikum'
+    ) {
+      const rawParam = hash.replace(/^#(praktikum|galeri)-/, '').toLowerCase();
+      const matchedItem = galleryItems.find(
+        (g) =>
+          g.id.toLowerCase() === rawParam ||
+          g.id.toLowerCase() === `gal-${rawParam}` ||
+          g.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(rawParam) ||
+          rawParam.includes(g.id.toLowerCase())
+      );
+
+      if (matchedItem) {
+        setActiveGalleryItem(matchedItem);
+        setCurrentRoute('praktikum-detail');
+        setActiveSection('galeri');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
+    // 2. Check Catatan Kelas detail: #catatan-... (excluding #catatan-kelas)
     if (hash.startsWith('#catatan-') && hash !== '#catatan-kelas') {
       const rawParam = hash.replace('#catatan-', '').toLowerCase();
       const matchedNote = notes.find(
@@ -192,7 +223,7 @@ export default function App() {
       }
     }
 
-    // 2. Check Document detail: #file-... or #modul-... (excluding #modul)
+    // 3. Check Document detail: #file-... or #modul-... (excluding #modul)
     if (
       (hash.startsWith('#file-') || hash.startsWith('#dokumentasi-') || hash.startsWith('#modul-')) &&
       hash !== '#modul' &&
@@ -216,7 +247,7 @@ export default function App() {
       }
     }
 
-    // 3. Check Blog Post detail: #blog-... or #artikel-... (excluding #blog)
+    // 4. Check Blog Post detail: #blog-... or #artikel-... (excluding #blog)
     if ((hash.startsWith('#blog-') || hash.startsWith('#artikel-')) && hash !== '#blog' && hash !== '#artikel') {
       const rawParam = hash.replace(/^#(blog|artikel)-/, '').toLowerCase();
       const matchedPost = blogPosts.find(
@@ -237,7 +268,7 @@ export default function App() {
       }
     }
 
-    // 4. Fallback: Main Landing Page Section
+    // 5. Fallback: Main Landing Page Section
     setCurrentRoute('main');
     const cleanSection = hash.replace('#', '');
     setActiveSection(cleanSection || 'beranda');
@@ -249,7 +280,7 @@ export default function App() {
         el.scrollIntoView({ behavior: 'smooth' });
       }
     }, 50);
-  }, [notes, documents, blogPosts]);
+  }, [notes, documents, blogPosts, galleryItems]);
 
   // Listen to Hash Changes
   useEffect(() => {
@@ -283,6 +314,13 @@ export default function App() {
   }, [currentRoute]);
 
   // Navigation handlers to dedicated full pages
+  const handleSelectGalleryItem = (item: GalleryItem) => {
+    setActiveGalleryItem(item);
+    setCurrentRoute('praktikum-detail');
+    window.location.hash = `#praktikum-${item.id}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectNote = (note: ClassNote) => {
     setActiveNote(note);
     setCurrentRoute('catatan-detail');
@@ -346,6 +384,18 @@ export default function App() {
       await saveDocumentToFirestore(newDoc);
     } catch (e) {
       console.warn('Failed to sync new document to Firestore:', e);
+    }
+  };
+
+  const handleUpdateDocument = async (updatedDoc: DocumentItem) => {
+    setDocuments((prev) => prev.map((d) => (d.id === updatedDoc.id ? updatedDoc : d)));
+    if (activeDocument && activeDocument.id === updatedDoc.id) {
+      setActiveDocument(updatedDoc);
+    }
+    try {
+      await saveDocumentToFirestore(updatedDoc);
+    } catch (e) {
+      console.warn('Failed to sync updated document to Firestore:', e);
     }
   };
 
@@ -461,10 +511,26 @@ https://www.kelaspakhafiz.my.id/
     }
   };
 
+  const handleUpdateGalleryItem = async (updatedItem: GalleryItem) => {
+    setGalleryItems((prev) => prev.map((g) => (g.id === updatedItem.id ? updatedItem : g)));
+    if (activeGalleryItem && activeGalleryItem.id === updatedItem.id) {
+      setActiveGalleryItem(updatedItem);
+    }
+    try {
+      await saveGalleryItemToFirestore(updatedItem);
+    } catch (e) {
+      console.warn('Failed to sync updated gallery item to Firestore:', e);
+    }
+  };
+
   const handleDeleteGalleryItem = async (itemId: string) => {
     setGalleryItems((prev) => prev.filter((i) => i.id !== itemId));
+    if (activeGalleryItem && activeGalleryItem.id === itemId) {
+      handleBackToSection('galeri');
+    }
     try {
       await deleteGalleryItemFromFirestore(itemId);
+      addToast('Dokumentasi Dihapus', 'Dokumentasi praktikum berhasil dihapus.', 'info');
     } catch (e) {
       console.warn('Failed to delete gallery item from Firestore:', e);
     }
@@ -524,7 +590,20 @@ https://www.kelaspakhafiz.my.id/
 
       {/* Route-driven Content Rendering */}
       <main className="flex-grow">
-        {currentRoute === 'catatan-detail' && activeNote ? (
+        {currentRoute === 'praktikum-detail' && activeGalleryItem ? (
+          /* Dedicated Full-Page View: Galeri Praktikum */
+          <PraktikumDetailPage
+            item={activeGalleryItem}
+            allItems={galleryItems}
+            onSelectItem={handleSelectGalleryItem}
+            onBack={() => handleBackToSection('galeri')}
+            onAddToast={addToast}
+            onOpenMainPortal={handleOpenMainPortal}
+            isAdmin={isAdmin}
+            onUpdateItem={handleUpdateGalleryItem}
+            onDeleteItem={handleDeleteGalleryItem}
+          />
+        ) : currentRoute === 'catatan-detail' && activeNote ? (
           /* Dedicated Full-Page View: Catatan Kelas */
           <ClassNoteDetailPage
             note={activeNote}
@@ -569,6 +648,17 @@ https://www.kelaspakhafiz.my.id/
               onExploreClick={handleExploreClick}
             />
 
+            <GallerySection
+              onSelectItem={handleSelectGalleryItem}
+              items={galleryItems}
+              isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
+              onAddItem={handleAddGalleryItem}
+              onDeleteItem={handleDeleteGalleryItem}
+              onUpdateItem={handleUpdateGalleryItem}
+              onAddToast={addToast}
+            />
+
             <ClassNotesSection
               onAddToast={addToast}
               onSelectNote={handleSelectNote}
@@ -578,22 +668,14 @@ https://www.kelaspakhafiz.my.id/
               setIsAdmin={setIsAdmin}
             />
 
-            <GallerySection
-              onSelectItem={(item) => setSelectedGalleryItem(item)}
-              items={galleryItems}
-              isAdmin={isAdmin}
-              setIsAdmin={setIsAdmin}
-              onAddItem={handleAddGalleryItem}
-              onDeleteItem={handleDeleteGalleryItem}
-              onAddToast={addToast}
-            />
-
             <DocumentsSection
               onPreviewDoc={handleSelectDocument}
               onDownloadDoc={handleDownloadDocument}
               docs={documents}
               isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
               onAddDoc={handleAddDocument}
+              onUpdateDoc={handleUpdateDocument}
               onDeleteDoc={handleDeleteDocument}
               onAddToast={addToast}
             />

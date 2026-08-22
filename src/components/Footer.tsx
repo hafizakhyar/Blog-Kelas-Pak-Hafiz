@@ -100,7 +100,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
               </li>
               <li>
                 <a href="#modul" className="hover:text-white transition-colors">
-                  Pusat Unduhan Modul & LKPD
+                  Perangkat Ajar & Modul Belajar
                 </a>
               </li>
               <li>

@@ -16,9 +16,9 @@ export interface GalleryItem {
 export interface DocumentItem {
   id: string;
   title: string;
-  category: 'Modul Ajar' | 'LKPD Praktikum' | 'Ringkasan & Rumus' | 'Bank Soal';
-  classGrade: 'Kelas X' | 'Kelas XI' | 'Kelas XII' | 'Semua Tingkat';
-  fileFormat: 'PDF' | 'DOCX' | 'PPTX';
+  category: 'Modul Ajar' | 'LKPD Praktikum' | 'Ringkasan & Rumus' | 'Bank Soal' | 'RPP & ATP' | 'Silabus' | string;
+  classGrade: 'Kelas X' | 'Kelas XI' | 'Kelas XII' | 'Semua Tingkat' | string;
+  fileFormat: 'PDF' | 'DOCX' | 'PPTX' | 'XLSX' | 'GDRIVE' | string;
   fileSize: string;
   downloads: number;
   updatedDate: string;
@@ -26,6 +26,7 @@ export interface DocumentItem {
   topics: string[];
   pages: number;
   fileUrl?: string;
+  driveUrl?: string;
 }
 
 export interface BlogPost {

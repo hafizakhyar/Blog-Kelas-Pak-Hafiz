@@ -27,11 +27,13 @@ import {
   Atom,
   HelpCircle,
   Tag,
-  Layers
+  Layers,
+  Globe
 } from 'lucide-react';
 import { GALLERY_ITEMS } from '../data/mockData';
 import { GalleryItem } from '../types';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../lib/firebase';
+import { PhotoChangerModal } from './Modals/PhotoChangerModal';
 import {
   generateLabExperimentFromTitle,
   LAB_CATEGORY_SUGGESTIONS,
@@ -58,6 +60,7 @@ interface GallerySectionProps {
   setIsAdmin?: (val: boolean) => void;
   onAddItem?: (item: GalleryItem) => void;
   onDeleteItem?: (itemId: string) => void;
+  onUpdateItem?: (updatedItem: GalleryItem) => void;
   onAddToast?: (title: string, description?: string, type?: 'success' | 'info') => void;
 }
 
@@ -68,10 +71,14 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   setIsAdmin,
   onAddItem,
   onDeleteItem,
+  onUpdateItem,
   onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {}
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Quick photo changer state
+  const [itemForPhotoChange, setItemForPhotoChange] = useState<GalleryItem | null>(null);
 
   // Admin Passcode Modal
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -330,7 +337,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               <span className="uppercase tracking-widest text-[10px] text-[#0284C7] font-bold">Dokumentasi Praktik & Media</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-light font-heading text-[#0F172A] tracking-tight">
-              Galeri Eksperimen & <span className="font-semibold text-[#0284C7]">Laboratorium</span>
+              Galeri <span className="font-semibold text-[#0284C7]">Praktikum</span>
             </h2>
             <p className="text-[#64748B] text-sm sm:text-base mt-2 max-w-xl">
               Dokumentasi nyata kegiatan praktikum kimia siswa. Dari uji indikator alami dapur hingga titrasi presisi laboratorium.
@@ -429,10 +436,23 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                     {item.category}
                   </span>
 
-                  {/* Badge */}
-                  <span className="absolute top-3.5 right-3.5 px-3 py-1 text-[11px] font-medium rounded-full bg-[#0F172A]/80 text-white backdrop-blur-xs">
-                    {item.badge}
-                  </span>
+                  {/* Badge & Quick Photo Changer */}
+                  <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setItemForPhotoChange(item);
+                      }}
+                      className="px-2.5 py-1 rounded-full bg-white/90 hover:bg-[#0284C7] text-[#0F172A] hover:text-white text-[10px] font-bold backdrop-blur-xs shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
+                      title="Ganti Foto (Unggah File / Cari Google)"
+                    >
+                      <ImageIcon className="w-3 h-3" />
+                      <span>Ganti Foto</span>
+                    </button>
+                    <span className="px-3 py-1 text-[11px] font-medium rounded-full bg-[#0F172A]/80 text-white backdrop-blur-xs">
+                      {item.badge}
+                    </span>
+                  </div>
 
                   {/* Video Duration if available */}
                   {item.videoDuration && (
@@ -470,6 +490,17 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                     </button>
                     
                     <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setItemForPhotoChange(item);
+                        }}
+                        className="p-2 rounded-full bg-[#F4F8FC] text-[#64748B] hover:bg-[#E0F2FE] hover:text-[#0284C7] transition-colors cursor-pointer"
+                        title="Ganti Foto Praktikum (Upload / Cari Google)"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                      </button>
+
                       {isAdmin && (
                         <button
                           onClick={(e) => {
@@ -485,6 +516,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       <button
                         onClick={() => onSelectItem(item)}
                         className="p-2 rounded-full bg-[#F4F8FC] text-[#64748B] group-hover:bg-[#E0F2FE] group-hover:text-[#0284C7] transition-colors"
+                        title="Buka Sub Tampilan Praktikum"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
@@ -1085,6 +1117,27 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
           </div>
         )}
       </AnimatePresence>
+
+      {/* Quick Photo Changer Modal for Gallery Cards */}
+      {itemForPhotoChange && (
+        <PhotoChangerModal
+          isOpen={!!itemForPhotoChange}
+          onClose={() => setItemForPhotoChange(null)}
+          currentImageUrl={itemForPhotoChange.image}
+          itemTitle={itemForPhotoChange.title}
+          onSavePhoto={(newUrl) => {
+            if (onUpdateItem && itemForPhotoChange) {
+              onUpdateItem({
+                ...itemForPhotoChange,
+                image: newUrl
+              });
+            }
+            onAddToast('Foto Praktikum Diperbarui', 'Foto baru berhasil disimpan & diperbarui di Galeri.', 'success');
+            setItemForPhotoChange(null);
+          }}
+          onAddToast={onAddToast}
+        />
+      )}
     </section>
   );
 };

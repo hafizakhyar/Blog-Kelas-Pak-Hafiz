@@ -41,8 +41,8 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMainPortal, onExploreClick }) 
 
               {/* Main Headline */}
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light leading-[1.18] text-[#0F172A] mb-4 tracking-tight">
-                Sains Dalam Sudut Pandang yang <br className="hidden sm:inline" />
-                <span className="italic text-[#0284C7] font-medium">Lebih Segar & Hidup.</span>
+                Belajar Sains Lebih <br className="hidden sm:inline" />
+                <span className="text-[#0284C7] font-medium">Simpel dan Menarik</span>
               </h1>
 
               {/* Subtitle */}

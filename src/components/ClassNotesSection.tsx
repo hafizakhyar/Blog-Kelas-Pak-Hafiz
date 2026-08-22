@@ -29,7 +29,12 @@ import {
   Wand2,
   Zap,
   Lightbulb,
-  CheckCheck
+  CheckCheck,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  SlidersHorizontal,
+  ArrowLeftRight
 } from 'lucide-react';
 import { ClassNote } from '../types';
 import { INITIAL_CLASS_NOTES, TEACHER_INFO } from '../data/mockData';
@@ -147,6 +152,16 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
   const [selectedGrade, setSelectedGrade] = useState<string>('Semua');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+
+  // View Mode: 'slider' (horizontal carousel) or 'grid'
+  const [viewMode, setViewMode] = useState<'slider' | 'grid'>('slider');
+  const sliderRef = useRef<HTMLDivElement | null>(null);
+  const [activeSlideIndex, setActiveSlideIndex] = useState<number>(0);
+  const [canScrollLeft, setCanScrollLeft] = useState<boolean>(false);
+  const [canScrollRight, setCanScrollRight] = useState<boolean>(true);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [startX, setStartX] = useState<number>(0);
+  const [scrollLeftPos, setScrollLeftPos] = useState<number>(0);
 
   // Editor Modal State
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -640,6 +655,81 @@ ${
     return 0;
   });
 
+  // Check and update scroll position for horizontal slider
+  const updateScrollState = () => {
+    if (!sliderRef.current) return;
+    const el = sliderRef.current;
+    setCanScrollLeft(el.scrollLeft > 20);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 20);
+
+    // Calculate active slide index based on scroll position
+    const cardWidth = el.clientWidth < 640 ? el.clientWidth * 0.85 : 440;
+    const index = Math.round(el.scrollLeft / cardWidth);
+    setActiveSlideIndex(Math.max(0, Math.min(index, Math.max(0, sortedNotes.length - 1))));
+  };
+
+  useEffect(() => {
+    updateScrollState();
+    const el = sliderRef.current;
+    if (el) {
+      el.addEventListener('scroll', updateScrollState, { passive: true });
+      window.addEventListener('resize', updateScrollState);
+      return () => {
+        el.removeEventListener('scroll', updateScrollState);
+        window.removeEventListener('resize', updateScrollState);
+      };
+    }
+  }, [sortedNotes.length, viewMode]);
+
+  // Smooth scroll left
+  const handleScrollLeft = () => {
+    if (!sliderRef.current) return;
+    const scrollAmount = sliderRef.current.clientWidth < 640 ? sliderRef.current.clientWidth * 0.85 : 440;
+    sliderRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+  };
+
+  // Smooth scroll right
+  const handleScrollRight = () => {
+    if (!sliderRef.current) return;
+    const scrollAmount = sliderRef.current.clientWidth < 640 ? sliderRef.current.clientWidth * 0.85 : 440;
+    sliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  };
+
+  // Scroll directly to a specific note index
+  const handleScrollToSlide = (index: number) => {
+    if (!sliderRef.current) return;
+    const container = sliderRef.current;
+    const cards = container.children;
+    if (cards[index]) {
+      (cards[index] as HTMLElement).scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+      setActiveSlideIndex(index);
+    }
+  };
+
+  // Mouse drag handlers for desktop smooth dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!sliderRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - sliderRef.current.offsetLeft);
+    setScrollLeftPos(sliderRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !sliderRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - sliderRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5; // Drag sensitivity
+    sliderRef.current.scrollLeft = scrollLeftPos - walk;
+  };
+
+  const handleMouseUpOrLeave = () => {
+    setIsDragging(false);
+  };
+
   return (
     <section id="catatan-kelas" className="py-20 sm:py-28 bg-[#F4F8FC] relative border-b border-[#E2E8F0] scroll-mt-20">
       {/* Hidden File Inputs for Admin Upload */}
@@ -863,235 +953,613 @@ ${
           </div>
         )}
 
-        {/* Notes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-          <AnimatePresence mode="popLayout">
-            {sortedNotes.map((note) => (
-              <motion.article
-                key={note.id}
-                layout
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className={`flex flex-col bg-white rounded-[28px] border transition-all duration-300 overflow-hidden shadow-xs hover:shadow-md ${
-                  note.isPinned
-                    ? 'border-[#38BDF8] ring-2 ring-[#0284C7]/15'
-                    : 'border-[#E2E8F0] hover:border-[#0284C7]/50'
-                }`}
-              >
-                {/* Note Visual Header (If Image is attached) */}
-                {note.imageUrl ? (
-                  <div className="relative h-48 sm:h-56 bg-[#0F172A] overflow-hidden group">
-                    <img
-                      src={note.imageUrl}
-                      alt={note.title}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => {
-                        e.currentTarget.src = PRESET_IMAGES[0].url;
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+        {/* View Mode Switcher & Slider Navigation Bar */}
+        {sortedNotes.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-2">
+            {/* View Mode Toggle: Slider vs Grid */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="p-1 rounded-full bg-white border border-[#E2E8F0] shadow-2xs flex items-center gap-1">
+                <button
+                  onClick={() => setViewMode('slider')}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    viewMode === 'slider'
+                      ? 'bg-[#0284C7] text-white shadow-2xs'
+                      : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+                  }`}
+                  title="Mode Geser Samping (Slider Horizontal)"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Mode Geser (Slider)</span>
+                </button>
 
-                    {/* Pinned Ribbon Badge */}
-                    {note.isPinned && (
-                      <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-[#0284C7] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-md backdrop-blur-xs">
-                        <Pin className="w-3 h-3 fill-current" />
-                        <span>Disematkan</span>
-                      </div>
-                    )}
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    viewMode === 'grid'
+                      ? 'bg-[#0284C7] text-white shadow-2xs'
+                      : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
+                  }`}
+                  title="Mode Kisi 2 Kolom (Grid)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Mode Kisi (Grid)</span>
+                </button>
+              </div>
 
-                    {/* Image Action Buttons (Lightbox for all, Quick change photo for Admin only) */}
-                    <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => setLightboxImage({ url: note.imageUrl!, title: note.title })}
-                        className="p-2 rounded-full bg-white/80 hover:bg-white text-[#0F172A] backdrop-blur-md shadow-xs transition-colors cursor-pointer"
-                        title="Perbesar Gambar"
-                      >
-                        <Maximize2 className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Ganti Foto (Admin Only) */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleTriggerQuickChange(note.id)}
-                          className="px-2.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-xs transition-colors cursor-pointer"
-                          title="Ganti Foto Catatan"
-                        >
-                          <ImageIcon className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Ganti Foto</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Bottom Metadata in Image */}
-                    <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white/90 text-xs">
-                      <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-[11px] font-semibold border border-white/20">
-                        {note.category}
-                      </span>
-                      <span className="text-[11px] text-white/80">{note.classGrade}</span>
-                    </div>
-                  </div>
-                ) : (
-                  /* Header without image */
-                  <div className="p-5 pb-0 flex items-center justify-between border-b border-[#F1F5F9] pb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-1 rounded-full bg-[#E0F2FE] text-[#0369A1] text-[11px] font-bold border border-[#BAE6FD]">
-                        {note.category}
-                      </span>
-                      <span className="text-xs font-semibold text-[#64748B]">• {note.classGrade}</span>
-                    </div>
-
-                    {note.isPinned && (
-                      <div className="px-2.5 py-1 rounded-full bg-[#0284C7]/10 text-[#0284C7] text-[11px] font-bold flex items-center gap-1">
-                        <Pin className="w-3 h-3 fill-current" />
-                        <span>Disematkan</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Note Body */}
-                <div className="p-5 sm:p-6 flex-grow flex flex-col justify-between space-y-4">
-                  <div>
-                    {/* Note Title */}
-                    <h3
-                      onClick={() => onSelectNote && onSelectNote(note)}
-                      className="text-lg sm:text-xl font-bold font-heading text-[#0F172A] leading-snug hover:text-[#0284C7] transition-colors mb-2.5 cursor-pointer"
-                    >
-                      {note.title}
-                    </h3>
-
-                    {/* Note Paragraph Content */}
-                    <p className="text-xs sm:text-sm text-[#475569] leading-relaxed whitespace-pre-line">
-                      {note.content}
-                    </p>
-
-                    {/* Key Formulas / Takeaways Points Box */}
-                    {note.keyPoints && note.keyPoints.length > 0 && (
-                      <div className="mt-4 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]/80 space-y-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] uppercase tracking-wider">
-                          <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-                          <span>Rumus Kunci & Poin Penting:</span>
-                        </div>
-                        <ul className="space-y-1.5 text-xs text-[#334155]">
-                          {note.keyPoints.map((point, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#0284C7] mt-1.5 shrink-0" />
-                              <span className="font-mono sm:font-sans font-medium">{point}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                    {/* Tags */}
-                    {note.tags && note.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-3 pt-2">
-                        {note.tags.map((tg, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded-md bg-[#F1F5F9] text-[#64748B] text-[10px] font-semibold flex items-center gap-1"
-                          >
-                            <Tag className="w-2.5 h-2.5 text-[#0284C7]" />
-                            #{tg}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Read Full Page Button */}
-                    <div className="pt-2">
-                      <button
-                        onClick={() => onSelectNote && onSelectNote(note)}
-                        className="text-xs font-bold text-[#0284C7] hover:text-[#0369A1] flex items-center gap-1 transition-colors cursor-pointer group/btn"
-                      >
-                        <span>Lihat Catatan & Rumus Lengkap</span>
-                        <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Note Footer with Author, Date & Action Toolbar */}
-                  <div className="pt-4 border-t border-[#F1F5F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-2 text-[#64748B]">
-                      <img
-                        src="https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi"
-                        alt={note.authorName}
-                        referrerPolicy="no-referrer"
-                        className="w-5 h-5 rounded-full object-cover border border-[#CBD5E1]"
-                      />
-                      <span className="font-semibold text-[#0F172A] text-[11px] truncate max-w-[130px]">
-                        {note.authorName}
-                      </span>
-                      <span>•</span>
-                      <span className="text-[11px] text-[#94A3B8]">{note.date}</span>
-                    </div>
-
-                    {/* Actions: Copy & Like for everyone; Edit & Delete for ADMIN ONLY */}
-                    <div className="flex items-center gap-1.5 self-end sm:self-auto">
-                      {/* Like button */}
-                      <button
-                        onClick={() => handleLikeNote(note.id)}
-                        className="p-1.5 sm:px-2.5 sm:py-1 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#64748B] hover:text-[#EF4444] border border-[#E2E8F0] flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
-                        title="Suka Catatan Ini"
-                      >
-                        <Heart className={`w-3.5 h-3.5 ${note.likes ? 'text-[#EF4444] fill-current' : ''}`} />
-                        <span>{note.likes || 0}</span>
-                      </button>
-
-                      {/* Copy Text Button */}
-                      <button
-                        onClick={() => handleCopyNote(note)}
-                        className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                          copiedNoteId === note.id
-                            ? 'bg-emerald-500 text-white shadow-2xs'
-                            : 'bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#E2E8F0]'
-                        }`}
-                        title="Salin tulisan catatan ke clipboard"
-                      >
-                        {copiedNoteId === note.id ? (
-                          <>
-                            <Check className="w-3 h-3" />
-                            <span>Tersalin!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Salin</span>
-                          </>
-                        )}
-                      </button>
-
-                      {/* ADMIN ONLY: Edit Note Button */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleOpenEditModal(note)}
-                          className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] hover:text-[#0369A1] border border-[#E2E8F0] transition-colors cursor-pointer"
-                          title="Edit Tulisan / Ganti Foto Catatan"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-
-                      {/* ADMIN ONLY: Delete Note Button */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => setNoteToDelete(note)}
-                          className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] border border-[#E2E8F0] transition-colors cursor-pointer"
-                          title="Hapus Catatan"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+              {viewMode === 'slider' && (
+                <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#0369A1] bg-[#E0F2FE]/80 border border-[#BAE6FD] px-3 py-1.5 rounded-full">
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-[#0284C7]" />
+                  <span className="font-medium text-[11px]">Geser kartu ke samping kiri/kanan atau klik panah</span>
                 </div>
-              </motion.article>
-            ))}
-          </AnimatePresence>
-        </div>
+              )}
+            </div>
+
+            {/* Slider Navigation Buttons (Prev / Next & Counter) */}
+            {viewMode === 'slider' && (
+              <div className="flex items-center gap-2.5 self-end sm:self-auto">
+                <span className="text-xs font-semibold text-[#64748B] bg-white px-3 py-1.5 rounded-full border border-[#E2E8F0] shadow-2xs">
+                  Catatan <span className="font-bold text-[#0F172A]">{activeSlideIndex + 1}</span> dari{' '}
+                  <span className="font-bold text-[#0F172A]">{sortedNotes.length}</span>
+                </span>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={handleScrollLeft}
+                    disabled={!canScrollLeft}
+                    className={`p-2 rounded-full border transition-all cursor-pointer ${
+                      canScrollLeft
+                        ? 'bg-white hover:bg-[#E0F2FE] hover:text-[#0284C7] border-[#E2E8F0] text-[#0F172A] shadow-xs active:scale-95'
+                        : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed'
+                    }`}
+                    title="Geser ke Kiri (Sebelumnya)"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={handleScrollRight}
+                    disabled={!canScrollRight}
+                    className={`p-2 rounded-full border transition-all cursor-pointer ${
+                      canScrollRight
+                        ? 'bg-[#0284C7] hover:bg-[#0369A1] border-[#0284C7] text-white shadow-xs active:scale-95'
+                        : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed'
+                    }`}
+                    title="Geser ke Kanan (Berikutnya)"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Notes Content Container: Slider Mode vs Grid Mode */}
+        {viewMode === 'slider' ? (
+          /* Slider (Horizontal Scroll) Container */
+          <div className="relative group/slider">
+            {/* Floating Left Button on Desktop */}
+            {canScrollLeft && (
+              <button
+                onClick={handleScrollLeft}
+                className="hidden md:flex absolute -left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 text-[#0F172A] hover:text-[#0284C7] hover:bg-white shadow-xl border border-[#E2E8F0] items-center justify-center backdrop-blur-xs transition-all hover:scale-110 cursor-pointer"
+                title="Geser ke Kiri"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Floating Right Button on Desktop */}
+            {canScrollRight && (
+              <button
+                onClick={handleScrollRight}
+                className="hidden md:flex absolute -right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-[#0284C7] text-white hover:bg-[#0369A1] shadow-xl shadow-[#0284C7]/30 items-center justify-center transition-all hover:scale-110 cursor-pointer"
+                title="Geser ke Kanan"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            )}
+
+            {/* Horizontal Track */}
+            <div
+              ref={sliderRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUpOrLeave}
+              onMouseLeave={handleMouseUpOrLeave}
+              className="flex gap-6 overflow-x-auto pb-6 pt-2 px-1 snap-x snap-mandatory scroll-smooth cursor-grab active:cursor-grabbing select-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              <AnimatePresence mode="popLayout">
+                {sortedNotes.map((note) => (
+                  <motion.article
+                    key={note.id}
+                    layout
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    transition={{ duration: 0.3 }}
+                    className={`w-[85vw] sm:w-[410px] md:w-[450px] shrink-0 snap-start flex flex-col bg-white rounded-[28px] border transition-all duration-300 overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 ${
+                      note.isPinned
+                        ? 'border-[#38BDF8] ring-2 ring-[#0284C7]/20 shadow-md'
+                        : 'border-[#E2E8F0] hover:border-[#0284C7]/50'
+                    }`}
+                  >
+                    {/* Note Visual Header (If Image is attached) */}
+                    {note.imageUrl ? (
+                      <div className="relative h-48 sm:h-56 bg-[#0F172A] overflow-hidden group">
+                        <img
+                          src={note.imageUrl}
+                          alt={note.title}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            e.currentTarget.src = PRESET_IMAGES[0].url;
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+
+                        {/* Pinned Ribbon Badge */}
+                        {note.isPinned && (
+                          <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-[#0284C7] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-md backdrop-blur-xs">
+                            <Pin className="w-3 h-3 fill-current" />
+                            <span>Disematkan</span>
+                          </div>
+                        )}
+
+                        {/* Image Action Buttons */}
+                        <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setLightboxImage({ url: note.imageUrl!, title: note.title })}
+                            className="p-2 rounded-full bg-white/80 hover:bg-white text-[#0F172A] backdrop-blur-md shadow-xs transition-colors cursor-pointer"
+                            title="Perbesar Gambar"
+                          >
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleTriggerQuickChange(note.id)}
+                              className="px-2.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-xs transition-colors cursor-pointer"
+                              title="Ganti Foto Catatan"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Ganti Foto</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Bottom Metadata in Image */}
+                        <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white/90 text-xs">
+                          <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-[11px] font-semibold border border-white/20">
+                            {note.category}
+                          </span>
+                          <span className="text-[11px] text-white/80">{note.classGrade}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Header without image */
+                      <div className="p-5 pb-0 flex items-center justify-between border-b border-[#F1F5F9] pb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded-full bg-[#E0F2FE] text-[#0369A1] text-[11px] font-bold border border-[#BAE6FD]">
+                            {note.category}
+                          </span>
+                          <span className="text-xs font-semibold text-[#64748B]">• {note.classGrade}</span>
+                        </div>
+
+                        {note.isPinned && (
+                          <div className="px-2.5 py-1 rounded-full bg-[#0284C7]/10 text-[#0284C7] text-[11px] font-bold flex items-center gap-1">
+                            <Pin className="w-3 h-3 fill-current" />
+                            <span>Disematkan</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Note Body */}
+                    <div className="p-5 sm:p-6 flex-grow flex flex-col justify-between space-y-4">
+                      <div>
+                        {/* Note Title */}
+                        <h3
+                          onClick={() => onSelectNote && onSelectNote(note)}
+                          className="text-lg sm:text-xl font-bold font-heading text-[#0F172A] leading-snug hover:text-[#0284C7] transition-colors mb-2.5 cursor-pointer"
+                        >
+                          {note.title}
+                        </h3>
+
+                        {/* Note Paragraph Content */}
+                        <p className="text-xs sm:text-sm text-[#475569] leading-relaxed whitespace-pre-line line-clamp-4">
+                          {note.content}
+                        </p>
+
+                        {/* Key Formulas / Takeaways Points Box */}
+                        {note.keyPoints && note.keyPoints.length > 0 && (
+                          <div className="mt-4 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]/80 space-y-2">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+                              <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
+                              <span>Rumus Kunci & Poin Penting:</span>
+                            </div>
+                            <ul className="space-y-1.5 text-xs text-[#334155]">
+                              {note.keyPoints.slice(0, 3).map((point, idx) => (
+                                <li key={idx} className="flex items-start gap-2">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#0284C7] mt-1.5 shrink-0" />
+                                  <span className="font-mono sm:font-sans font-medium line-clamp-1">{point}</span>
+                                </li>
+                              ))}
+                              {note.keyPoints.length > 3 && (
+                                <li className="text-[11px] text-[#0284C7] font-semibold pl-3.5">
+                                  +{note.keyPoints.length - 3} rumus & poin lainnya...
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Tags */}
+                        {note.tags && note.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-3 pt-2">
+                            {note.tags.map((tg, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 rounded-md bg-[#F1F5F9] text-[#64748B] text-[10px] font-semibold flex items-center gap-1"
+                              >
+                                <Tag className="w-2.5 h-2.5 text-[#0284C7]" />
+                                #{tg}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Read Full Page Button */}
+                        <div className="pt-2">
+                          <button
+                            onClick={() => onSelectNote && onSelectNote(note)}
+                            className="text-xs font-bold text-[#0284C7] hover:text-[#0369A1] flex items-center gap-1 transition-colors cursor-pointer group/btn"
+                          >
+                            <span>Lihat Catatan & Rumus Lengkap</span>
+                            <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Note Footer with Author, Date & Action Toolbar */}
+                      <div className="pt-4 border-t border-[#F1F5F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 text-[#64748B]">
+                          <img
+                            src="https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi"
+                            alt={note.authorName}
+                            referrerPolicy="no-referrer"
+                            className="w-5 h-5 rounded-full object-cover border border-[#CBD5E1]"
+                          />
+                          <span className="font-semibold text-[#0F172A] text-[11px] truncate max-w-[130px]">
+                            {note.authorName}
+                          </span>
+                          <span>•</span>
+                          <span className="text-[11px] text-[#94A3B8]">{note.date}</span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                          <button
+                            onClick={() => handleLikeNote(note.id)}
+                            className="p-1.5 sm:px-2.5 sm:py-1 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#64748B] hover:text-[#EF4444] border border-[#E2E8F0] flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
+                            title="Suka Catatan Ini"
+                          >
+                            <Heart className={`w-3.5 h-3.5 ${note.likes ? 'text-[#EF4444] fill-current' : ''}`} />
+                            <span>{note.likes || 0}</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleCopyNote(note)}
+                            className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                              copiedNoteId === note.id
+                                ? 'bg-emerald-500 text-white shadow-2xs'
+                                : 'bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#E2E8F0]'
+                            }`}
+                            title="Salin tulisan catatan ke clipboard"
+                          >
+                            {copiedNoteId === note.id ? (
+                              <>
+                                <Check className="w-3 h-3" />
+                                <span>Tersalin!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Salin</span>
+                              </>
+                            )}
+                          </button>
+
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleOpenEditModal(note)}
+                              className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] hover:text-[#0369A1] border border-[#E2E8F0] transition-colors cursor-pointer"
+                              title="Edit Tulisan / Ganti Foto Catatan"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+
+                          {isAdmin && (
+                            <button
+                              onClick={() => setNoteToDelete(note)}
+                              className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] border border-[#E2E8F0] transition-colors cursor-pointer"
+                              title="Hapus Catatan"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.article>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* Interactive Bottom Pagination Dots & Swipe Guidance */}
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                {sortedNotes.map((_, dotIdx) => (
+                  <button
+                    key={dotIdx}
+                    onClick={() => handleScrollToSlide(dotIdx)}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                      activeSlideIndex === dotIdx
+                        ? 'w-8 h-2.5 bg-[#0284C7] shadow-xs'
+                        : 'w-2.5 h-2.5 bg-[#CBD5E1] hover:bg-[#94A3B8]'
+                    }`}
+                    title={`Lompat ke Catatan ${dotIdx + 1}`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-[#64748B]">
+                <button
+                  onClick={handleScrollLeft}
+                  disabled={!canScrollLeft}
+                  className="px-3.5 py-1.5 rounded-full bg-white border border-[#E2E8F0] hover:bg-[#E0F2FE] hover:text-[#0284C7] disabled:opacity-40 disabled:hover:bg-white text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Sebelumnya</span>
+                </button>
+                <button
+                  onClick={handleScrollRight}
+                  disabled={!canScrollRight}
+                  className="px-3.5 py-1.5 rounded-full bg-[#0284C7] text-white hover:bg-[#0369A1] disabled:opacity-40 disabled:hover:bg-[#0284C7] text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                >
+                  <span>Berikutnya</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Grid View */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            <AnimatePresence mode="popLayout">
+              {sortedNotes.map((note) => (
+                <motion.article
+                  key={note.id}
+                  layout
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className={`flex flex-col bg-white rounded-[28px] border transition-all duration-300 overflow-hidden shadow-xs hover:shadow-md ${
+                    note.isPinned
+                      ? 'border-[#38BDF8] ring-2 ring-[#0284C7]/15'
+                      : 'border-[#E2E8F0] hover:border-[#0284C7]/50'
+                  }`}
+                >
+                  {/* Note Visual Header (If Image is attached) */}
+                  {note.imageUrl ? (
+                    <div className="relative h-48 sm:h-56 bg-[#0F172A] overflow-hidden group">
+                      <img
+                        src={note.imageUrl}
+                        alt={note.title}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          e.currentTarget.src = PRESET_IMAGES[0].url;
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+
+                      {/* Pinned Ribbon Badge */}
+                      {note.isPinned && (
+                        <div className="absolute top-3.5 left-3.5 px-3 py-1 rounded-full bg-[#0284C7] text-white text-[11px] font-bold flex items-center gap-1.5 shadow-md backdrop-blur-xs">
+                          <Pin className="w-3 h-3 fill-current" />
+                          <span>Disematkan</span>
+                        </div>
+                      )}
+
+                      {/* Image Action Buttons */}
+                      <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => setLightboxImage({ url: note.imageUrl!, title: note.title })}
+                          className="p-2 rounded-full bg-white/80 hover:bg-white text-[#0F172A] backdrop-blur-md shadow-xs transition-colors cursor-pointer"
+                          title="Perbesar Gambar"
+                        >
+                          <Maximize2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleTriggerQuickChange(note.id)}
+                            className="px-2.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-xs transition-colors cursor-pointer"
+                            title="Ganti Foto Catatan"
+                          >
+                            <ImageIcon className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Ganti Foto</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Bottom Metadata in Image */}
+                      <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-white/90 text-xs">
+                        <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-[11px] font-semibold border border-white/20">
+                          {note.category}
+                        </span>
+                        <span className="text-[11px] text-white/80">{note.classGrade}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Header without image */
+                    <div className="p-5 pb-0 flex items-center justify-between border-b border-[#F1F5F9] pb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-full bg-[#E0F2FE] text-[#0369A1] text-[11px] font-bold border border-[#BAE6FD]">
+                          {note.category}
+                        </span>
+                        <span className="text-xs font-semibold text-[#64748B]">• {note.classGrade}</span>
+                      </div>
+
+                      {note.isPinned && (
+                        <div className="px-2.5 py-1 rounded-full bg-[#0284C7]/10 text-[#0284C7] text-[11px] font-bold flex items-center gap-1">
+                          <Pin className="w-3 h-3 fill-current" />
+                          <span>Disematkan</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Note Body */}
+                  <div className="p-5 sm:p-6 flex-grow flex flex-col justify-between space-y-4">
+                    <div>
+                      {/* Note Title */}
+                      <h3
+                        onClick={() => onSelectNote && onSelectNote(note)}
+                        className="text-lg sm:text-xl font-bold font-heading text-[#0F172A] leading-snug hover:text-[#0284C7] transition-colors mb-2.5 cursor-pointer"
+                      >
+                        {note.title}
+                      </h3>
+
+                      {/* Note Paragraph Content */}
+                      <p className="text-xs sm:text-sm text-[#475569] leading-relaxed whitespace-pre-line">
+                        {note.content}
+                      </p>
+
+                      {/* Key Formulas / Takeaways Points Box */}
+                      {note.keyPoints && note.keyPoints.length > 0 && (
+                        <div className="mt-4 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]/80 space-y-2">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+                            <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
+                            <span>Rumus Kunci & Poin Penting:</span>
+                          </div>
+                          <ul className="space-y-1.5 text-xs text-[#334155]">
+                            {note.keyPoints.map((point, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#0284C7] mt-1.5 shrink-0" />
+                                <span className="font-mono sm:font-sans font-medium">{point}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {note.tags && note.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-3 pt-2">
+                          {note.tags.map((tg, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded-md bg-[#F1F5F9] text-[#64748B] text-[10px] font-semibold flex items-center gap-1"
+                            >
+                              <Tag className="w-2.5 h-2.5 text-[#0284C7]" />
+                              #{tg}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Read Full Page Button */}
+                      <div className="pt-2">
+                        <button
+                          onClick={() => onSelectNote && onSelectNote(note)}
+                          className="text-xs font-bold text-[#0284C7] hover:text-[#0369A1] flex items-center gap-1 transition-colors cursor-pointer group/btn"
+                        >
+                          <span>Lihat Catatan & Rumus Lengkap</span>
+                          <span className="group-hover/btn:translate-x-1 transition-transform">→</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Note Footer with Author, Date & Action Toolbar */}
+                    <div className="pt-4 border-t border-[#F1F5F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 text-[#64748B]">
+                        <img
+                          src="https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi"
+                          alt={note.authorName}
+                          referrerPolicy="no-referrer"
+                          className="w-5 h-5 rounded-full object-cover border border-[#CBD5E1]"
+                        />
+                        <span className="font-semibold text-[#0F172A] text-[11px] truncate max-w-[130px]">
+                          {note.authorName}
+                        </span>
+                        <span>•</span>
+                        <span className="text-[11px] text-[#94A3B8]">{note.date}</span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 self-end sm:self-auto">
+                        <button
+                          onClick={() => handleLikeNote(note.id)}
+                          className="p-1.5 sm:px-2.5 sm:py-1 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#64748B] hover:text-[#EF4444] border border-[#E2E8F0] flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
+                          title="Suka Catatan Ini"
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${note.likes ? 'text-[#EF4444] fill-current' : ''}`} />
+                          <span>{note.likes || 0}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleCopyNote(note)}
+                          className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                            copiedNoteId === note.id
+                              ? 'bg-emerald-500 text-white shadow-2xs'
+                              : 'bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#E2E8F0]'
+                          }`}
+                          title="Salin tulisan catatan ke clipboard"
+                        >
+                          {copiedNoteId === note.id ? (
+                            <>
+                              <Check className="w-3 h-3" />
+                              <span>Tersalin!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Salin</span>
+                            </>
+                          )}
+                        </button>
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleOpenEditModal(note)}
+                            className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] hover:text-[#0369A1] border border-[#E2E8F0] transition-colors cursor-pointer"
+                            title="Edit Tulisan / Ganti Foto Catatan"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => setNoteToDelete(note)}
+                            className="p-1.5 rounded-full bg-[#F8FAFC] hover:bg-[#FEE2E2] text-[#94A3B8] hover:text-[#EF4444] border border-[#E2E8F0] transition-colors cursor-pointer"
+                            title="Hapus Catatan"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.article>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Footer Info Banner */}
         <div className="mt-12 p-6 rounded-[28px] bg-linear-to-r from-[#0F172A] to-[#1E293B] text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg border border-[#334155]">

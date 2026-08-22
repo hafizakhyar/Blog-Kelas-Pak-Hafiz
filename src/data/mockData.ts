@@ -170,7 +170,8 @@ export const DOCUMENT_ITEMS: DocumentItem[] = [
     updatedDate: 'Agustus 2026',
     summary: 'Rangkuman komprehensif teori Arrhenius, Bronsted-Lowry, Lewis, perhitungan pH asam-basa kuat/lemah, dan hidrolisis garam disertai latihan soal berjenjang.',
     topics: ['Teori Asam Basa', 'Konsep pH & pOH', 'Indikator Alami & Sintesis', 'Titrasi Asam Basa'],
-    pages: 42
+    pages: 42,
+    driveUrl: 'https://drive.google.com/file/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi/view?usp=sharing'
   },
   {
     id: 'doc-2',
@@ -183,7 +184,8 @@ export const DOCUMENT_ITEMS: DocumentItem[] = [
     updatedDate: 'Agustus 2026',
     summary: 'Lembar Kerja Peserta Didik terstruktur untuk melakukan percobaan mandiri di rumah maupun di lab sekolah dengan alat & bahan yang mudah didapat.',
     topics: ['Alat & Bahan Sederhana', 'Tabel Pengamatan Warna', 'Analisis Data & Diskusi', 'Rubrik Penilaian'],
-    pages: 12
+    pages: 12,
+    driveUrl: 'https://drive.google.com/file/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge/view?usp=sharing'
   },
   {
     id: 'doc-3',
@@ -196,20 +198,22 @@ export const DOCUMENT_ITEMS: DocumentItem[] = [
     updatedDate: 'Juli 2026',
     summary: '1 Lembar ringkasan cepat konversi Mol, Hukum Dasar Kimia (Lavoisier, Proust, Dalton, Gay-Lussac, Avogadro), dan Gas Ideal PV=nRT dengan visual diagram alir.',
     topics: ['Jembatan Mol', 'Persamaan Reaksi', 'Pereaksi Pembatas', 'Kadar Zat & Molaritas'],
-    pages: 4
+    pages: 4,
+    driveUrl: 'https://drive.google.com/file/d/1kZ8W_rumus_stoikiometri/view?usp=sharing'
   },
   {
     id: 'doc-4',
     title: 'Modul Kimia Karbon: Senyawa Hidrokarbon & Minyak Bumi',
     category: 'Modul Ajar',
     classGrade: 'Kelas XI',
-    fileFormat: 'PDF',
+    fileFormat: 'DOCX',
     fileSize: '3.6 MB',
     downloads: 870,
     updatedDate: 'Juli 2026',
     summary: 'Tata nama IUPAC Alkana, Alkena, Alkuna, isomer rangka/posisi/geometri, reaksi pembakaran hidrokarbon, dan dampak lingkungan emisi gas buang.',
     topics: ['Kekhasan Atom Karbon', 'Tata Nama IUPAC', 'Isomerisme', 'Fraksi Minyak Bumi'],
-    pages: 34
+    pages: 34,
+    driveUrl: 'https://drive.google.com/file/d/1mB7X_kimia_karbon_doc/view?usp=sharing'
   },
   {
     id: 'doc-5',
@@ -222,20 +226,22 @@ export const DOCUMENT_ITEMS: DocumentItem[] = [
     updatedDate: 'Juni 2026',
     summary: 'Kumpulan 50 soal pilihan ganda HOTS dan esai penyetaraan redoks (metode PBO & setengah reaksi), Sel Volta, Sel Elektrolisis, dan Korosi beserta pembahasan langkah demi langkah.',
     topics: ['Penyetaraan Redoks', 'Potensial Sel E°', 'Hukum Faraday I & II', 'Pencegahan Korosi'],
-    pages: 28
+    pages: 28,
+    driveUrl: 'https://drive.google.com/file/d/1pQ9Y_bank_soal_redoks/view?usp=sharing'
   },
   {
     id: 'doc-6',
-    title: 'Modul Struktur Atom & Sistem Periodik Unsur (SPU Modern)',
-    category: 'Modul Ajar',
-    classGrade: 'Kelas X',
-    fileFormat: 'PDF',
-    fileSize: '3.2 MB',
+    title: 'Alur Tujuan Pembelajaran (ATP) & Modul Ajar Kurikulum Merdeka',
+    category: 'RPP & ATP',
+    classGrade: 'Semua Tingkat',
+    fileFormat: 'DOCX',
+    fileSize: '1.8 MB',
     downloads: 1120,
     updatedDate: 'Juni 2026',
-    summary: 'Perkembangan model atom mekanika kuantum, bilangan kuantum (n, l, m, s), konfigurasi Aufbau & Hund, serta sifat keperiodikan unsur (jari-jari, energi ionisasi, afinitas).',
-    topics: ['Model Mekanika Kuantum', 'Aturan Aufbau', 'Sifat Periodik', 'Elektron Valensi'],
-    pages: 30
+    summary: 'Perangkat ajar lengkap fase E & F mencakup Capaian Pembelajaran (CP), Alur Tujuan Pembelajaran (ATP), dan rancangan modul berbasis diferensiasi proses.',
+    topics: ['Capaian Pembelajaran CP', 'Pemetaan Alur Tujuan ATP', 'Asesmen Formatif & Sumatif', 'Rubrik Kinerja Profil Pelajar Pancasila'],
+    pages: 24,
+    driveUrl: 'https://drive.google.com/file/d/1rT2Z_atp_kurikulum_merdeka/view?usp=sharing'
   }
 ];
 
