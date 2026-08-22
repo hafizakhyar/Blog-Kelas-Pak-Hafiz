@@ -24,11 +24,14 @@ import {
   ShieldCheck,
   RotateCcw,
   CloudUpload,
-  Loader2
+  Loader2,
+  Wand2,
+  Zap
 } from 'lucide-react';
 import { ClassNote } from '../../types';
 import { TEACHER_INFO } from '../../data/mockData';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../../lib/firebase';
+import { generateChemistryContentFromTitle } from '../../lib/chemistryAutoGenerator';
 
 interface ClassNoteDetailPageProps {
   note: ClassNote;
@@ -91,6 +94,20 @@ export const ClassNoteDetailPage: React.FC<ClassNoteDetailPageProps> = ({
     setEditIsPinned(!!note.isPinned);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [note.id]);
+
+  const handleAutoGenerateInEdit = () => {
+    if (!editTitle.trim()) {
+      onAddToast('Ketik Judul Dulu', 'Masukkan judul materi untuk membuat deskripsi & rumus otomatis.', 'info');
+      return;
+    }
+    const res = generateChemistryContentFromTitle(editTitle, editCategory, editGrade);
+    setEditContent(res.content);
+    setEditKeyPoints(res.keyPoints);
+    setEditTags(res.tags.join(', '));
+    if (res.category) setEditCategory(res.category);
+    if (res.classGrade) setEditGrade(res.classGrade);
+    onAddToast('Deskripsi & Rumus Terisi Otomatis', 'Konten telah disesuaikan dengan topik judul.', 'success');
+  };
 
   const handleLike = () => {
     if (!hasLiked) {
@@ -620,7 +637,18 @@ ${
 
               <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-xs font-bold text-[#0F172A] mb-1">Judul Catatan</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-[#0F172A]">Judul Catatan</label>
+                    <button
+                      type="button"
+                      onClick={handleAutoGenerateInEdit}
+                      className="px-2 py-0.5 rounded-md bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-[#BAE6FD]"
+                      title="Isi otomatis deskripsi, rumus, dan tag dari judul"
+                    >
+                      <Wand2 className="w-3 h-3" />
+                      <span>✨ Buat Otomatis dari Judul</span>
+                    </button>
+                  </div>
                   <input
                     type="text"
                     required
