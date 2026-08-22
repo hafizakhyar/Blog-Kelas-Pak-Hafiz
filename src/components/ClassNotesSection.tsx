@@ -96,6 +96,7 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [passcodeAttempt, setPasscodeAttempt] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'create' | null>(null);
 
   // Check URL query on mount for direct admin access (?admin=true)
   useEffect(() => {
@@ -192,9 +193,16 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
       setPasscodeAttempt('');
       setPasscodeError(false);
       onAddToast('Mode Pengajar Aktif', 'Selamat datang Pak Hafiz! Seluruh fitur tulis, ganti foto, edit, dan hapus telah dibuka.', 'success');
+      
+      if (pendingAction === 'create') {
+        setPendingAction(null);
+        setTimeout(() => {
+          handleOpenCreateModal();
+        }, 100);
+      }
     } else {
       setPasscodeError(true);
-      onAddToast('Passcode Salah', 'Passcode admin rahasia tidak cocok. Silakan coba lagi.', 'info');
+      onAddToast('Passcode Salah', 'Passcode admin rahasia tidak cocok. Gunakan hafiz2026.', 'info');
     }
   };
 
@@ -628,14 +636,17 @@ ${
                 </button>
               </div>
             ) : (
-              /* Public View: Discrete Admin Login Button */
+              /* Public View: Prominent Admin Login / Create Note Button */
               <button
-                onClick={() => setIsAdminModalOpen(true)}
-                className="px-3.5 py-2 rounded-full border border-[#CBD5E1] bg-white hover:border-[#0284C7] text-[#64748B] hover:text-[#0284C7] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer group"
-                title="Masuk mode admin khusus pengajar (Pak Hafiz)"
+                onClick={() => {
+                  setPendingAction('create');
+                  setIsAdminModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer group"
+                title="Tulis materi atau ringkasan kimia baru (Mode Pengajar Pak Hafiz)"
               >
-                <Lock className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#0284C7]" />
-                <span>Mode Guru</span>
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tulis Catatan (Guru)</span>
               </button>
             )}
           </div>

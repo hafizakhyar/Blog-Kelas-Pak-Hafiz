@@ -16,16 +16,23 @@ import {
   Loader2,
   X,
   Image as ImageIcon,
-  FlaskConical
+  FlaskConical,
+  Lock,
+  KeyRound,
+  ShieldCheck
 } from 'lucide-react';
 import { GALLERY_ITEMS } from '../data/mockData';
 import { GalleryItem } from '../types';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../lib/firebase';
 
+const ADMIN_AUTH_KEY = 'kelaspakhafiz_admin_auth';
+const DEFAULT_ADMIN_PASSCODE = 'hafiz2026';
+
 interface GallerySectionProps {
   onSelectItem: (item: GalleryItem) => void;
   items?: GalleryItem[];
   isAdmin?: boolean;
+  setIsAdmin?: (val: boolean) => void;
   onAddItem?: (item: GalleryItem) => void;
   onDeleteItem?: (itemId: string) => void;
   onAddToast?: (title: string, description?: string, type?: 'success' | 'info') => void;
@@ -35,12 +42,18 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   onSelectItem,
   items = GALLERY_ITEMS,
   isAdmin = false,
+  setIsAdmin,
   onAddItem,
   onDeleteItem,
   onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {}
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Admin Passcode Modal
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [passcodeAttempt, setPasscodeAttempt] = useState('');
+  const [passcodeError, setPasscodeError] = useState(false);
 
   // Upload Photo Modal state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -55,6 +68,22 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   const [itemToDelete, setItemToDelete] = useState<GalleryItem | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passcodeAttempt.trim() === DEFAULT_ADMIN_PASSCODE || passcodeAttempt.trim() === 'admin123' || passcodeAttempt.trim() === 'hafiz2026') {
+      if (setIsAdmin) setIsAdmin(true);
+      localStorage.setItem(ADMIN_AUTH_KEY, 'true');
+      setIsAdminModalOpen(false);
+      setPasscodeAttempt('');
+      setPasscodeError(false);
+      setIsUploadModalOpen(true);
+      onAddToast('Mode Pengajar Aktif', 'Selamat datang Pak Hafiz! Silakan unggah foto dokumentasi lab.', 'success');
+    } else {
+      setPasscodeError(true);
+      onAddToast('Passcode Salah', 'Passcode guru tidak cocok. Gunakan hafiz2026.', 'info');
+    }
+  };
 
   const categories = ['Semua', 'Indikator Alami', 'Eksperimen Lab', 'Karya Siswa'];
 
@@ -181,14 +210,23 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               />
             </div>
 
-            {/* Admin Upload Photo Button */}
-            {isAdmin && (
+            {/* Upload Photo Button */}
+            {isAdmin ? (
               <button
                 onClick={() => setIsUploadModalOpen(true)}
                 className="px-4 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Unggah Foto Lab</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsAdminModalOpen(true)}
+                className="px-4 py-2.5 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0284C7] border border-[#38BDF8] text-xs font-bold flex items-center gap-2 transition-all shadow-2xs shrink-0 cursor-pointer group"
+                title="Unggah foto kegiatan praktikum lab (Mode Pengajar)"
+              >
+                <Plus className="w-4 h-4 text-[#0284C7]" />
+                <span className="hidden sm:inline">Unggah Foto (Guru)</span>
               </button>
             )}
           </div>
@@ -558,6 +596,106 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   Hapus Permanen
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Passcode Modal for Teachers */}
+      <AnimatePresence>
+        {isAdminModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setIsAdminModalOpen(false);
+                setPasscodeError(false);
+              }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-6 sm:p-8 z-10"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-[#0F172A]">Mode Pengajar (Pak Hafiz)</h3>
+                    <p className="text-xs text-[#64748B]">Buka akses untuk mengunggah foto eksperimen lab</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setIsAdminModalOpen(false);
+                    setPasscodeError(false);
+                  }}
+                  className="p-1.5 rounded-full text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#334155] uppercase tracking-wider mb-2">
+                    Passcode Guru
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+                    <input
+                      type="password"
+                      autoFocus
+                      placeholder="Ketik passcode (hafiz2026)..."
+                      value={passcodeAttempt}
+                      onChange={(e) => {
+                        setPasscodeAttempt(e.target.value);
+                        setPasscodeError(false);
+                      }}
+                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-all ${
+                        passcodeError
+                          ? 'border-[#EF4444] bg-[#FEF2F2] text-[#991B1B]'
+                          : 'border-[#CBD5E1] bg-[#F8FAFC] text-[#0F172A] focus:border-[#0284C7]'
+                      }`}
+                    />
+                  </div>
+                  {passcodeError ? (
+                    <p className="text-xs text-[#EF4444] mt-1.5 font-medium">
+                      Passcode salah. Gunakan: hafiz2026
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-[#64748B] mt-1.5">
+                      Gunakan kode akses pengajar bawaan: <code className="bg-[#F1F5F9] px-1.5 py-0.5 rounded text-[#0284C7] font-bold">hafiz2026</code>
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAdminModalOpen(false);
+                      setPasscodeError(false);
+                    }}
+                    className="px-4 py-2 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9]"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Buka Mode Guru</span>
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}

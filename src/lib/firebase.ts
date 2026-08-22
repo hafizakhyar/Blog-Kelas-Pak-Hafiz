@@ -35,8 +35,15 @@ export const firebaseConfig = {
 // Initialize Firebase App singleton
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Export Firestore & Storage instances
-export const db = getFirestore(app);
+// User's custom Firestore Database ID
+export const FIRESTORE_DATABASE_ID = "ai-studio-kelaspakhafizpor-c1ee3adc-37e9-4c0a-9d18-5defc1a47a83";
+
+// Initialize both Custom Firestore instance and Default Firestore instance for robust auto-fallback
+export const customDb = getFirestore(app, FIRESTORE_DATABASE_ID);
+export const defaultDb = getFirestore(app);
+
+// Export primary db instance
+export const db = customDb;
 export const storage = getStorage(app);
 
 // Firestore Collection Names prefixed with "catatan_"
@@ -102,6 +109,40 @@ export async function uploadFileToFirebaseStorage(
 }
 
 /**
+ * Helper to write a document with custom DB first, falling back to default DB if needed
+ */
+async function writeWithFallback(collectionName: string, docId: string, data: any): Promise<void> {
+  try {
+    const docRef = doc(customDb, collectionName, docId);
+    await setDoc(docRef, data, { merge: true });
+    console.log(`[Firebase Firestore SUCCESS] Tersimpan di Database Kustom (${collectionName}/${docId})`);
+  } catch (err: any) {
+    console.warn(`[Firebase Firestore WARN] Custom DB gagal (${err?.message || err}), mencoba Default DB...`);
+    try {
+      const defaultRef = doc(defaultDb, collectionName, docId);
+      await setDoc(defaultRef, data, { merge: true });
+      console.log(`[Firebase Firestore SUCCESS] Tersimpan di Database Default (${collectionName}/${docId})`);
+    } catch (defaultErr) {
+      console.error(`[Firebase Firestore ERROR] Gagal menyimpan dokumen (${collectionName}/${docId}):`, defaultErr);
+      throw defaultErr;
+    }
+  }
+}
+
+/**
+ * Helper to delete a document with fallback
+ */
+async function deleteWithFallback(collectionName: string, docId: string): Promise<void> {
+  try {
+    const docRef = doc(customDb, collectionName, docId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    const defaultRef = doc(defaultDb, collectionName, docId);
+    await deleteDoc(defaultRef);
+  }
+}
+
+/**
  * Auto-Seed Firestore with initial mock data if empty
  */
 let isSeeding = false;
@@ -111,68 +152,38 @@ export async function seedFirestoreIfEmpty() {
 
   try {
     // 1. Seed & Sync Class Notes (catatan_kelas)
-    const notesBatch = writeBatch(db);
-    INITIAL_CLASS_NOTES.forEach((note) => {
-      const docRef = doc(db, COLLECTIONS.NOTES, note.id);
-      notesBatch.set(
-        docRef,
-        {
-          ...note,
-          updatedAt: serverTimestamp()
-        },
-        { merge: true }
-      );
-    });
-    await notesBatch.commit();
-    console.log(`[Firebase Firestore] Berhasil menyinkronkan ${INITIAL_CLASS_NOTES.length} catatan kelas ke Firestore.`);
+    for (const note of INITIAL_CLASS_NOTES) {
+      await writeWithFallback(COLLECTIONS.NOTES, note.id, {
+        ...note,
+        updatedAt: serverTimestamp()
+      });
+    }
 
     // 2. Seed & Sync Articles (catatan_artikel)
-    const articlesBatch = writeBatch(db);
-    BLOG_POSTS.forEach((post) => {
-      const docRef = doc(db, COLLECTIONS.ARTICLES, post.id);
-      articlesBatch.set(
-        docRef,
-        {
-          ...post,
-          updatedAt: serverTimestamp()
-        },
-        { merge: true }
-      );
-    });
-    await articlesBatch.commit();
-    console.log(`[Firebase Firestore] Berhasil menyinkronkan ${BLOG_POSTS.length} artikel ke catatan_artikel.`);
+    for (const post of BLOG_POSTS) {
+      await writeWithFallback(COLLECTIONS.ARTICLES, post.id, {
+        ...post,
+        updatedAt: serverTimestamp()
+      });
+    }
 
     // 3. Seed Photos/Gallery (catatan_foto)
-    const photosSnap = await getDocs(collection(db, COLLECTIONS.PHOTOS));
-    if (photosSnap.empty) {
-      console.log('[Firebase Firestore] Mengisi data awal galeri ke catatan_foto...');
-      const batch = writeBatch(db);
-      GALLERY_ITEMS.forEach((item) => {
-        const docRef = doc(db, COLLECTIONS.PHOTOS, item.id);
-        batch.set(docRef, {
-          ...item,
-          createdAt: serverTimestamp()
-        });
+    for (const item of GALLERY_ITEMS) {
+      await writeWithFallback(COLLECTIONS.PHOTOS, item.id, {
+        ...item,
+        createdAt: serverTimestamp()
       });
-      await batch.commit();
     }
 
     // 4. Seed Documents (catatan_dokumen)
-    const docsSnap = await getDocs(collection(db, COLLECTIONS.DOCUMENTS));
-    if (docsSnap.empty) {
-      console.log('[Firebase Firestore] Mengisi data awal dokumen ke catatan_dokumen...');
-      const batch = writeBatch(db);
-      DOCUMENT_ITEMS.forEach((docItem) => {
-        const docRef = doc(db, COLLECTIONS.DOCUMENTS, docItem.id);
-        batch.set(docRef, {
-          ...docItem,
-          createdAt: serverTimestamp()
-        });
+    for (const docItem of DOCUMENT_ITEMS) {
+      await writeWithFallback(COLLECTIONS.DOCUMENTS, docItem.id, {
+        ...docItem,
+        createdAt: serverTimestamp()
       });
-      await batch.commit();
     }
   } catch (err) {
-    console.warn('[Firebase Firestore] Auto-seeding dilewati atau terjadi kendala jaringan/izin:', err);
+    console.warn('[Firebase Firestore] Auto-seeding selesai atau ada pembatasan jaringan:', err);
   } finally {
     isSeeding = false;
   }
@@ -187,96 +198,93 @@ export function subscribeToClassNotes(
   onData: (notes: ClassNote[]) => void,
   onError?: (err: Error) => void
 ) {
-  return onSnapshot(
-    collection(db, COLLECTIONS.NOTES),
-    (snapshot) => {
-      if (snapshot.empty) {
-        // Trigger seed if empty
-        seedFirestoreIfEmpty();
-        onData(INITIAL_CLASS_NOTES);
-        return;
-      }
-      const items: ClassNote[] = [];
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        items.push({
-          id: docSnap.id,
-          title: data.title || '',
-          category: data.category || 'Materi Kimia',
-          classGrade: data.classGrade || 'Semua Tingkat',
-          content: data.content || '',
-          keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints : [],
-          imageUrl: data.imageUrl || undefined,
-          date: data.date || '',
-          authorName: data.authorName || 'Pak Hafiz, S.Pd., M.Si.',
-          isPinned: !!data.isPinned,
-          likes: typeof data.likes === 'number' ? data.likes : 0,
-          tags: Array.isArray(data.tags) ? data.tags : [],
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt
-        } as ClassNote);
-      });
+  const parseSnapshot = (snapshot: any) => {
+    if (snapshot.empty) {
+      seedFirestoreIfEmpty();
+      onData(INITIAL_CLASS_NOTES);
+      return;
+    }
+    const items: ClassNote[] = [];
+    snapshot.forEach((docSnap: any) => {
+      const data = docSnap.data();
+      items.push({
+        id: docSnap.id,
+        title: data.title || '',
+        category: data.category || 'Materi Kimia',
+        classGrade: data.classGrade || 'Semua Tingkat',
+        content: data.content || '',
+        keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints : [],
+        imageUrl: data.imageUrl || undefined,
+        date: data.date || '',
+        authorName: data.authorName || 'Pak Hafiz, S.Pd., M.Si.',
+        isPinned: !!data.isPinned,
+        likes: typeof data.likes === 'number' ? data.likes : 0,
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt
+      } as ClassNote);
+    });
 
-      // Sort pinned first, then by timestamp or id
-      items.sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return 0;
-      });
+    items.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
 
-      console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} catatan kelas secara real-time.`);
-      onData(items);
-    },
+    console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} catatan kelas.`);
+    onData(items);
+  };
+
+  let unsubDefault: (() => void) | null = null;
+
+  const unsubCustom = onSnapshot(
+    collection(customDb, COLLECTIONS.NOTES),
+    parseSnapshot,
     (err) => {
-      console.error('[Firebase Firestore ERROR] Gagal berlangganan real-time koleksi catatan_kelas:', err);
-      if (onError) onError(err);
+      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_kelas gagal, beralih ke defaultDb:', err.message);
+      unsubDefault = onSnapshot(
+        collection(defaultDb, COLLECTIONS.NOTES),
+        parseSnapshot,
+        (defaultErr) => {
+          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_kelas error:', defaultErr);
+          if (onError) onError(defaultErr);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubCustom();
+    if (unsubDefault) unsubDefault();
+  };
 }
 
 export async function saveClassNoteToFirestore(note: ClassNote): Promise<void> {
-  try {
-    const docRef = doc(db, COLLECTIONS.NOTES, note.id);
-    
-    // Clean object without undefined fields for safe Firestore serialization
-    const payload: Record<string, any> = {
-      id: note.id,
-      title: note.title || '',
-      category: note.category || 'Materi Kimia',
-      classGrade: note.classGrade || 'Semua Tingkat',
-      content: note.content || '',
-      keyPoints: Array.isArray(note.keyPoints) ? note.keyPoints : [],
-      imageUrl: note.imageUrl || '',
-      date: note.date || '',
-      authorName: note.authorName || 'Pak Hafiz, S.Pd., M.Si.',
-      isPinned: !!note.isPinned,
-      likes: typeof note.likes === 'number' ? note.likes : 0,
-      tags: Array.isArray(note.tags) ? note.tags : [],
-      updatedAt: serverTimestamp()
-    };
+  const payload: Record<string, any> = {
+    id: note.id,
+    title: note.title || '',
+    category: note.category || 'Materi Kimia',
+    classGrade: note.classGrade || 'Semua Tingkat',
+    content: note.content || '',
+    keyPoints: Array.isArray(note.keyPoints) ? note.keyPoints : [],
+    imageUrl: note.imageUrl || '',
+    date: note.date || '',
+    authorName: note.authorName || 'Pak Hafiz, S.Pd., M.Si.',
+    isPinned: !!note.isPinned,
+    likes: typeof note.likes === 'number' ? note.likes : 0,
+    tags: Array.isArray(note.tags) ? note.tags : [],
+    updatedAt: serverTimestamp()
+  };
 
-    // If new note or doesn't have createdAt, set server timestamp
-    if (!(note as any).createdAt) {
-      payload.createdAt = serverTimestamp();
-    }
-
-    await setDoc(docRef, payload, { merge: true });
-    console.log(`[Firebase Firestore SUCCESS] Dokumen catatan_kelas "${note.title}" (ID: ${note.id}) tersimpan dengan serverTimestamp().`);
-  } catch (error) {
-    console.error(`[Firebase Firestore ERROR] Gagal menyimpan dokumen catatan_kelas "${note.title}":`, error);
-    throw error;
+  if (!(note as any).createdAt) {
+    payload.createdAt = serverTimestamp();
   }
+
+  await writeWithFallback(COLLECTIONS.NOTES, note.id, payload);
 }
 
 export async function deleteClassNoteFromFirestore(noteId: string): Promise<void> {
-  try {
-    const docRef = doc(db, COLLECTIONS.NOTES, noteId);
-    await deleteDoc(docRef);
-    console.log(`[Firebase Firestore SUCCESS] Dokumen catatan_kelas ID: ${noteId} berhasil dihapus.`);
-  } catch (error) {
-    console.error(`[Firebase Firestore ERROR] Gagal menghapus dokumen catatan_kelas ID: ${noteId}:`, error);
-    throw error;
-  }
+  await deleteWithFallback(COLLECTIONS.NOTES, noteId);
 }
 
 // --- Artikel & Catatan Belajar ---
@@ -284,43 +292,60 @@ export function subscribeToArticles(
   onData: (articles: BlogPost[]) => void,
   onError?: (err: Error) => void
 ) {
-  return onSnapshot(
-    collection(db, COLLECTIONS.ARTICLES),
-    (snapshot) => {
-      if (snapshot.empty) {
-        seedFirestoreIfEmpty();
-        onData(BLOG_POSTS);
-        return;
-      }
-      const items: BlogPost[] = [];
-      snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as BlogPost);
-      });
-      onData(items);
-    },
+  const parseSnapshot = (snapshot: any) => {
+    if (snapshot.empty) {
+      seedFirestoreIfEmpty();
+      onData(BLOG_POSTS);
+      return;
+    }
+    const items: BlogPost[] = [];
+    snapshot.forEach((docSnap: any) => {
+      items.push(docSnap.data() as BlogPost);
+    });
+    onData(items);
+  };
+
+  let unsubDefault: (() => void) | null = null;
+  const unsubCustom = onSnapshot(
+    collection(customDb, COLLECTIONS.ARTICLES),
+    parseSnapshot,
     (err) => {
-      console.error('Error subscribing to catatan_artikel:', err);
-      if (onError) onError(err);
+      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_artikel gagal, beralih ke defaultDb:', err.message);
+      unsubDefault = onSnapshot(
+        collection(defaultDb, COLLECTIONS.ARTICLES),
+        parseSnapshot,
+        (defaultErr) => {
+          if (onError) onError(defaultErr);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubCustom();
+    if (unsubDefault) unsubDefault();
+  };
 }
 
 export async function saveArticleToFirestore(article: BlogPost): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.ARTICLES, article.id);
-  await setDoc(docRef, article, { merge: true });
+  await writeWithFallback(COLLECTIONS.ARTICLES, article.id, article);
 }
 
 export async function deleteArticleFromFirestore(articleId: string): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.ARTICLES, articleId);
-  await deleteDoc(docRef);
+  await deleteWithFallback(COLLECTIONS.ARTICLES, articleId);
 }
 
 export async function incrementArticleReactions(articleId: string): Promise<void> {
   try {
-    const docRef = doc(db, COLLECTIONS.ARTICLES, articleId);
+    const docRef = doc(customDb, COLLECTIONS.ARTICLES, articleId);
     await updateDoc(docRef, { reactions: increment(1) });
   } catch (e) {
-    console.error('Error updating reaction:', e);
+    try {
+      const docRef = doc(defaultDb, COLLECTIONS.ARTICLES, articleId);
+      await updateDoc(docRef, { reactions: increment(1) });
+    } catch (err) {
+      console.error('Error updating reaction:', err);
+    }
   }
 }
 
@@ -329,35 +354,47 @@ export function subscribeToGalleryPhotos(
   onData: (items: GalleryItem[]) => void,
   onError?: (err: Error) => void
 ) {
-  return onSnapshot(
-    collection(db, COLLECTIONS.PHOTOS),
-    (snapshot) => {
-      if (snapshot.empty) {
-        seedFirestoreIfEmpty();
-        onData(GALLERY_ITEMS);
-        return;
-      }
-      const items: GalleryItem[] = [];
-      snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as GalleryItem);
-      });
-      onData(items);
-    },
+  const parseSnapshot = (snapshot: any) => {
+    if (snapshot.empty) {
+      seedFirestoreIfEmpty();
+      onData(GALLERY_ITEMS);
+      return;
+    }
+    const items: GalleryItem[] = [];
+    snapshot.forEach((docSnap: any) => {
+      items.push(docSnap.data() as GalleryItem);
+    });
+    onData(items);
+  };
+
+  let unsubDefault: (() => void) | null = null;
+  const unsubCustom = onSnapshot(
+    collection(customDb, COLLECTIONS.PHOTOS),
+    parseSnapshot,
     (err) => {
-      console.error('Error subscribing to catatan_foto:', err);
-      if (onError) onError(err);
+      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_foto gagal, beralih ke defaultDb:', err.message);
+      unsubDefault = onSnapshot(
+        collection(defaultDb, COLLECTIONS.PHOTOS),
+        parseSnapshot,
+        (defaultErr) => {
+          if (onError) onError(defaultErr);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubCustom();
+    if (unsubDefault) unsubDefault();
+  };
 }
 
 export async function saveGalleryItemToFirestore(item: GalleryItem): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.PHOTOS, item.id);
-  await setDoc(docRef, item, { merge: true });
+  await writeWithFallback(COLLECTIONS.PHOTOS, item.id, item);
 }
 
 export async function deleteGalleryItemFromFirestore(itemId: string): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.PHOTOS, itemId);
-  await deleteDoc(docRef);
+  await deleteWithFallback(COLLECTIONS.PHOTOS, itemId);
 }
 
 // --- Modul & Dokumen File ---
@@ -365,35 +402,47 @@ export function subscribeToDocuments(
   onData: (docs: DocumentItem[]) => void,
   onError?: (err: Error) => void
 ) {
-  return onSnapshot(
-    collection(db, COLLECTIONS.DOCUMENTS),
-    (snapshot) => {
-      if (snapshot.empty) {
-        seedFirestoreIfEmpty();
-        onData(DOCUMENT_ITEMS);
-        return;
-      }
-      const items: DocumentItem[] = [];
-      snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as DocumentItem);
-      });
-      onData(items);
-    },
+  const parseSnapshot = (snapshot: any) => {
+    if (snapshot.empty) {
+      seedFirestoreIfEmpty();
+      onData(DOCUMENT_ITEMS);
+      return;
+    }
+    const items: DocumentItem[] = [];
+    snapshot.forEach((docSnap: any) => {
+      items.push(docSnap.data() as DocumentItem);
+    });
+    onData(items);
+  };
+
+  let unsubDefault: (() => void) | null = null;
+  const unsubCustom = onSnapshot(
+    collection(customDb, COLLECTIONS.DOCUMENTS),
+    parseSnapshot,
     (err) => {
-      console.error('Error subscribing to catatan_dokumen:', err);
-      if (onError) onError(err);
+      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_dokumen gagal, beralih ke defaultDb:', err.message);
+      unsubDefault = onSnapshot(
+        collection(defaultDb, COLLECTIONS.DOCUMENTS),
+        parseSnapshot,
+        (defaultErr) => {
+          if (onError) onError(defaultErr);
+        }
+      );
     }
   );
+
+  return () => {
+    unsubCustom();
+    if (unsubDefault) unsubDefault();
+  };
 }
 
 export async function saveDocumentToFirestore(item: DocumentItem): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.DOCUMENTS, item.id);
-  await setDoc(docRef, item, { merge: true });
+  await writeWithFallback(COLLECTIONS.DOCUMENTS, item.id, item);
 }
 
 export async function deleteDocumentFromFirestore(docId: string): Promise<void> {
-  const docRef = doc(db, COLLECTIONS.DOCUMENTS, docId);
-  await deleteDoc(docRef);
+  await deleteWithFallback(COLLECTIONS.DOCUMENTS, docId);
 }
 
 export async function incrementDocumentDownloads(docId: string): Promise<void> {

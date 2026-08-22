@@ -582,6 +582,7 @@ https://www.kelaspakhafiz.my.id/
               onSelectItem={(item) => setSelectedGalleryItem(item)}
               items={galleryItems}
               isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
               onAddItem={handleAddGalleryItem}
               onDeleteItem={handleDeleteGalleryItem}
               onAddToast={addToast}
@@ -602,6 +603,7 @@ https://www.kelaspakhafiz.my.id/
               onOpenMainPortal={handleOpenMainPortal}
               posts={blogPosts}
               isAdmin={isAdmin}
+              setIsAdmin={setIsAdmin}
               onAddPost={handleAddArticle}
               onDeletePost={handleDeleteArticle}
               onAddToast={addToast}
