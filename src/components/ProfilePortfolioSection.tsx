@@ -490,10 +490,10 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
           {/* ========================================================================= */}
           {/* SISI KIRI: POIN-POIN PROFIL & PENGALAMAN (SIMPEL, ELEGAN & IPHONE BLUE) */}
           {/* ========================================================================= */}
-          <div className="flex flex-col h-full bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden justify-between">
+          <div className="flex flex-col h-full min-h-[480px] bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden justify-between">
             
             {/* Top Container Header */}
-            <div>
+            <div className="flex-1 flex flex-col min-h-0">
               {/* Teacher Info Header */}
               <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
                 <div className="flex items-center gap-3">
@@ -542,7 +542,7 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
               </div>
 
               {/* Simplified & Sleek Vertical Scrollable List */}
-              <div className="max-h-[380px] sm:max-h-[400px] overflow-y-auto pr-1.5 space-y-2.5 custom-scrollbar focus:outline-none">
+              <div className="flex-1 min-h-[300px] max-h-[380px] sm:max-h-[400px] overflow-y-auto pr-1.5 space-y-2.5 custom-scrollbar focus:outline-none">
                 {experiences.map((exp, idx) => (
                   <div
                     key={exp.id || idx}
@@ -588,19 +588,19 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
                       </div>
                     </div>
 
-                    {/* Quick Admin Actions & Copy Button */}
-                    <div className="mt-2.5 pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyExp(exp)}
-                        className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
-                        title="Salin Poin ke Clipboard"
-                      >
-                        <Copy className="w-3 h-3" />
-                        <span>Salin</span>
-                      </button>
+                    {/* Quick Admin Actions & Copy Button (Only on Admin / Mode Guru) */}
+                    {isAdmin && (
+                      <div className="mt-2.5 pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyExp(exp)}
+                          className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
+                          title="Salin Poin ke Clipboard"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </button>
 
-                      {isAdmin && (
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
@@ -627,8 +627,8 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -661,10 +661,10 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
           {/* ========================================================================= */}
           {/* SISI KANAN: PORTOFOLIO SERTIFIKAT & KARYA (HORIZONTAL SCROLLABLE) */}
           {/* ========================================================================= */}
-          <div className="flex flex-col h-full bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden justify-between">
+          <div className="flex flex-col h-full min-h-[480px] bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden justify-between">
             
             {/* Header & Carousel Nav Controls */}
-            <div>
+            <div className="flex-1 flex flex-col min-h-0">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4 gap-3">
                 <div>
                   <div className="flex items-center gap-2">
@@ -798,52 +798,56 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
 
                       {/* Card Footer Actions */}
                       <div className="mt-3 pt-2.5 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
-                        <button
-                          type="button"
-                          onClick={() => handleCopyCertLink(cert)}
-                          className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
-                          title="Salin Rincian Sertifikat"
-                        >
-                          <Copy className="w-3 h-3" />
-                          <span>Salin</span>
-                        </button>
-
                         {isAdmin ? (
-                          <div className="flex items-center gap-1.5">
+                          <>
                             <button
                               type="button"
-                              onClick={() => handleDuplicateCert(cert)}
-                              className="px-2 py-0.5 rounded-md bg-white hover:bg-[#E0F2FE] text-[#007AFF] border border-[#BAE6FD] text-[10px] font-bold cursor-pointer transition-colors"
-                              title="Duplikasi Sertifikat Ini"
+                              onClick={() => handleCopyCertLink(cert)}
+                              className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
+                              title="Salin Rincian Sertifikat"
                             >
-                              Duplikasi
+                              <Copy className="w-3 h-3" />
+                              <span>Salin</span>
                             </button>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleDuplicateCert(cert)}
+                                className="px-2 py-0.5 rounded-md bg-white hover:bg-[#E0F2FE] text-[#007AFF] border border-[#BAE6FD] text-[10px] font-bold cursor-pointer transition-colors"
+                                title="Duplikasi Sertifikat Ini"
+                              >
+                                Duplikasi
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditCert(cert)}
+                                className="p-1 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer transition-colors"
+                                title="Edit Data Sertifikat"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCert(cert.id, cert.title)}
+                                className="p-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer transition-colors"
+                                title="Hapus Sertifikat"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full flex items-center justify-end">
                             <button
                               type="button"
-                              onClick={() => handleOpenEditCert(cert)}
-                              className="p-1 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer transition-colors"
-                              title="Edit Data Sertifikat"
+                              onClick={() => setPreviewCert(cert)}
+                              className="text-[#007AFF] hover:text-[#0369A1] font-semibold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
                             >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteCert(cert.id, cert.title)}
-                              className="p-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer transition-colors"
-                              title="Hapus Sertifikat"
-                            >
-                              <Trash2 className="w-3 h-3" />
+                              <span>Lihat Rincian</span>
+                              <ExternalLink className="w-3 h-3" />
                             </button>
                           </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewCert(cert)}
-                            className="text-[#007AFF] font-semibold text-[11px] flex items-center gap-1 cursor-pointer hover:underline"
-                          >
-                            <span>Rincian</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </button>
                         )}
                       </div>
 
