@@ -130,17 +130,26 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
     }
   }, [certificates]);
 
-  // Horizontal Scroll Carousel Ref
+  // Horizontal Scroll Carousel Ref & Active Index
   const carouselRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [activeCertIndex, setActiveCertIndex] = useState(0);
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
 
-  // Check scroll position for arrow buttons
+  // Check scroll position for arrow buttons & active dot calculation
   const checkScroll = () => {
     if (carouselRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
       setCanScrollLeft(scrollLeft > 10);
       setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+
+      // Estimate active index based on scroll position
+      if (certificates.length > 0) {
+        const itemWidth = clientWidth > 0 ? (clientWidth * 0.85) : 320;
+        const index = Math.round(scrollLeft / itemWidth);
+        setActiveCertIndex(Math.max(0, Math.min(index, certificates.length - 1)));
+      }
     }
   };
 
@@ -152,14 +161,62 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
 
   const scrollCarousel = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
-      const scrollAmount = carouselRef.current.clientWidth * 0.75;
-      carouselRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
+      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+      const scrollAmount = clientWidth * 0.85;
+
+      if (direction === 'right') {
+        if (scrollLeft >= scrollWidth - clientWidth - 20) {
+          // Loop back to beginning if reached end
+          carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          carouselRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      } else {
+        if (scrollLeft <= 20) {
+          // Loop to end if at beginning and scroll left
+          carouselRef.current.scrollTo({ left: scrollWidth, behavior: 'smooth' });
+        } else {
+          carouselRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        }
+      }
       setTimeout(checkScroll, 350);
     }
   };
+
+  const scrollToCertIndex = (index: number) => {
+    if (carouselRef.current) {
+      const { clientWidth } = carouselRef.current;
+      const itemWidth = clientWidth * 0.85;
+      carouselRef.current.scrollTo({
+        left: index * itemWidth,
+        behavior: 'smooth'
+      });
+      setActiveCertIndex(index);
+      setTimeout(checkScroll, 350);
+    }
+  };
+
+  // Auto-scroll every 3 seconds unless user is interacting (hovering or touching)
+  useEffect(() => {
+    if (certificates.length <= 1 || isUserInteracting) return;
+
+    const timer = setInterval(() => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        const itemWidth = clientWidth * 0.85;
+
+        if (scrollLeft >= scrollWidth - clientWidth - 20) {
+          // Loop back to start smoothly
+          carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          carouselRef.current.scrollBy({ left: itemWidth, behavior: 'smooth' });
+        }
+        setTimeout(checkScroll, 350);
+      }
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [certificates.length, isUserInteracting]);
 
   // Modals State: Experience Item
   const [isExpModalOpen, setIsExpModalOpen] = useState(false);
@@ -659,13 +716,19 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
           </div>
 
           {/* ========================================================================= */}
-          {/* SISI KANAN: PORTOFOLIO SERTIFIKAT & KARYA (HORIZONTAL SCROLLABLE) */}
+          {/* SISI KANAN: PORTOFOLIO SERTIFIKAT & KARYA (HORIZONTAL SCROLLABLE & EXPANDED) */}
           {/* ========================================================================= */}
-          <div className="flex flex-col h-full min-h-[480px] bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden justify-between">
+          <div
+            className="flex flex-col h-full min-h-[480px] bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-5 sm:p-7 relative overflow-hidden justify-between group/carousel"
+            onMouseEnter={() => setIsUserInteracting(true)}
+            onMouseLeave={() => setIsUserInteracting(false)}
+            onTouchStart={() => setIsUserInteracting(true)}
+            onTouchEnd={() => setTimeout(() => setIsUserInteracting(false), 2000)}
+          >
             
             {/* Header & Carousel Nav Controls */}
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4 gap-3">
+            <div className="flex-1 flex flex-col min-h-0 relative">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 border-b border-[#E2E8F0] mb-3 gap-3">
                 <div>
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg bg-[#E0F2FE] text-[#007AFF] flex items-center justify-center">
@@ -698,123 +761,127 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
                   <button
                     type="button"
                     onClick={() => scrollCarousel('left')}
-                    disabled={!canScrollLeft}
-                    className={`p-2 rounded-full border transition-all cursor-pointer ${
-                      canScrollLeft
-                        ? 'bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] text-[#0F172A] shadow-xs'
-                        : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed opacity-60'
-                    }`}
-                    title="Gulir ke Kiri"
+                    className="p-2 rounded-full border bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] hover:border-[#007AFF] text-[#0F172A] hover:text-[#007AFF] shadow-xs transition-all cursor-pointer active:scale-95"
+                    title="Geser ke Kiri"
+                    aria-label="Geser ke Kiri"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={() => scrollCarousel('right')}
-                    disabled={!canScrollRight}
-                    className={`p-2 rounded-full border transition-all cursor-pointer ${
-                      canScrollRight
-                        ? 'bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] text-[#0F172A] shadow-xs'
-                        : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed opacity-60'
-                    }`}
-                    title="Gulir ke Kanan"
+                    className="p-2 rounded-full border bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] hover:border-[#007AFF] text-[#0F172A] hover:text-[#007AFF] shadow-xs transition-all cursor-pointer active:scale-95"
+                    title="Geser ke Kanan"
+                    aria-label="Geser ke Kanan"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
 
-              {/* Horizontal Scrollable Carousel Container */}
-              <div
-                ref={carouselRef}
-                onScroll={checkScroll}
-                className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2 pt-1 focus:outline-none"
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-              >
-                {certificates.map((cert) => (
-                  <div
-                    key={cert.id}
-                    className="min-w-[250px] sm:min-w-[270px] max-w-[290px] snap-start bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] hover:border-[#93C5FD] border-t-[3px] border-t-[#007AFF] shadow-xs hover:shadow-md transition-all flex flex-col overflow-hidden group/card relative"
-                  >
-                    {/* Image Container with Hover Overlay */}
-                    <div className="relative aspect-4/3 w-full bg-[#0F172A] overflow-hidden">
-                      <img
-                        src={cert.imageUrl}
-                        alt={cert.title}
-                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 cursor-pointer"
-                        onClick={() => setPreviewCert(cert)}
-                      />
-                      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-60 group-hover/card:opacity-90 transition-opacity" />
+              {/* Stage without shadow overlays */}
+              <div className="relative flex-1 min-h-0 flex flex-col">
+                {/* Horizontal Scrollable Carousel Container (Wide, Immersive Desktop Card Size) */}
+                <div
+                  ref={carouselRef}
+                  onScroll={checkScroll}
+                  className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none py-1 px-0.5 focus:outline-none flex-1 min-h-[320px] sm:min-h-[350px]"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {certificates.map((cert, index) => (
+                    <div
+                      key={cert.id}
+                      className="w-[88%] sm:w-[92%] lg:w-[94%] shrink-0 snap-center bg-slate-900 rounded-2xl border border-[#E2E8F0] hover:border-[#38BDF8] shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden group/card relative"
+                    >
+                      {/* Full-Bleed High-Resolution Image Container */}
+                      <div className="relative w-full h-[240px] sm:h-[270px] lg:h-[285px] bg-[#0B1120] overflow-hidden">
+                        <img
+                          src={cert.imageUrl}
+                          alt={cert.title}
+                          className="w-full h-full object-cover object-center group-hover/card:scale-105 transition-transform duration-700 cursor-pointer"
+                          onClick={() => setPreviewCert(cert)}
+                        />
+                        
+                        {/* Immersive Gradient Overlay for Maximum Text Contrast */}
+                        <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-black/20" />
 
-                      {/* Top Badges */}
-                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/95 text-[#007AFF] backdrop-blur-xs shadow-xs">
-                          {cert.category}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#0F172A]/80 text-white backdrop-blur-xs">
-                          {cert.year}
-                        </span>
+                        {/* Top Badges & Information */}
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[#007AFF] text-white shadow-md">
+                              {cert.category}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-white/20 backdrop-blur-md text-white border border-white/30">
+                              {cert.year}
+                            </span>
+                          </div>
+
+                          {/* Quick Photo Changer for Teacher (Admin) */}
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCertForPhotoChange(cert);
+                              }}
+                              className="px-3 py-1 rounded-full bg-white/95 hover:bg-[#007AFF] text-[#007AFF] hover:text-white border border-white/40 text-xs font-bold shadow-lg flex items-center gap-1.5 cursor-pointer transition-all transform hover:scale-105"
+                              title="Ganti / Cari Foto via Google atau Unggah"
+                            >
+                              <Camera className="w-3.5 h-3.5" />
+                              <span>Ganti Foto</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Text Overlay Details at the Bottom of Photo */}
+                        <div className="absolute bottom-3 left-3 right-3 z-10">
+                          <h4
+                            onClick={() => setPreviewCert(cert)}
+                            className="text-sm sm:text-base font-bold text-white leading-snug cursor-pointer hover:text-[#38BDF8] transition-colors drop-shadow-md line-clamp-2"
+                          >
+                            {cert.title}
+                          </h4>
+                          <div className="flex items-center justify-between mt-1.5 gap-2 text-xs">
+                            <p className="text-sky-300 font-semibold flex items-center gap-1.5 truncate drop-shadow-xs">
+                              <Building className="w-3.5 h-3.5 shrink-0 text-[#38BDF8]" />
+                              <span className="truncate">{cert.issuer}</span>
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setPreviewCert(cert)}
+                              className="shrink-0 px-2.5 py-1 rounded-lg bg-white/20 hover:bg-[#007AFF] text-white text-xs font-medium backdrop-blur-md flex items-center gap-1 cursor-pointer transition-all shadow-sm border border-white/20"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Lihat Penuh</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Quick View Button on Image */}
-                      <button
-                        type="button"
-                        onClick={() => setPreviewCert(cert)}
-                        className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/60 hover:bg-black/90 text-white text-[10px] font-medium backdrop-blur-xs flex items-center gap-1 cursor-pointer transition-colors"
-                        title="Lihat Pratinjau Penuh"
-                      >
-                        <Eye className="w-3 h-3" />
-                        <span>Perbesar</span>
-                      </button>
-
-                      {/* Admin: Quick Photo Changer Button */}
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCertForPhotoChange(cert);
-                          }}
-                          className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-white/95 hover:bg-[#007AFF] text-[#007AFF] hover:text-white border border-[#BAE6FD] text-[10px] font-bold shadow-md flex items-center gap-1 cursor-pointer transition-all transform hover:scale-105"
-                          title="Ganti / Cari Foto via Google atau Unggah"
-                        >
-                          <Camera className="w-3 h-3" />
-                          <span>Ganti Foto</span>
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Card Body */}
-                    <div className="p-3.5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug line-clamp-2">
-                          {cert.title}
-                        </h4>
-                        <p className="text-[11px] font-semibold text-[#007AFF] mt-1 flex items-center gap-1">
-                          <Building className="w-3 h-3 text-[#38BDF8]" />
-                          <span className="truncate">{cert.issuer}</span>
+                      {/* Card Bottom Panel / Descriptions & Controls */}
+                      <div className="p-3.5 bg-white flex-1 flex flex-col justify-between border-t border-[#E2E8F0]">
+                        <p className="text-xs text-[#475569] leading-relaxed line-clamp-2">
+                          {cert.description || `Sertifikasi dan karya riset resmi dari ${cert.issuer} pada tahun ${cert.year} untuk kompetensi dan inovasi pembelajaran sains.`}
                         </p>
-                      </div>
 
-                      {/* Card Footer Actions */}
-                      <div className="mt-3 pt-2.5 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
+                        {/* Admin Toolbar or Student View Info */}
                         {isAdmin ? (
-                          <>
+                          <div className="mt-2.5 pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
                             <button
                               type="button"
                               onClick={() => handleCopyCertLink(cert)}
-                              className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
+                              className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-xs font-medium cursor-pointer transition-colors"
                               title="Salin Rincian Sertifikat"
                             >
                               <Copy className="w-3 h-3" />
                               <span>Salin</span>
                             </button>
 
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleDuplicateCert(cert)}
-                                className="px-2 py-0.5 rounded-md bg-white hover:bg-[#E0F2FE] text-[#007AFF] border border-[#BAE6FD] text-[10px] font-bold cursor-pointer transition-colors"
+                                className="px-2.5 py-1 rounded-md bg-white hover:bg-[#E0F2FE] text-[#007AFF] border border-[#BAE6FD] text-xs font-bold cursor-pointer transition-colors"
                                 title="Duplikasi Sertifikat Ini"
                               >
                                 Duplikasi
@@ -822,52 +889,68 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
                               <button
                                 type="button"
                                 onClick={() => handleOpenEditCert(cert)}
-                                className="p-1 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer transition-colors"
+                                className="p-1.5 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer transition-colors"
                                 title="Edit Data Sertifikat"
                               >
-                                <Edit2 className="w-3 h-3" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleDeleteCert(cert.id, cert.title)}
-                                className="p-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer transition-colors"
+                                className="p-1.5 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer transition-colors"
                                 title="Hapus Sertifikat"
                               >
-                                <Trash2 className="w-3 h-3" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                          </>
+                          </div>
                         ) : (
-                          <div className="w-full flex items-center justify-end">
+                          <div className="mt-2 pt-2 border-t border-[#F1F5F9] flex items-center justify-between text-[11px] text-[#64748B]">
+                            <span className="font-medium flex items-center gap-1 text-[#0284C7]">
+                              <Sparkles className="w-3 h-3" />
+                              <span>Karya Terverifikasi ({index + 1}/{certificates.length})</span>
+                            </span>
                             <button
                               type="button"
                               onClick={() => setPreviewCert(cert)}
-                              className="text-[#007AFF] hover:text-[#0369A1] font-semibold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                              className="text-[#007AFF] hover:text-[#0369A1] font-bold flex items-center gap-1 cursor-pointer transition-colors"
                             >
-                              <span>Lihat Rincian</span>
+                              <span>Buka Pratinjau</span>
                               <ExternalLink className="w-3 h-3" />
                             </button>
                           </div>
                         )}
                       </div>
-
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Bottom Horizontal Scroll Hint Indicator */}
-            <div className="mt-4 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-xs text-[#94A3B8]">
-              <span className="flex items-center gap-1.5 text-[11px] text-[#475569]">
-                <Sparkles className="w-3 h-3 text-[#007AFF]" />
-                <span>Geser horizontal untuk melihat {certificates.length} sertifikat & karya</span>
-              </span>
-              <div className="flex items-center gap-1">
+            {/* Bottom Enhanced Pagination Indicator Dots & Hint */}
+            <div className="mt-3 pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs">
+              <div className="flex items-center gap-1.5 text-[11px] text-[#475569]">
+                <span className="w-2 h-2 rounded-full bg-[#007AFF] animate-ping" />
+                <span className="font-medium text-[#0F172A]">Geser foto ke kanan atau kiri</span>
+              </div>
+
+              {/* Distinct Interactive Indicator Dots in Bottom Right Corner */}
+              <div className="flex items-center gap-1.5 bg-[#F1F5F9] px-3 py-1.5 rounded-full border border-[#CBD5E1] shadow-2xs">
+                <span className="text-[10px] font-bold text-[#64748B] mr-1 uppercase tracking-wider">
+                  Foto {activeCertIndex + 1}/{certificates.length}
+                </span>
                 {certificates.map((_, i) => (
-                  <span
+                  <button
                     key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-[#CBD5E1]"
+                    type="button"
+                    onClick={() => scrollToCertIndex(i)}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                      activeCertIndex === i
+                        ? 'w-5 h-2.5 bg-[#007AFF] shadow-xs'
+                        : 'w-2.5 h-2.5 bg-[#94A3B8] hover:bg-[#64748B]'
+                    }`}
+                    title={`Lihat Sertifikat ke-${i + 1}`}
+                    aria-label={`Lihat Sertifikat ke-${i + 1}`}
                   />
                 ))}
               </div>
