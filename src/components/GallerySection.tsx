@@ -506,10 +506,17 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
         {/* Pinned Info & Navigation Sub-Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-2 border-b border-[#E2E8F0]/70">
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-xs font-bold shadow-2xs">
-              <Pin className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
-              <span>{pinnedItemsCount > 0 ? `${pinnedItemsCount} Postingan Tersemat Utama` : 'Dokumentasi Lab'}</span>
-            </span>
+            {isAdmin ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-xs font-bold shadow-2xs">
+                <Pin className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
+                <span>{pinnedItemsCount > 0 ? `${pinnedItemsCount} Postingan Tersemat (Menu Guru)` : 'Dokumentasi Lab'}</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F0F9FF] text-[#0284C7] border border-[#BAE6FD] text-xs font-semibold shadow-2xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
+                <span>Galeri Eksperimen Kimia</span>
+              </span>
+            )}
             <span className="text-xs text-[#64748B] hidden sm:inline">
               · Geser horizontal untuk melihat seluruh {filteredAndSortedItems.length} dokumentasi praktikum
             </span>
@@ -583,13 +590,13 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.25 }}
                     className={`w-[290px] sm:w-[340px] md:w-[370px] shrink-0 snap-start group relative bg-white rounded-[24px] overflow-hidden border ${
-                      isPinnedItem
+                      isAdmin && isPinnedItem
                         ? 'border-[#F59E0B]/70 shadow-[0_6px_28px_rgba(245,158,11,0.12)] ring-1 ring-[#F59E0B]/30'
                         : 'border-[#E2E8F0] shadow-[0_4px_24px_rgba(2,132,199,0.06)]'
                     } hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col justify-between cursor-pointer`}
                   >
-                    {/* Top Pinned Ribbon if pinned */}
-                    {isPinnedItem && (
+                    {/* Top Pinned Ribbon (Teacher Mode Only) */}
+                    {isAdmin && isPinnedItem && (
                       <div className="bg-linear-to-r from-[#D97706] to-[#F59E0B] text-white px-3 py-1 text-[10px] font-extrabold flex items-center justify-between tracking-wider uppercase shadow-xs">
                         <div className="flex items-center gap-1">
                           <Pin className="w-3 h-3 fill-white" />
@@ -675,7 +682,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                             <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
                             <span>{item.date}</span>
                           </div>
-                          {isPinnedItem && (
+                          {isAdmin && isPinnedItem && (
                             <span className="text-[10px] font-bold text-[#D97706] flex items-center gap-0.5">
                               <Pin className="w-2.5 h-2.5 fill-[#D97706]" />
                               <span>Pinned</span>

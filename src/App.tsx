@@ -158,6 +158,19 @@ export default function App() {
     }
   }, [notes]);
 
+  // Ensure favicon matches the official Kelas Pak Hafiz logo
+  useEffect(() => {
+    const logo = localStorage.getItem('hero_teacher_logo') || 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge';
+    let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.type = 'image/png';
+    link.href = logo;
+  }, []);
+
   // Toast Helper
   const addToast = (title: string, description?: string, type: 'success' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
