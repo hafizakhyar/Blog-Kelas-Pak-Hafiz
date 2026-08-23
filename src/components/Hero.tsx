@@ -125,8 +125,8 @@ export const Hero: React.FC<HeroProps> = ({
 
               {/* Main Headline */}
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-light leading-[1.18] text-[#0F172A] mb-4 tracking-tight">
-                Belajar Sains Lebih <br className="hidden sm:inline" />
-                <span className="text-[#0284C7] font-medium">Simpel dan Menarik</span>
+                Selamat datang di <br className="hidden sm:inline" />
+                <span className="text-[#0284C7] font-medium">Catatan Kelas Pak Hafiz</span>
               </h1>
 
               {/* Subtitle */}
