@@ -20,6 +20,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     date: '14 Agustus 2026',
     image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1000&q=80',
     badge: 'Populer di Kelas XI',
+    isPinned: true,
     description: 'Uji keasaman menggunakan ekstrak rimpang kunyit segar terhadap larutan asam cuka, air netral, dan air kapur/sabun.',
     chemistryConcept: 'Kurkuminoid (Kurkumin) mengalami perubahan struktur tautomer saat berada di lingkungan basa (pH > 8.5), menghasilkan pergeseran serapan spektrum cahaya ke merah bata.',
     materials: [
@@ -46,6 +47,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     date: '8 Agustus 2026',
     image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=1000&q=80',
     badge: 'Eksperimen Viral Siswa',
+    isPinned: true,
     description: 'Mengeksplorasi perubahan warna spektrum biru laut menjadi ungu hingga merah muda saat ditetesi air perasan jeruk nipis.',
     chemistryConcept: 'Molekul antosianin pada bunga telang bertindak sebagai kation flavilium pada pH rendah (warna merah muda) dan berubah menjadi basa kuinonoid tak bermuatan pada pH basa (kehijauan).',
     materials: [
@@ -71,6 +73,7 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     date: '28 Juli 2026',
     image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1000&q=80',
     badge: 'Proyek Kearifan Lokal',
+    isPinned: true,
     description: 'Pemanfaatan limbah kulit manggis yang kaya senyawa xanton dan antosianin sebagai kertas indikator alternatif yang ramah lingkungan.',
     chemistryConcept: 'Pigmen pigmen alami pada perikarp manggis bereaksi terhadap konsentrasi ion H+ dan OH-, mengubah warna merah keunguan pekat menjadi cokelat kehijauan.',
     materials: [

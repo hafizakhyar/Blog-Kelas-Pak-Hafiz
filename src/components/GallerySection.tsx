@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Sparkles,
@@ -29,7 +29,11 @@ import {
   Tag,
   Layers,
   Globe,
-  Camera
+  Camera,
+  ChevronLeft,
+  ChevronRight,
+  Pin,
+  PinOff
 } from 'lucide-react';
 import { GALLERY_ITEMS } from '../data/mockData';
 import { GalleryItem } from '../types';
@@ -78,6 +82,11 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Horizontal carousel ref & scroll state
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
   // Quick photo changer state
   const [itemForPhotoChange, setItemForPhotoChange] = useState<GalleryItem | null>(null);
 
@@ -91,6 +100,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   const [formTitle, setFormTitle] = useState('');
   const [formCategory, setFormCategory] = useState<string>('Indikator Alami');
   const [formBadge, setFormBadge] = useState('Praktikum Siswa');
+  const [formIsPinned, setFormIsPinned] = useState(false);
   const [formConcept, setFormConcept] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formSteps, setFormSteps] = useState<string[]>([
@@ -116,6 +126,38 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const checkScrollState = () => {
+    if (carouselRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+      setCanScrollLeft(scrollLeft > 10);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScrollState();
+    const el = carouselRef.current;
+    if (el) {
+      el.addEventListener('scroll', checkScrollState);
+      window.addEventListener('resize', checkScrollState);
+      return () => {
+        el.removeEventListener('scroll', checkScrollState);
+        window.removeEventListener('resize', checkScrollState);
+      };
+    }
+  }, [items, selectedCategory, searchQuery]);
+
+  const handleScrollCarousel = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const scrollOffset = 380;
+      carouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollOffset : scrollOffset,
+        behavior: 'smooth'
+      });
+      setTimeout(checkScrollState, 350);
+    }
+  };
+
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (passcodeAttempt.trim() === DEFAULT_ADMIN_PASSCODE || passcodeAttempt.trim() === 'admin123' || passcodeAttempt.trim() === 'hafiz2026') {
@@ -125,7 +167,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
       setPasscodeAttempt('');
       setPasscodeError(false);
       setIsUploadModalOpen(true);
-      onAddToast('Mode Pengajar Aktif', 'Selamat datang Pak Hafiz! Silakan unggah foto dokumentasi lab.', 'success');
+      onAddToast('Mode Pengajar Aktif', 'Selamat datang Pak Hafiz! Silakan kelola dan sematkan foto dokumentasi lab.', 'success');
     } else {
       setPasscodeError(true);
       onAddToast('Passcode Salah', 'Passcode guru tidak cocok. Gunakan hafiz2026.', 'info');
@@ -137,15 +179,67 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     new Set(['Semua', 'Indikator Alami', 'Eksperimen Lab', 'Karya Siswa', ...items.map((i) => i.category)])
   );
 
-  const filteredItems = items.filter((item) => {
-    const matchesCategory = selectedCategory === 'Semua' || item.category === selectedCategory;
-    const matchesSearch =
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.chemistryConcept.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Filter & Sort: Top 3 pinned items appear first
+  const filteredAndSortedItems = items
+    .filter((item) => {
+      const matchesCategory = selectedCategory === 'Semua' || item.category === selectedCategory;
+      const matchesSearch =
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.chemistryConcept.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    })
+    .sort((a, b) => {
+      const aPinned = !!a.isPinned;
+      const bPinned = !!b.isPinned;
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return 0;
+    });
+
+  // Count pinned items
+  const pinnedItemsCount = items.filter((i) => !!i.isPinned).length;
+
+  // Toggle Pin on an item (Teacher Action)
+  const handleTogglePin = (item: GalleryItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
+
+    const nextPinState = !item.isPinned;
+
+    if (nextPinState) {
+      if (pinnedItemsCount >= 3) {
+        onAddToast(
+          'Postingan Disematkan',
+          `"${item.title.slice(0, 26)}..." disematkan di posisi teratas Galeri. (Maksimal 3 disarankan di baris utama).`,
+          'success'
+        );
+      } else {
+        onAddToast(
+          'Postingan Disematkan',
+          `"${item.title.slice(0, 26)}..." kini disematkan di baris depan Galeri Praktikum!`,
+          'success'
+        );
+      }
+    } else {
+      onAddToast(
+        'Pin Dilepas',
+        `Pin untuk "${item.title.slice(0, 26)}..." telah dilepas.`,
+        'info'
+      );
+    }
+
+    if (onUpdateItem) {
+      onUpdateItem({
+        ...item,
+        isPinned: nextPinState
+      });
+    }
+  };
 
   // Filter category suggestions based on manual input
   const matchingCategorySuggestions = LAB_CATEGORY_SUGGESTIONS.filter((cat) =>
@@ -304,6 +398,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
       title: formTitle.trim(),
       category: (formCategory.trim() || 'Eksperimen Lab') as any,
       badge: formBadge.trim() || 'Praktikum Kimia',
+      isPinned: formIsPinned,
       image: formImageUrl,
       chemistryConcept: formConcept.trim() || 'Eksperimen & Reaksi Kimia',
       description: formDescription.trim() || 'Dokumentasi kegiatan praktikum siswa di laboratorium kimia SMA.',
@@ -322,8 +417,13 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     setFormConcept('');
     setFormDescription('');
     setFormImageUrl('');
+    setFormIsPinned(false);
     setAutoGeneratedNotice(null);
-    onAddToast('Dokumentasi Ditambahkan', `Foto "${newItem.title}" tersimpan di Firebase Firestore & Storage.`, 'success');
+    onAddToast(
+      'Dokumentasi Ditambahkan',
+      `Foto "${newItem.title}" tersimpan di Firebase Firestore & Storage${formIsPinned ? ' dan disematkan di posisi teratas' : ''}.`,
+      'success'
+    );
   };
 
   return (
@@ -403,137 +503,272 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
           })}
         </div>
 
-        {/* Cards Grid */}
-        <motion.div
-          layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
-        >
-          <AnimatePresence>
-            {filteredItems.map((item) => (
-              <motion.article
-                layout
-                key={item.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="group relative bg-white rounded-[24px] overflow-hidden border border-[#E2E8F0] shadow-[0_4px_24px_rgba(2,132,199,0.06)] hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col justify-between cursor-pointer transform hover:-translate-y-1"
-              >
-                {/* Image Container */}
-                <div
-                  onClick={() => onSelectItem(item)}
-                  className="relative aspect-16/10 w-full overflow-hidden bg-[#E2E8F0]"
-                >
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-[#0F172A]/75 via-transparent to-transparent opacity-75 group-hover:opacity-85 transition-opacity" />
-                  
-                  {/* Category Chip */}
-                  <span className="absolute top-3.5 left-3.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider rounded-full bg-white/90 text-[#0F172A] backdrop-blur-xs shadow-xs border border-white/60">
-                    {item.category}
-                  </span>
+        {/* Pinned Info & Navigation Sub-Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-2 border-b border-[#E2E8F0]/70">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-xs font-bold shadow-2xs">
+              <Pin className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
+              <span>{pinnedItemsCount > 0 ? `${pinnedItemsCount} Postingan Tersemat Utama` : 'Dokumentasi Lab'}</span>
+            </span>
+            <span className="text-xs text-[#64748B] hidden sm:inline">
+              · Geser horizontal untuk melihat seluruh {filteredAndSortedItems.length} dokumentasi praktikum
+            </span>
+          </div>
 
-                  {/* Badge & Teacher Photo Changer */}
-                  <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 z-10">
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setItemForPhotoChange(item);
-                        }}
-                        className="px-3 py-1.5 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] hover:border-[#0284C7] text-[11px] font-bold backdrop-blur-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer transform hover:scale-105"
-                        title="Ganti / Cari Foto via Google atau Unggah dari HP/Laptop"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        <span>Ganti / Cari Foto</span>
-                      </button>
+          {/* Navigation Scroll Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleScrollCarousel('left')}
+              disabled={!canScrollLeft}
+              className="p-2 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] hover:text-[#0284C7] border border-[#CBD5E1] shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="Geser ke kiri"
+              aria-label="Geser ke kiri"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleScrollCarousel('right')}
+              disabled={!canScrollRight}
+              className="p-2 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] hover:text-[#0284C7] border border-[#CBD5E1] shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              title="Geser ke kanan"
+              aria-label="Geser ke kanan"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Single Row Horizontal Scrollable Carousel */}
+        <div className="relative group/carousel">
+          {/* Floating Left Scroll Button (Desktop) */}
+          <button
+            type="button"
+            onClick={() => handleScrollCarousel('left')}
+            disabled={!canScrollLeft}
+            className={`hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-20 w-11 h-11 rounded-full bg-white text-[#0F172A] border border-[#CBD5E1] shadow-xl hover:bg-[#0284C7] hover:text-white hover:border-[#0284C7] items-center justify-center transition-all cursor-pointer disabled:opacity-0 disabled:pointer-events-none`}
+            aria-label="Geser ke Kiri"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+
+          {/* Floating Right Scroll Button (Desktop) */}
+          <button
+            type="button"
+            onClick={() => handleScrollCarousel('right')}
+            disabled={!canScrollRight}
+            className={`hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-20 w-11 h-11 rounded-full bg-white text-[#0F172A] border border-[#CBD5E1] shadow-xl hover:bg-[#0284C7] hover:text-white hover:border-[#0284C7] items-center justify-center transition-all cursor-pointer disabled:opacity-0 disabled:pointer-events-none`}
+            aria-label="Geser ke Kanan"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Horizontal Row Container */}
+          <div
+            ref={carouselRef}
+            onScroll={checkScrollState}
+            className="flex flex-row overflow-x-auto gap-5 sm:gap-6 pb-6 pt-2 snap-x snap-mandatory scroll-smooth custom-scrollbar focus:outline-none"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            <AnimatePresence>
+              {filteredAndSortedItems.map((item, index) => {
+                const isPinnedItem = !!item.isPinned;
+                return (
+                  <motion.article
+                    layout
+                    key={item.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.25 }}
+                    className={`w-[290px] sm:w-[340px] md:w-[370px] shrink-0 snap-start group relative bg-white rounded-[24px] overflow-hidden border ${
+                      isPinnedItem
+                        ? 'border-[#F59E0B]/70 shadow-[0_6px_28px_rgba(245,158,11,0.12)] ring-1 ring-[#F59E0B]/30'
+                        : 'border-[#E2E8F0] shadow-[0_4px_24px_rgba(2,132,199,0.06)]'
+                    } hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col justify-between cursor-pointer`}
+                  >
+                    {/* Top Pinned Ribbon if pinned */}
+                    {isPinnedItem && (
+                      <div className="bg-linear-to-r from-[#D97706] to-[#F59E0B] text-white px-3 py-1 text-[10px] font-extrabold flex items-center justify-between tracking-wider uppercase shadow-xs">
+                        <div className="flex items-center gap-1">
+                          <Pin className="w-3 h-3 fill-white" />
+                          <span>Disematkan Guru (Top {index + 1})</span>
+                        </div>
+                        <span className="text-[9px] bg-white/20 px-1.5 py-0.2 rounded-full">Pilihan</span>
+                      </div>
                     )}
-                    <span className="px-3 py-1 text-[11px] font-medium rounded-full bg-[#0F172A]/80 text-white backdrop-blur-xs">
-                      {item.badge}
-                    </span>
-                  </div>
 
-                  {/* Video Duration if available */}
-                  {item.videoDuration && (
-                    <div className="absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-black/60 text-white text-[11px] backdrop-blur-xs font-mono">
-                      <Play className="w-3 h-3 fill-white" />
-                      <span>{item.videoDuration}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Content Details */}
-                <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div onClick={() => onSelectItem(item)}>
-                    <div className="flex items-center gap-2 text-xs text-[#64748B] mb-2">
-                      <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
-                      <span>{item.date}</span>
-                    </div>
-
-                    <h3 className="text-base font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#0284C7] transition-colors mb-2 line-clamp-2">
-                      {item.title}
-                    </h3>
-
-                    <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2 mb-4">
-                      {item.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-3.5 border-t border-[#E2E8F0] flex items-center justify-between">
-                    <button
+                    {/* Image Container */}
+                    <div
                       onClick={() => onSelectItem(item)}
-                      className="text-xs font-semibold text-[#0284C7] group-hover:underline flex items-center gap-1 cursor-pointer"
+                      className="relative aspect-16/10 w-full overflow-hidden bg-[#E2E8F0]"
                     >
-                      Lihat Prosedur & Data
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                    </button>
-                    
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setItemForPhotoChange(item);
-                        }}
-                        className="p-2 rounded-full bg-[#F4F8FC] text-[#64748B] hover:bg-[#E0F2FE] hover:text-[#0284C7] transition-colors cursor-pointer"
-                        title="Ganti Foto Praktikum (Upload / Cari Google)"
-                      >
-                        <ImageIcon className="w-4 h-4" />
-                      </button>
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-[#0F172A]/75 via-transparent to-transparent opacity-75 group-hover:opacity-85 transition-opacity" />
+                      
+                      {/* Category Chip */}
+                      <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider rounded-full bg-white/90 text-[#0F172A] backdrop-blur-xs shadow-xs border border-white/60">
+                        {item.category}
+                      </span>
 
-                      {isAdmin && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setItemToDelete(item);
-                          }}
-                          className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
-                          title="Hapus Foto Praktikum"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      {/* Top Action Tools / Badge / Teacher Pin Toggle */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                        {/* Pin Button for Teachers */}
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleTogglePin(item, e)}
+                            className={`p-1.5 rounded-full backdrop-blur-xs shadow-md transition-all flex items-center justify-center cursor-pointer transform hover:scale-110 ${
+                              isPinnedItem
+                                ? 'bg-[#F59E0B] text-white hover:bg-[#D97706]'
+                                : 'bg-white/90 text-[#64748B] hover:bg-[#F59E0B] hover:text-white'
+                            }`}
+                            title={isPinnedItem ? 'Lepas Sematan (Unpin)' : 'Sematkan ke 3 Teratas (Pin)'}
+                          >
+                            {isPinnedItem ? (
+                              <Pin className="w-3.5 h-3.5 fill-white" />
+                            ) : (
+                              <Pin className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        )}
+
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setItemForPhotoChange(item);
+                            }}
+                            className="p-1.5 rounded-full bg-white/90 hover:bg-[#0284C7] text-[#0284C7] hover:text-white backdrop-blur-xs shadow-md transition-all cursor-pointer transform hover:scale-110"
+                            title="Ganti / Cari Foto via Google atau Unggah"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+
+                        <span className="px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-[#0F172A]/80 text-white backdrop-blur-xs">
+                          {item.badge}
+                        </span>
+                      </div>
+
+                      {/* Video Duration if available */}
+                      {item.videoDuration && (
+                        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] backdrop-blur-xs font-mono">
+                          <Play className="w-3 h-3 fill-white" />
+                          <span>{item.videoDuration}</span>
+                        </div>
                       )}
-                      <button
-                        onClick={() => onSelectItem(item)}
-                        className="p-2 rounded-full bg-[#F4F8FC] text-[#64748B] group-hover:bg-[#E0F2FE] group-hover:text-[#0284C7] transition-colors"
-                        title="Buka Sub Tampilan Praktikum"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
                     </div>
-                  </div>
-                </div>
-              </motion.article>
-            ))}
-          </AnimatePresence>
-        </motion.div>
 
-        {filteredItems.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-[24px] border border-[#E2E8F0] p-8">
+                    {/* Content Details */}
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div onClick={() => onSelectItem(item)}>
+                        <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
+                            <span>{item.date}</span>
+                          </div>
+                          {isPinnedItem && (
+                            <span className="text-[10px] font-bold text-[#D97706] flex items-center gap-0.5">
+                              <Pin className="w-2.5 h-2.5 fill-[#D97706]" />
+                              <span>Pinned</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-sm sm:text-base font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#0284C7] transition-colors mb-1.5 line-clamp-2">
+                          {item.title}
+                        </h3>
+
+                        <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2 mb-3">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
+                        <button
+                          onClick={() => onSelectItem(item)}
+                          className="text-xs font-semibold text-[#0284C7] group-hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Lihat Data & Reaksi</span>
+                          <ArrowUpRight className="w-3.5 h-3.5" />
+                        </button>
+                        
+                        <div className="flex items-center gap-1.5">
+                          {isAdmin && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setItemToDelete(item);
+                              }}
+                              className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                              title="Hapus Foto Praktikum"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onSelectItem(item)}
+                            className="p-1.5 rounded-full bg-[#F4F8FC] text-[#64748B] group-hover:bg-[#E0F2FE] group-hover:text-[#0284C7] transition-colors cursor-pointer"
+                            title="Buka Detail Praktikum"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.article>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Scroll Bar & Helper at Bottom */}
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#64748B]">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#0284C7] animate-pulse" />
+            <span>
+              Menampilkan <strong>{filteredAndSortedItems.length}</strong> eksperimen lab. Geser ke kanan untuk melihat lainnya.
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <span className="text-[11px] text-[#0284C7] font-semibold bg-[#E0F2FE] px-2.5 py-0.5 rounded-full">
+                💡 Klik ikon 📌 pada kartu untuk menyematkan ke 3 teratas
+              </span>
+            )}
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleScrollCarousel('left')}
+                disabled={!canScrollLeft}
+                className="px-3 py-1 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] border border-[#CBD5E1] font-semibold text-xs disabled:opacity-40 cursor-pointer"
+              >
+                ← Kiri
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScrollCarousel('right')}
+                disabled={!canScrollRight}
+                className="px-3 py-1 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] border border-[#CBD5E1] font-semibold text-xs disabled:opacity-40 cursor-pointer"
+              >
+                Kanan →
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {filteredAndSortedItems.length === 0 && (
+          <div className="text-center py-16 bg-white rounded-[24px] border border-[#E2E8F0] p-8 mt-6">
             <p className="text-[#64748B] text-sm">
               Tidak ada dokumentasi yang cocok dengan kata kunci "{searchQuery}".
             </p>
@@ -779,6 +1014,30 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       ))}
                     </div>
                   </div>
+                </div>
+
+                {/* Sematkan di 3 Teratas (Pin Post) Toggle */}
+                <div className="p-3 rounded-xl bg-[#FEF3C7]/60 border border-[#FDE68A] flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#F59E0B] text-white flex items-center justify-center shrink-0">
+                      <Pin className="w-3.5 h-3.5 fill-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-[#92400E]">Sematkan di 3 Teratas Galeri (Pin)</h4>
+                      <p className="text-[11px] text-[#92400E]/80">
+                        Postingan ini akan langsung tampil di baris terdepan galeri praktikum
+                      </p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formIsPinned}
+                      onChange={(e) => setFormIsPinned(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D97706]"></div>
+                  </label>
                 </div>
 
                 {/* Konsep Kimia / Reaksi (Otomatis & Editable) */}

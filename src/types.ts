@@ -11,6 +11,7 @@ export interface GalleryItem {
   steps: string[];
   results: string;
   videoDuration?: string;
+  isPinned?: boolean;
 }
 
 export interface DocumentItem {
