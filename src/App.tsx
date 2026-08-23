@@ -18,6 +18,7 @@ import { DocumentDetailPage } from './components/Pages/DocumentDetailPage';
 import { ArticleDetailPage } from './components/Pages/ArticleDetailPage';
 import { GalleryItem, BlogPost, DocumentItem, ClassNote } from './types';
 import { INITIAL_CLASS_NOTES, DOCUMENT_ITEMS, BLOG_POSTS, GALLERY_ITEMS } from './data/mockData';
+import { createCircularFavicon } from './utils/favicon';
 import {
   subscribeToClassNotes,
   subscribeToDocuments,
@@ -158,17 +159,25 @@ export default function App() {
     }
   }, [notes]);
 
-  // Ensure favicon matches the official Kelas Pak Hafiz logo
+  // Ensure favicon matches the official Kelas Pak Hafiz logo with transparent circular shape
   useEffect(() => {
     const logo = localStorage.getItem('hero_teacher_logo') || 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge';
-    let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.type = 'image/png';
-    link.href = logo;
+    createCircularFavicon(logo, 64).then((circularFavicon) => {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.type = 'image/png';
+      link.href = circularFavicon;
+
+      // Update apple-touch-icon as well
+      let appleIcon: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
+      if (appleIcon) {
+        appleIcon.href = circularFavicon;
+      }
+    });
   }, []);
 
   // Toast Helper
