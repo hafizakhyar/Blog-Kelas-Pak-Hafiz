@@ -19,8 +19,15 @@ import {
   uploadBytesResumable,
   getDownloadURL
 } from 'firebase/storage';
-import { ClassNote, GalleryItem, DocumentItem, BlogPost } from '../types';
-import { INITIAL_CLASS_NOTES, GALLERY_ITEMS, DOCUMENT_ITEMS, BLOG_POSTS } from '../data/mockData';
+import { ClassNote, GalleryItem, DocumentItem, BlogPost, ProfileExperienceItem, PortfolioCertificateItem } from '../types';
+import {
+  INITIAL_CLASS_NOTES,
+  GALLERY_ITEMS,
+  DOCUMENT_ITEMS,
+  BLOG_POSTS,
+  INITIAL_PROFILE_EXPERIENCES,
+  INITIAL_PORTFOLIO_CERTIFICATES
+} from '../data/mockData';
 
 // User's exact Firebase Project Configuration
 export const firebaseConfig = {
@@ -52,6 +59,8 @@ export const COLLECTIONS = {
   ARTICLES: 'catatan_artikel',
   PHOTOS: 'catatan_foto',
   DOCUMENTS: 'catatan_dokumen',
+  PROFILES: 'catatan_profil',
+  PORTFOLIOS: 'catatan_portofolio',
 } as const;
 
 // Storage Folder Names prefixed with "catatan_"
@@ -60,6 +69,8 @@ export const STORAGE_FOLDERS = {
   GALLERY_IMAGES: 'catatan_foto/galeri',
   ARTICLE_IMAGES: 'catatan_artikel',
   DOCUMENTS: 'catatan_dokumen',
+  PROFILE_IMAGES: 'catatan_foto/profil',
+  CERTIFICATE_IMAGES: 'catatan_foto/portofolio_sertifikat',
 } as const;
 
 /**
@@ -179,6 +190,22 @@ export async function seedFirestoreIfEmpty() {
     for (const docItem of DOCUMENT_ITEMS) {
       await writeWithFallback(COLLECTIONS.DOCUMENTS, docItem.id, {
         ...docItem,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    // 5. Seed Profile Experiences (catatan_profil)
+    for (const exp of INITIAL_PROFILE_EXPERIENCES) {
+      await writeWithFallback(COLLECTIONS.PROFILES, exp.id, {
+        ...exp,
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    // 6. Seed Portfolio Certificates & Research Works (catatan_portofolio)
+    for (const cert of INITIAL_PORTFOLIO_CERTIFICATES) {
+      await writeWithFallback(COLLECTIONS.PORTFOLIOS, cert.id, {
+        ...cert,
         createdAt: serverTimestamp()
       });
     }
@@ -453,3 +480,159 @@ export async function incrementDocumentDownloads(docId: string): Promise<void> {
     console.error('Error incrementing downloads in Firestore:', e);
   }
 }
+
+// --- Profil & Riwayat Pengalaman Guru (catatan_profil) ---
+export function subscribeToProfileExperiences(
+  onData: (items: ProfileExperienceItem[]) => void,
+  onError?: (err: Error) => void
+) {
+  const parseSnapshot = (snapshot: any) => {
+    if (snapshot.empty) {
+      seedFirestoreIfEmpty();
+      onData(INITIAL_PROFILE_EXPERIENCES);
+      return;
+    }
+    const items: ProfileExperienceItem[] = [];
+    snapshot.forEach((docSnap: any) => {
+      const data = docSnap.data();
+      items.push({
+        id: docSnap.id,
+        title: data.title || '',
+        institution: data.institution || undefined,
+        period: data.period || undefined,
+        category: data.category || 'Pengalaman',
+        description: data.description || undefined,
+        subItems: Array.isArray(data.subItems) ? data.subItems : undefined,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt
+      } as ProfileExperienceItem);
+    });
+
+    console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} riwayat profil guru (catatan_profil).`);
+    onData(items);
+  };
+
+  let unsubDefault: (() => void) | null = null;
+  const unsubCustom = onSnapshot(
+    collection(customDb, COLLECTIONS.PROFILES),
+    parseSnapshot,
+    (err) => {
+      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_profil gagal, beralih ke defaultDb:', err.message);
+      unsubDefault = onSnapshot(
+        collection(defaultDb, COLLECTIONS.PROFILES),
+        parseSnapshot,
+        (defaultErr) => {
+          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_profil error:', defaultErr);
+          if (onError) onError(defaultErr);
+        }
+      );
+    }
+  );
+
+  return () => {
+    unsubCustom();
+    if (unsubDefault) unsubDefault();
+  };
+}
+
+export async function saveProfileExperienceToFirestore(item: ProfileExperienceItem): Promise<void> {
+  const payload: Record<string, any> = {
+    id: item.id,
+    title: item.title || '',
+    category: item.category || 'Pengalaman',
+    updatedAt: serverTimestamp()
+  };
+
+  if (item.institution) payload.institution = item.institution;
+  if (item.period) payload.period = item.period;
+  if (item.description) payload.description = item.description;
+  if (Array.isArray(item.subItems) && item.subItems.length > 0) payload.subItems = item.subItems;
+
+  if (!(item as any).createdAt) {
+    payload.createdAt = serverTimestamp();
+  }
+
+  await writeWithFallback(COLLECTIONS.PROFILES, item.id, payload);
+}
+
+export async function deleteProfileExperienceFromFirestore(itemId: string): Promise<void> {
+  await deleteWithFallback(COLLECTIONS.PROFILES, itemId);
+}
+
+// --- Portofolio & Sertifikat Guru (catatan_portofolio) ---
+export function subscribeToPortfolioCertificates(
+  onData: (certs: PortfolioCertificateItem[]) => void,
+  onError?: (err: Error) => void
+) {
+  const parseSnapshot = (snapshot: any) => {
+    if (snapshot.empty) {
+      seedFirestoreIfEmpty();
+      onData(INITIAL_PORTFOLIO_CERTIFICATES);
+      return;
+    }
+    const items: PortfolioCertificateItem[] = [];
+    snapshot.forEach((docSnap: any) => {
+      const data = docSnap.data();
+      items.push({
+        id: docSnap.id,
+        title: data.title || '',
+        category: data.category || 'Sertifikat',
+        issuer: data.issuer || 'UIN Syarif Hidayatullah Jakarta',
+        year: data.year || '2025',
+        imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=800&q=80',
+        description: data.description || undefined,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt
+      } as PortfolioCertificateItem);
+    });
+
+    console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} sertifikat & karya portofolio guru (catatan_portofolio).`);
+    onData(items);
+  };
+
+  let unsubDefault: (() => void) | null = null;
+  const unsubCustom = onSnapshot(
+    collection(customDb, COLLECTIONS.PORTFOLIOS),
+    parseSnapshot,
+    (err) => {
+      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_portofolio gagal, beralih ke defaultDb:', err.message);
+      unsubDefault = onSnapshot(
+        collection(defaultDb, COLLECTIONS.PORTFOLIOS),
+        parseSnapshot,
+        (defaultErr) => {
+          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_portofolio error:', defaultErr);
+          if (onError) onError(defaultErr);
+        }
+      );
+    }
+  );
+
+  return () => {
+    unsubCustom();
+    if (unsubDefault) unsubDefault();
+  };
+}
+
+export async function savePortfolioCertificateToFirestore(cert: PortfolioCertificateItem): Promise<void> {
+  const payload: Record<string, any> = {
+    id: cert.id,
+    title: cert.title || '',
+    category: cert.category || 'Sertifikat',
+    issuer: cert.issuer || '',
+    year: cert.year || '',
+    imageUrl: cert.imageUrl || '',
+    updatedAt: serverTimestamp()
+  };
+
+  if (cert.description) payload.description = cert.description;
+  if (!(cert as any).createdAt) {
+    payload.createdAt = serverTimestamp();
+  }
+
+  await writeWithFallback(COLLECTIONS.PORTFOLIOS, cert.id, payload);
+}
+
+export async function deletePortfolioCertificateFromFirestore(certId: string): Promise<void> {
+  await deleteWithFallback(COLLECTIONS.PORTFOLIOS, certId);
+}
+

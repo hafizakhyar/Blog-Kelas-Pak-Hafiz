@@ -80,6 +80,36 @@
         "fileUrl": { "type": "string" }
       },
       "required": ["id", "title", "category", "classGrade", "fileFormat", "fileSize", "updatedDate"]
+    },
+    "ProfileExperienceItem": {
+      "title": "ProfileExperienceItem",
+      "description": "Riwayat pendidikan, pengalaman mengajar, dan rekam jejak laboratorium kimia",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "institution": { "type": "string" },
+        "period": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "subItems": { "type": "array" }
+      },
+      "required": ["id", "title", "category"]
+    },
+    "PortfolioCertificateItem": {
+      "title": "PortfolioCertificateItem",
+      "description": "Dokumentasi sertifikat kompetensi, karya riset pembelajaran, dan piagam penghargaan guru",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "category": { "type": "string" },
+        "issuer": { "type": "string" },
+        "year": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["id", "title", "category", "issuer", "year", "imageUrl"]
     }
   },
   "firestore": {
@@ -98,6 +128,14 @@
     "/catatan_dokumen/{docId}": {
       "schema": { "$ref": "#/entities/DocumentItem" },
       "description": "Koleksi modul PDF, LKPD, dan cheat sheet"
+    },
+    "/catatan_profil/{profileId}": {
+      "schema": { "$ref": "#/entities/ProfileExperienceItem" },
+      "description": "Koleksi riwayat pendidikan dan pengalaman mengajar/laboratorium guru"
+    },
+    "/catatan_portofolio/{portfolioId}": {
+      "schema": { "$ref": "#/entities/PortfolioCertificateItem" },
+      "description": "Koleksi sertifikat kompetensi dan karya portofolio guru"
     }
   }
 }

@@ -28,7 +28,16 @@ import {
 import { ProfileExperienceItem, PortfolioCertificateItem } from '../types';
 import { INITIAL_PROFILE_EXPERIENCES, INITIAL_PORTFOLIO_CERTIFICATES, TEACHER_INFO } from '../data/mockData';
 import { PhotoChangerModal } from './Modals/PhotoChangerModal';
-import { STORAGE_FOLDERS } from '../lib/firebase';
+import {
+  subscribeToProfileExperiences,
+  saveProfileExperienceToFirestore,
+  deleteProfileExperienceFromFirestore,
+  subscribeToPortfolioCertificates,
+  savePortfolioCertificateToFirestore,
+  deletePortfolioCertificateFromFirestore,
+  STORAGE_FOLDERS,
+  COLLECTIONS
+} from '../lib/firebase';
 
 const STORAGE_KEY_EXPERIENCES = 'kelaspakhafiz_profile_experiences';
 const STORAGE_KEY_CERTIFICATES = 'kelaspakhafiz_portfolio_certificates';
@@ -64,7 +73,47 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
     return INITIAL_PORTFOLIO_CERTIFICATES;
   });
 
-  // Save to localStorage when state changes
+  // Subscribe to real-time changes in Firestore
+  useEffect(() => {
+    const unsubExperiences = subscribeToProfileExperiences(
+      (data) => {
+        if (data && data.length > 0) {
+          setExperiences(data);
+          try {
+            localStorage.setItem(STORAGE_KEY_EXPERIENCES, JSON.stringify(data));
+          } catch (e) {
+            console.warn('Failed to cache experiences to localStorage:', e);
+          }
+        }
+      },
+      (err) => {
+        console.warn('[Firebase] Profile experiences subscription warning:', err);
+      }
+    );
+
+    const unsubCertificates = subscribeToPortfolioCertificates(
+      (data) => {
+        if (data && data.length > 0) {
+          setCertificates(data);
+          try {
+            localStorage.setItem(STORAGE_KEY_CERTIFICATES, JSON.stringify(data));
+          } catch (e) {
+            console.warn('Failed to cache certificates to localStorage:', e);
+          }
+        }
+      },
+      (err) => {
+        console.warn('[Firebase] Portfolio certificates subscription warning:', err);
+      }
+    );
+
+    return () => {
+      unsubExperiences();
+      unsubCertificates();
+    };
+  }, []);
+
+  // Save to localStorage when state changes as fallback cache
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_EXPERIENCES, JSON.stringify(experiences));
@@ -171,7 +220,7 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
     setIsExpModalOpen(true);
   };
 
-  const handleSaveExp = (e: React.FormEvent) => {
+  const handleSaveExp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!expFormData.title.trim()) return;
 
@@ -192,7 +241,19 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
         subItems: subItems.length > 0 ? subItems : undefined
       };
       setExperiences((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      onAddToast('Poin Profil Diperbarui', `Berhasil mengubah poin: ${updated.title}`, 'success');
+      setIsExpModalOpen(false);
+
+      try {
+        await saveProfileExperienceToFirestore(updated);
+        onAddToast(
+          'Tersimpan di Firebase!',
+          `Poin "${updated.title}" berhasil diperbarui langsung ke Cloud Firestore (${COLLECTIONS.PROFILES}).`,
+          'success'
+        );
+      } catch (err) {
+        console.warn('Firebase save error:', err);
+        onAddToast('Poin Profil Diperbarui', `Berhasil disimpan ke memori lokal.`, 'success');
+      }
     } else {
       // Create new
       const newItem: ProfileExperienceItem = {
@@ -205,15 +266,36 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
         subItems: subItems.length > 0 ? subItems : undefined
       };
       setExperiences((prev) => [newItem, ...prev]);
-      onAddToast('Poin Profil Ditambahkan', `Poin baru "${newItem.title}" telah ditambahkan ke profil.`, 'success');
+      setIsExpModalOpen(false);
+
+      try {
+        await saveProfileExperienceToFirestore(newItem);
+        onAddToast(
+          'Tersimpan di Firebase!',
+          `Poin baru "${newItem.title}" berhasil ditambahkan langsung ke Cloud Firestore (${COLLECTIONS.PROFILES}).`,
+          'success'
+        );
+      } catch (err) {
+        console.warn('Firebase save error:', err);
+        onAddToast('Poin Profil Ditambahkan', `Poin "${newItem.title}" tersimpan di memori lokal.`, 'success');
+      }
     }
-    setIsExpModalOpen(false);
   };
 
-  const handleDeleteExp = (id: string, title: string) => {
-    if (window.confirm(`Hapus poin profil "${title}"?`)) {
+  const handleDeleteExp = async (id: string, title: string) => {
+    if (window.confirm(`Hapus poin profil "${title}" dari daftar dan Firebase?`)) {
       setExperiences((prev) => prev.filter((item) => item.id !== id));
-      onAddToast('Poin Profil Dihapus', `Poin "${title}" telah dihapus.`, 'info');
+      try {
+        await deleteProfileExperienceFromFirestore(id);
+        onAddToast(
+          'Dihapus dari Firebase',
+          `Poin "${title}" berhasil dihapus dari Cloud Firestore (${COLLECTIONS.PROFILES}).`,
+          'info'
+        );
+      } catch (err) {
+        console.warn('Firebase delete error:', err);
+        onAddToast('Poin Profil Dihapus', `Poin "${title}" telah dihapus.`, 'info');
+      }
     }
   };
 
@@ -225,14 +307,24 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
     onAddToast('Teks Disalin', 'Poin profil telah disalin ke clipboard.', 'success');
   };
 
-  const handleDuplicateExp = (item: ProfileExperienceItem) => {
+  const handleDuplicateExp = async (item: ProfileExperienceItem) => {
     const duplicated: ProfileExperienceItem = {
       ...item,
       id: `prof-${Date.now()}`,
       title: `${item.title} (Salinan)`
     };
     setExperiences((prev) => [duplicated, ...prev]);
-    onAddToast('Poin Profil Diduplikasi', `Salinan "${duplicated.title}" berhasil dibuat.`, 'success');
+    try {
+      await saveProfileExperienceToFirestore(duplicated);
+      onAddToast(
+        'Tersimpan di Firebase!',
+        `Salinan "${duplicated.title}" berhasil disimpan langsung ke Cloud Firestore (${COLLECTIONS.PROFILES}).`,
+        'success'
+      );
+    } catch (err) {
+      console.warn('Firebase duplicate error:', err);
+      onAddToast('Poin Profil Diduplikasi', `Salinan "${duplicated.title}" berhasil dibuat.`, 'success');
+    }
   };
 
   // -------------------------------------------------------------
@@ -264,7 +356,7 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
     setIsCertModalOpen(true);
   };
 
-  const handleSaveCert = (e: React.FormEvent) => {
+  const handleSaveCert = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!certFormData.title.trim()) return;
 
@@ -280,7 +372,19 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
         description: certFormData.description.trim() || undefined
       };
       setCertificates((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      onAddToast('Sertifikat Diperbarui', `Sertifikat "${updated.title}" berhasil diperbarui.`, 'success');
+      setIsCertModalOpen(false);
+
+      try {
+        await savePortfolioCertificateToFirestore(updated);
+        onAddToast(
+          'Sertifikat Tersimpan di Firebase!',
+          `Data karya "${updated.title}" berhasil diperbarui langsung di Cloud Firestore (${COLLECTIONS.PORTFOLIOS}).`,
+          'success'
+        );
+      } catch (err) {
+        console.warn('Firebase save cert error:', err);
+        onAddToast('Sertifikat Diperbarui', `Sertifikat "${updated.title}" berhasil diperbarui.`, 'success');
+      }
     } else {
       // Create new
       const newCert: PortfolioCertificateItem = {
@@ -293,26 +397,57 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
         description: certFormData.description.trim() || undefined
       };
       setCertificates((prev) => [newCert, ...prev]);
-      onAddToast('Sertifikat Ditambahkan', `Sertifikat/Karya "${newCert.title}" berhasil ditambahkan.`, 'success');
+      setIsCertModalOpen(false);
+
+      try {
+        await savePortfolioCertificateToFirestore(newCert);
+        onAddToast(
+          'Sertifikat Tersimpan di Firebase!',
+          `Sertifikat baru "${newCert.title}" berhasil disimpan langsung ke Cloud Firestore (${COLLECTIONS.PORTFOLIOS}).`,
+          'success'
+        );
+      } catch (err) {
+        console.warn('Firebase save cert error:', err);
+        onAddToast('Sertifikat Ditambahkan', `Sertifikat/Karya "${newCert.title}" berhasil ditambahkan.`, 'success');
+      }
     }
-    setIsCertModalOpen(false);
   };
 
-  const handleDeleteCert = (id: string, title: string) => {
-    if (window.confirm(`Hapus sertifikat/karya "${title}"?`)) {
+  const handleDeleteCert = async (id: string, title: string) => {
+    if (window.confirm(`Hapus sertifikat/karya "${title}" dari portofolio dan Firebase?`)) {
       setCertificates((prev) => prev.filter((c) => c.id !== id));
-      onAddToast('Sertifikat Dihapus', `Sertifikat "${title}" telah dihapus.`, 'info');
+      try {
+        await deletePortfolioCertificateFromFirestore(id);
+        onAddToast(
+          'Dihapus dari Firebase',
+          `Sertifikat "${title}" berhasil dihapus dari Cloud Firestore (${COLLECTIONS.PORTFOLIOS}).`,
+          'info'
+        );
+      } catch (err) {
+        console.warn('Firebase delete cert error:', err);
+        onAddToast('Sertifikat Dihapus', `Sertifikat "${title}" telah dihapus.`, 'info');
+      }
     }
   };
 
-  const handleDuplicateCert = (cert: PortfolioCertificateItem) => {
+  const handleDuplicateCert = async (cert: PortfolioCertificateItem) => {
     const duplicated: PortfolioCertificateItem = {
       ...cert,
       id: `cert-${Date.now()}`,
       title: `${cert.title} (Salinan)`
     };
     setCertificates((prev) => [duplicated, ...prev]);
-    onAddToast('Sertifikat Diduplikasi', `Salinan "${duplicated.title}" berhasil ditambahkan ke portofolio.`, 'success');
+    try {
+      await savePortfolioCertificateToFirestore(duplicated);
+      onAddToast(
+        'Sertifikat Tersimpan di Firebase!',
+        `Salinan "${duplicated.title}" berhasil disimpan langsung ke Cloud Firestore (${COLLECTIONS.PORTFOLIOS}).`,
+        'success'
+      );
+    } catch (err) {
+      console.warn('Firebase duplicate cert error:', err);
+      onAddToast('Sertifikat Diduplikasi', `Salinan "${duplicated.title}" berhasil ditambahkan.`, 'success');
+    }
   };
 
   const handleCopyCertLink = (cert: PortfolioCertificateItem) => {
@@ -349,389 +484,380 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
           )}
         </div>
 
-        {/* 2-Column Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* 2-Column Balanced Grid Layout (50:50 on Laptop/Desktop) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-stretch">
           
           {/* ========================================================================= */}
-          {/* SISI KIRI: POIN-POIN PROFIL & PENGALAMAN (VERTICAL SCROLLABLE) */}
+          {/* SISI KIRI: POIN-POIN PROFIL & PENGALAMAN (SIMPEL, ELEGAN & IPHONE BLUE) */}
           {/* ========================================================================= */}
-          <div className="lg:col-span-5 flex flex-col bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden">
+          <div className="flex flex-col h-full bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden justify-between">
             
-            {/* Top Teacher Bio Card Header */}
-            <div className="flex items-center justify-between pb-5 border-b border-[#E2E8F0] mb-5">
-              <div className="flex items-center gap-3.5">
-                <div className="relative w-14 h-14 rounded-full bg-linear-to-br from-[#0284C7] to-[#0369A1] p-0.5 shadow-md shrink-0">
-                  <img
-                    src={TEACHER_INFO.avatar}
-                    alt={TEACHER_INFO.name}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover rounded-full"
-                  />
-                  <span className="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-white rounded-full" title="Pendidik Aktif" />
+            {/* Top Container Header */}
+            <div>
+              {/* Teacher Info Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-12 h-12 rounded-full bg-linear-to-br from-[#0284C7] via-[#007AFF] to-[#0369A1] p-0.5 shadow-md shadow-[#0284C7]/20 shrink-0">
+                    <img
+                      src={TEACHER_INFO.avatar}
+                      alt={TEACHER_INFO.name}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" title="Pendidik Aktif" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold font-heading text-[#0F172A] leading-tight">
+                      {TEACHER_INFO.name}
+                    </h3>
+                    <p className="text-xs text-[#007AFF] font-semibold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-[#38BDF8]" />
+                      <span>Guru Kimia & Praktisi Lab</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-base sm:text-lg font-bold font-heading text-[#0F172A] leading-tight">
-                    {TEACHER_INFO.name}
-                  </h3>
-                  <p className="text-xs text-[#0284C7] font-semibold">
-                    Guru Kimia & Praktisi Laboratorium
-                  </p>
-                  <p className="text-[11px] text-[#64748B]">
-                    Spesialisasi Kimia Organik & Kimia Analitik
-                  </p>
-                </div>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={handleOpenAddExp}
+                    className="px-3 py-1.5 rounded-full bg-[#007AFF] hover:bg-[#0062CC] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#007AFF]/25 transition-transform transform hover:scale-105 cursor-pointer"
+                    title="Tambah Poin Profil Baru"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambah Poin</span>
+                  </button>
+                )}
               </div>
 
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={handleOpenAddExp}
-                  className="px-3 py-1.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-transform transform hover:scale-105 cursor-pointer"
-                  title="Tambah Poin Profil Baru"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah Poin</span>
-                </button>
-              )}
-            </div>
+              {/* Sub-header & Counter */}
+              <div className="flex items-center justify-between text-xs text-[#64748B] mb-3">
+                <span className="font-semibold text-[#0F172A] flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-[#007AFF]" />
+                  <span>Riwayat Pendidikan & Pengalaman ({experiences.length})</span>
+                </span>
+                <span className="text-[11px] text-[#007AFF] font-medium bg-[#F0F7FF] px-2 py-0.5 rounded-md border border-[#BAE6FD]">
+                  Gulir vertikal
+                </span>
+              </div>
 
-            {/* Sub-header & Counter */}
-            <div className="flex items-center justify-between text-xs text-[#64748B] mb-3">
-              <span className="font-semibold text-[#0F172A] flex items-center gap-1.5">
-                <Briefcase className="w-3.5 h-3.5 text-[#0284C7]" />
-                <span>Riwayat Pendidikan & Pengalaman ({experiences.length})</span>
-              </span>
-              <span className="text-[11px] text-[#94A3B8]">Dapat digulir ke bawah</span>
-            </div>
-
-            {/* Vertical Scrollable List Container */}
-            <div className="max-h-[500px] overflow-y-auto pr-2 space-y-3.5 custom-scrollbar focus:outline-none">
-              {experiences.map((exp, idx) => (
-                <div
-                  key={exp.id || idx}
-                  className="p-4 rounded-2xl bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] hover:border-[#BAE6FD] transition-all group relative"
-                >
-                  {/* Top Item Row */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                        {exp.category === 'Pendidikan' ? (
-                          <GraduationCap className="w-4 h-4" />
-                        ) : exp.institution?.toLowerCase().includes('lab') || exp.title.toLowerCase().includes('lab') ? (
-                          <FlaskConical className="w-4 h-4" />
-                        ) : (
-                          <Briefcase className="w-4 h-4" />
-                        )}
+              {/* Simplified & Sleek Vertical Scrollable List */}
+              <div className="max-h-[380px] sm:max-h-[400px] overflow-y-auto pr-1.5 space-y-2.5 custom-scrollbar focus:outline-none">
+                {experiences.map((exp, idx) => (
+                  <div
+                    key={exp.id || idx}
+                    className="p-3.5 rounded-xl bg-[#F8FAFC] hover:bg-[#F0F7FF] border border-[#E2E8F0] hover:border-[#93C5FD] border-l-[4px] border-l-[#007AFF] transition-all group relative shadow-2xs hover:shadow-xs"
+                  >
+                    {/* Top Row: Title, Institution, and Category Pill */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <div className="w-7 h-7 rounded-lg bg-[#E0F2FE] text-[#007AFF] flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                          {exp.category === 'Pendidikan' ? (
+                            <GraduationCap className="w-4 h-4" />
+                          ) : exp.institution?.toLowerCase().includes('lab') || exp.title.toLowerCase().includes('lab') ? (
+                            <FlaskConical className="w-4 h-4" />
+                          ) : (
+                            <Briefcase className="w-4 h-4" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          {/* Nama Pekerjaan / Jabatan */}
+                          <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug group-hover:text-[#007AFF] transition-colors truncate">
+                            {exp.title}
+                          </h4>
+                          {/* Tempat / Institusi */}
+                          {exp.institution && (
+                            <p className="text-xs font-semibold text-[#475569] mt-0.5 flex items-center gap-1 truncate">
+                              <Building className="w-3 h-3 text-[#007AFF] shrink-0" />
+                              <span className="truncate">{exp.institution}</span>
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug">
-                          {exp.title}
-                        </h4>
-                        {exp.institution && (
-                          <p className="text-xs font-semibold text-[#0284C7] mt-0.5 flex items-center gap-1">
-                            <Building className="w-3 h-3 text-[#38BDF8]" />
-                            <span>{exp.institution}</span>
-                          </p>
+
+                      {/* Kategori Badge & Periode */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#E0F2FE] border border-[#BAE6FD] text-[#007AFF]">
+                          {exp.category}
+                        </span>
+                        {exp.period && (
+                          <span className="text-[10px] text-[#94A3B8] font-mono">
+                            {exp.period}
+                          </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Category / Period Badge */}
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-white border border-[#CBD5E1] text-[#475569]">
-                        {exp.category}
-                      </span>
-                      {exp.period && (
-                        <span className="text-[10px] text-[#94A3B8] font-mono">
-                          {exp.period}
-                        </span>
+                    {/* Quick Admin Actions & Copy Button */}
+                    <div className="mt-2.5 pt-2 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyExp(exp)}
+                        className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
+                        title="Salin Poin ke Clipboard"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>Salin</span>
+                      </button>
+
+                      {isAdmin && (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicateExp(exp)}
+                            className="px-2 py-0.5 rounded-md bg-white hover:bg-[#E0F2FE] text-[#007AFF] border border-[#BAE6FD] text-[10px] font-bold cursor-pointer transition-colors"
+                            title="Duplikasi Poin Ini"
+                          >
+                            Duplikasi
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditExp(exp)}
+                            className="p-1 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer transition-colors"
+                            title="Edit Poin Profil"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteExp(exp.id, exp.title)}
+                            className="p-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer transition-colors"
+                            title="Hapus Poin Profil"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
-
-                  {/* Description */}
-                  {exp.description && (
-                    <p className="text-xs text-[#64748B] mt-2.5 leading-relaxed pl-9">
-                      {exp.description}
-                    </p>
-                  )}
-
-                  {/* Sub-Items / Bullet Points */}
-                  {exp.subItems && exp.subItems.length > 0 && (
-                    <ul className="mt-2 space-y-1.5 pl-9">
-                      {exp.subItems.map((sub, sIdx) => (
-                        <li key={sIdx} className="text-[11px] text-[#475569] flex items-start gap-1.5 leading-tight">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0 mt-0.5" />
-                          <span>{sub}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {/* Action Buttons: Copy, Edit, Delete, Duplicate */}
-                  <div className="mt-3 pt-2.5 border-t border-[#E2E8F0] flex items-center justify-between text-xs pl-9">
-                    <button
-                      type="button"
-                      onClick={() => handleCopyExp(exp)}
-                      className="text-[#64748B] hover:text-[#0284C7] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
-                      title="Salin Poin ke Clipboard"
-                    >
-                      <Copy className="w-3 h-3" />
-                      <span>Salin</span>
-                    </button>
-
-                    {isAdmin && (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleDuplicateExp(exp)}
-                          className="px-2 py-1 rounded-md bg-white hover:bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD] text-[10px] font-bold cursor-pointer"
-                          title="Duplikasi Poin Ini"
-                        >
-                          Duplikasi
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEditExp(exp)}
-                          className="p-1 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer"
-                          title="Edit Poin Profil"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteExp(exp.id, exp.title)}
-                          className="p-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer"
-                          title="Hapus Poin Profil"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Bottom Add Poin Bar */}
-            {isAdmin && (
-              <div className="mt-4 pt-3 border-t border-[#E2E8F0]">
+            {/* Bottom Add Poin Bar (Admin) or Subtle Hint */}
+            <div className="mt-4 pt-3 border-t border-[#E2E8F0]">
+              {isAdmin ? (
                 <button
                   type="button"
                   onClick={handleOpenAddExp}
-                  className="w-full py-2.5 rounded-xl bg-[#F0F9FF] hover:bg-[#E0F2FE] border border-[#BAE6FD] text-[#0284C7] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                  className="w-full py-2.5 rounded-xl bg-[#F0F7FF] hover:bg-[#E0F2FE] border border-[#BAE6FD] text-[#007AFF] text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Tambah Poin Profil Baru</span>
                 </button>
-              </div>
-            )}
+              ) : (
+                <div className="flex items-center justify-between text-[11px] text-[#64748B]">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-[#007AFF] animate-pulse" />
+                    <span>Rekam jejak pendidik & instruktur sains terverifikasi</span>
+                  </span>
+                  <span className="text-[#007AFF] font-medium font-mono">{experiences.length} Posisi</span>
+                </div>
+              )}
+            </div>
 
           </div>
 
           {/* ========================================================================= */}
           {/* SISI KANAN: PORTOFOLIO SERTIFIKAT & KARYA (HORIZONTAL SCROLLABLE) */}
           {/* ========================================================================= */}
-          <div className="lg:col-span-7 flex flex-col bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden">
+          <div className="flex flex-col h-full bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 sm:p-7 relative overflow-hidden justify-between">
             
             {/* Header & Carousel Nav Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-[#E2E8F0] mb-5 gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
-                    <Award className="w-4 h-4" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-bold font-heading text-[#0F172A]">
-                    Sertifikat & Karya Guru
-                  </h3>
-                </div>
-                <p className="text-xs text-[#64748B] mt-0.5">
-                  Gulir horizontal untuk melihat dokumentasi sertifikat kompetensi & riset
-                </p>
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center gap-2 self-end sm:self-auto">
-                {isAdmin && (
-                  <button
-                    type="button"
-                    onClick={handleOpenAddCert}
-                    className="px-3 py-1.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition-transform transform hover:scale-105 cursor-pointer mr-1"
-                    title="Tambah Sertifikat / Karya Baru"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Tambah Karya</span>
-                  </button>
-                )}
-
-                {/* Left/Right Carousel Arrows */}
-                <button
-                  type="button"
-                  onClick={() => scrollCarousel('left')}
-                  disabled={!canScrollLeft}
-                  className={`p-2 rounded-full border transition-all cursor-pointer ${
-                    canScrollLeft
-                      ? 'bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] text-[#0F172A] shadow-xs'
-                      : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed opacity-60'
-                  }`}
-                  title="Gulir ke Kiri"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => scrollCarousel('right')}
-                  disabled={!canScrollRight}
-                  className={`p-2 rounded-full border transition-all cursor-pointer ${
-                    canScrollRight
-                      ? 'bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] text-[#0F172A] shadow-xs'
-                      : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed opacity-60'
-                  }`}
-                  title="Gulir ke Kanan"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Horizontal Scrollable Carousel Container */}
-            <div
-              ref={carouselRef}
-              onScroll={checkScroll}
-              className="flex gap-4 sm:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-4 pt-1 focus:outline-none"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {certificates.map((cert) => (
-                <div
-                  key={cert.id}
-                  className="min-w-[270px] sm:min-w-[300px] max-w-[320px] snap-start bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] shadow-xs hover:shadow-md transition-all flex flex-col overflow-hidden group/card relative"
-                >
-                  {/* Image Container with Hover Overlay */}
-                  <div className="relative aspect-4/3 w-full bg-[#0F172A] overflow-hidden">
-                    <img
-                      src={cert.imageUrl}
-                      alt={cert.title}
-                      className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 cursor-pointer"
-                      onClick={() => setPreviewCert(cert)}
-                    />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-60 group-hover/card:opacity-90 transition-opacity" />
-
-                    {/* Top Badges */}
-                    <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/95 text-[#0284C7] backdrop-blur-xs shadow-xs">
-                        {cert.category}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#0F172A]/80 text-white backdrop-blur-xs">
-                        {cert.year}
-                      </span>
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4 gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#E0F2FE] text-[#007AFF] flex items-center justify-center">
+                      <Award className="w-4 h-4" />
                     </div>
+                    <h3 className="text-base font-bold font-heading text-[#0F172A]">
+                      Sertifikat & Karya Guru
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    Dokumentasi sertifikasi kompetensi & riset sains
+                  </p>
+                </div>
 
-                    {/* Quick View Button on Image */}
+                {/* Controls */}
+                <div className="flex items-center gap-2 self-end sm:self-auto">
+                  {isAdmin && (
                     <button
                       type="button"
-                      onClick={() => setPreviewCert(cert)}
-                      className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-black/60 hover:bg-black/90 text-white text-[10px] font-medium backdrop-blur-xs flex items-center gap-1 cursor-pointer transition-colors"
-                      title="Lihat Pratinjau Penuh"
+                      onClick={handleOpenAddCert}
+                      className="px-3 py-1.5 rounded-full bg-[#007AFF] hover:bg-[#0062CC] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#007AFF]/25 transition-transform transform hover:scale-105 cursor-pointer mr-1"
+                      title="Tambah Sertifikat / Karya Baru"
                     >
-                      <Eye className="w-3 h-3" />
-                      <span>Perbesar</span>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Tambah Karya</span>
                     </button>
+                  )}
 
-                    {/* Admin: Quick Photo Changer Button */}
-                    {isAdmin && (
+                  {/* Left/Right Carousel Arrows */}
+                  <button
+                    type="button"
+                    onClick={() => scrollCarousel('left')}
+                    disabled={!canScrollLeft}
+                    className={`p-2 rounded-full border transition-all cursor-pointer ${
+                      canScrollLeft
+                        ? 'bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] text-[#0F172A] shadow-xs'
+                        : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed opacity-60'
+                    }`}
+                    title="Gulir ke Kiri"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollCarousel('right')}
+                    disabled={!canScrollRight}
+                    className={`p-2 rounded-full border transition-all cursor-pointer ${
+                      canScrollRight
+                        ? 'bg-white hover:bg-[#E0F2FE] border-[#CBD5E1] text-[#0F172A] shadow-xs'
+                        : 'bg-[#F1F5F9] border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed opacity-60'
+                    }`}
+                    title="Gulir ke Kanan"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Horizontal Scrollable Carousel Container */}
+              <div
+                ref={carouselRef}
+                onScroll={checkScroll}
+                className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-2 pt-1 focus:outline-none"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {certificates.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="min-w-[250px] sm:min-w-[270px] max-w-[290px] snap-start bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] hover:border-[#93C5FD] border-t-[3px] border-t-[#007AFF] shadow-xs hover:shadow-md transition-all flex flex-col overflow-hidden group/card relative"
+                  >
+                    {/* Image Container with Hover Overlay */}
+                    <div className="relative aspect-4/3 w-full bg-[#0F172A] overflow-hidden">
+                      <img
+                        src={cert.imageUrl}
+                        alt={cert.title}
+                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500 cursor-pointer"
+                        onClick={() => setPreviewCert(cert)}
+                      />
+                      <div className="absolute inset-0 bg-linear-to-t from-black/70 via-transparent to-transparent opacity-60 group-hover/card:opacity-90 transition-opacity" />
+
+                      {/* Top Badges */}
+                      <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/95 text-[#007AFF] backdrop-blur-xs shadow-xs">
+                          {cert.category}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#0F172A]/80 text-white backdrop-blur-xs">
+                          {cert.year}
+                        </span>
+                      </div>
+
+                      {/* Quick View Button on Image */}
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCertForPhotoChange(cert);
-                        }}
-                        className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] text-[10px] font-bold shadow-md flex items-center gap-1 cursor-pointer transition-all transform hover:scale-105"
-                        title="Ganti / Cari Foto via Google atau Unggah"
+                        onClick={() => setPreviewCert(cert)}
+                        className="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-black/60 hover:bg-black/90 text-white text-[10px] font-medium backdrop-blur-xs flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Lihat Pratinjau Penuh"
                       >
-                        <Camera className="w-3 h-3" />
-                        <span>Ganti Foto</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Card Body */}
-                  <div className="p-4 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug line-clamp-2">
-                        {cert.title}
-                      </h4>
-                      <p className="text-[11px] font-semibold text-[#0284C7] mt-1 flex items-center gap-1">
-                        <Building className="w-3 h-3 text-[#38BDF8]" />
-                        <span className="truncate">{cert.issuer}</span>
-                      </p>
-                      {cert.description && (
-                        <p className="text-xs text-[#64748B] mt-2 line-clamp-3 leading-relaxed">
-                          {cert.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Card Footer Actions */}
-                    <div className="mt-4 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyCertLink(cert)}
-                        className="text-[#64748B] hover:text-[#0284C7] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
-                        title="Salin Rincian Sertifikat"
-                      >
-                        <Copy className="w-3 h-3" />
-                        <span>Salin</span>
+                        <Eye className="w-3 h-3" />
+                        <span>Perbesar</span>
                       </button>
 
-                      {isAdmin ? (
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleDuplicateCert(cert)}
-                            className="px-2 py-1 rounded-md bg-white hover:bg-[#E0F2FE] text-[#0369A1] border border-[#BAE6FD] text-[10px] font-bold cursor-pointer"
-                            title="Duplikasi Sertifikat Ini"
-                          >
-                            Duplikasi
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditCert(cert)}
-                            className="p-1 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer"
-                            title="Edit Data Sertifikat"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCert(cert.id, cert.title)}
-                            className="p-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer"
-                            title="Hapus Sertifikat"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ) : (
+                      {/* Admin: Quick Photo Changer Button */}
+                      {isAdmin && (
                         <button
                           type="button"
-                          onClick={() => setPreviewCert(cert)}
-                          className="text-[#0284C7] font-semibold text-[11px] flex items-center gap-1 cursor-pointer hover:underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCertForPhotoChange(cert);
+                          }}
+                          className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full bg-white/95 hover:bg-[#007AFF] text-[#007AFF] hover:text-white border border-[#BAE6FD] text-[10px] font-bold shadow-md flex items-center gap-1 cursor-pointer transition-all transform hover:scale-105"
+                          title="Ganti / Cari Foto via Google atau Unggah"
                         >
-                          <span>Rincian</span>
-                          <ExternalLink className="w-3 h-3" />
+                          <Camera className="w-3 h-3" />
+                          <span>Ganti Foto</span>
                         </button>
                       )}
                     </div>
 
+                    {/* Card Body */}
+                    <div className="p-3.5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h4 className="text-xs sm:text-sm font-bold text-[#0F172A] leading-snug line-clamp-2">
+                          {cert.title}
+                        </h4>
+                        <p className="text-[11px] font-semibold text-[#007AFF] mt-1 flex items-center gap-1">
+                          <Building className="w-3 h-3 text-[#38BDF8]" />
+                          <span className="truncate">{cert.issuer}</span>
+                        </p>
+                      </div>
+
+                      {/* Card Footer Actions */}
+                      <div className="mt-3 pt-2.5 border-t border-[#E2E8F0] flex items-center justify-between text-xs">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCertLink(cert)}
+                          className="text-[#64748B] hover:text-[#007AFF] flex items-center gap-1 text-[11px] font-medium cursor-pointer transition-colors"
+                          title="Salin Rincian Sertifikat"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </button>
+
+                        {isAdmin ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateCert(cert)}
+                              className="px-2 py-0.5 rounded-md bg-white hover:bg-[#E0F2FE] text-[#007AFF] border border-[#BAE6FD] text-[10px] font-bold cursor-pointer transition-colors"
+                              title="Duplikasi Sertifikat Ini"
+                            >
+                              Duplikasi
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditCert(cert)}
+                              className="p-1 rounded-md bg-white hover:bg-amber-50 text-amber-600 border border-amber-200 cursor-pointer transition-colors"
+                              title="Edit Data Sertifikat"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCert(cert.id, cert.title)}
+                              className="p-1 rounded-md bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 cursor-pointer transition-colors"
+                              title="Hapus Sertifikat"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setPreviewCert(cert)}
+                            className="text-[#007AFF] font-semibold text-[11px] flex items-center gap-1 cursor-pointer hover:underline"
+                          >
+                            <span>Rincian</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Horizontal Scroll Hint Indicator */}
-            <div className="mt-3 flex items-center justify-between text-xs text-[#94A3B8]">
-              <span className="flex items-center gap-1.5 text-[11px]">
-                <Sparkles className="w-3 h-3 text-[#38BDF8]" />
-                <span>Geser ke samping untuk melihat total {certificates.length} sertifikat & karya</span>
+            {/* Bottom Horizontal Scroll Hint Indicator */}
+            <div className="mt-4 pt-3 border-t border-[#E2E8F0] flex items-center justify-between text-xs text-[#94A3B8]">
+              <span className="flex items-center gap-1.5 text-[11px] text-[#475569]">
+                <Sparkles className="w-3 h-3 text-[#007AFF]" />
+                <span>Geser horizontal untuk melihat {certificates.length} sertifikat & karya</span>
               </span>
               <div className="flex items-center gap-1">
                 {certificates.map((_, i) => (
@@ -1051,16 +1177,27 @@ export const ProfilePortfolioSection: React.FC<ProfilePortfolioSectionProps> = (
           currentImageUrl={certForPhotoChange.imageUrl}
           itemTitle={certForPhotoChange.title}
           modalTitle="Ganti Foto Sertifikat / Karya"
-          storageFolder={STORAGE_FOLDERS.GALLERY_IMAGES}
-          onSavePhoto={(newUrl) => {
+          storageFolder={STORAGE_FOLDERS.CERTIFICATE_IMAGES}
+          onSavePhoto={async (newUrl) => {
             if (!certForPhotoChange) return;
             const updated: PortfolioCertificateItem = {
               ...certForPhotoChange,
               imageUrl: newUrl
             };
             setCertificates((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-            onAddToast('Foto Sertifikat Diperbarui', `Foto untuk "${updated.title}" berhasil disimpan.`, 'success');
             setCertForPhotoChange(null);
+
+            try {
+              await savePortfolioCertificateToFirestore(updated);
+              onAddToast(
+                'Foto Sertifikat Tersimpan di Firebase!',
+                `Foto untuk "${updated.title}" berhasil disimpan di Firebase (${COLLECTIONS.PORTFOLIOS} & ${STORAGE_FOLDERS.CERTIFICATE_IMAGES}).`,
+                'success'
+              );
+            } catch (err) {
+              console.warn('Firebase save cert photo error:', err);
+              onAddToast('Foto Sertifikat Diperbarui', `Foto untuk "${updated.title}" berhasil diperbarui.`, 'success');
+            }
           }}
           onAddToast={onAddToast}
         />

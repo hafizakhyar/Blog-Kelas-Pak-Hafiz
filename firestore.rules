@@ -26,5 +26,15 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    match /catatan_profil/{profileId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /catatan_portofolio/{portfolioId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }
