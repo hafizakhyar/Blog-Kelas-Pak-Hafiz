@@ -88,3 +88,24 @@ export interface ClassNote {
   tags?: string[];
 }
 
+export interface ProfileExperienceItem {
+  id: string;
+  title: string;
+  institution?: string;
+  period?: string;
+  category: 'Pendidikan' | 'Pengalaman' | 'Keahlian' | 'Sertifikasi' | string;
+  description?: string;
+  subItems?: string[];
+}
+
+export interface PortfolioCertificateItem {
+  id: string;
+  title: string;
+  category: 'Sertifikat' | 'Karya Riset' | 'Pelatihan' | 'Penghargaan' | string;
+  issuer: string;
+  year: string;
+  imageUrl: string;
+  credentialUrl?: string;
+  description?: string;
+}
+

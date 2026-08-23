@@ -34,7 +34,8 @@ import {
   ChevronRight,
   LayoutGrid,
   SlidersHorizontal,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Camera
 } from 'lucide-react';
 import { ClassNote } from '../types';
 import { INITIAL_CLASS_NOTES, TEACHER_INFO } from '../data/mockData';
@@ -48,6 +49,7 @@ import {
   generateChemistryContentFromTitle,
   QUICK_CHEMISTRY_TOPIC_PRESETS
 } from '../lib/chemistryAutoGenerator';
+import { PhotoChangerModal } from './Modals/PhotoChangerModal';
 
 interface ClassNotesSectionProps {
   onAddToast: (title: string, description?: string, type?: 'success' | 'info') => void;
@@ -146,6 +148,9 @@ export const ClassNotesSection: React.FC<ClassNotesSectionProps> = ({
 
   const notes = propNotes || internalNotes;
   const setNotes = propSetNotes || setInternalNotes;
+
+  // Teacher Quick Photo Changer State
+  const [noteForPhotoChange, setNoteForPhotoChange] = useState<ClassNote | null>(null);
 
   // Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -1118,12 +1123,16 @@ ${
 
                           {isAdmin && (
                             <button
-                              onClick={() => handleTriggerQuickChange(note.id)}
-                              className="px-2.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-xs transition-colors cursor-pointer"
-                              title="Ganti Foto Catatan"
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNoteForPhotoChange(note);
+                              }}
+                              className="px-2.5 py-1.5 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] hover:border-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-md transition-all cursor-pointer transform hover:scale-105"
+                              title="Ganti / Cari Foto Catatan via Google atau Unggah"
                             >
-                              <ImageIcon className="w-3.5 h-3.5" />
-                              <span className="hidden sm:inline">Ganti Foto</span>
+                              <Camera className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Ganti / Cari Foto</span>
                             </button>
                           )}
                         </div>
@@ -1386,12 +1395,16 @@ ${
 
                         {isAdmin && (
                           <button
-                            onClick={() => handleTriggerQuickChange(note.id)}
-                            className="px-2.5 py-1.5 rounded-full bg-white/90 hover:bg-white text-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-xs transition-colors cursor-pointer"
-                            title="Ganti Foto Catatan"
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setNoteForPhotoChange(note);
+                            }}
+                            className="px-2.5 py-1.5 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] hover:border-[#0284C7] text-[11px] font-bold flex items-center gap-1 backdrop-blur-md shadow-md transition-all cursor-pointer transform hover:scale-105"
+                            title="Ganti / Cari Foto Catatan via Google atau Unggah"
                           >
-                            <ImageIcon className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Ganti Foto</span>
+                            <Camera className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Ganti / Cari Foto</span>
                           </button>
                         )}
                       </div>
@@ -2175,6 +2188,36 @@ ${
           </div>
         )}
       </AnimatePresence>
+
+      {/* MODAL: Quick Photo Changer for Teacher (Google Search / Upload / URL) */}
+      {noteForPhotoChange && (
+        <PhotoChangerModal
+          isOpen={!!noteForPhotoChange}
+          onClose={() => setNoteForPhotoChange(null)}
+          currentImageUrl={noteForPhotoChange.imageUrl || ''}
+          itemTitle={noteForPhotoChange.title}
+          modalTitle="Ganti Foto Catatan Kelas"
+          storageFolder={STORAGE_FOLDERS.NOTES_IMAGES}
+          onSavePhoto={async (newUrl) => {
+            if (!noteForPhotoChange) return;
+            const updated: ClassNote = {
+              ...noteForPhotoChange,
+              imageUrl: newUrl
+            };
+            if (setNotes) {
+              setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+            }
+            try {
+              await saveClassNoteToFirestore(updated);
+              onAddToast('Foto Catatan Diperbarui', `Foto untuk "${updated.title}" berhasil disimpan di Cloud Firestore.`, 'success');
+            } catch (e) {
+              console.warn('Failed to sync note photo to Firestore:', e);
+            }
+            setNoteForPhotoChange(null);
+          }}
+          onAddToast={onAddToast}
+        />
+      )}
     </section>
   );
 };

@@ -6,6 +6,7 @@ import { GallerySection } from './components/GallerySection';
 import { DocumentsSection } from './components/DocumentsSection';
 import { BlogSection } from './components/BlogSection';
 import { LearningPlatformCTA } from './components/LearningPlatformCTA';
+import { ProfilePortfolioSection } from './components/ProfilePortfolioSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { GalleryDetailModal } from './components/Modals/GalleryDetailModal';
@@ -293,7 +294,7 @@ export default function App() {
   useEffect(() => {
     if (currentRoute !== 'main') return;
 
-    const sections = ['beranda', 'galeri', 'catatan-kelas', 'modul', 'blog', 'kontak'];
+    const sections = ['beranda', 'galeri', 'catatan-kelas', 'modul', 'blog', 'profil', 'kontak'];
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 180;
       for (const sectionId of sections) {
@@ -485,6 +486,18 @@ https://www.kelaspakhafiz.my.id/
     }
   };
 
+  const handleUpdateArticle = async (updatedPost: BlogPost) => {
+    setBlogPosts((prev) => prev.map((p) => (p.id === updatedPost.id ? updatedPost : p)));
+    if (activeBlogPost && activeBlogPost.id === updatedPost.id) {
+      setActiveBlogPost(updatedPost);
+    }
+    try {
+      await saveArticleToFirestore(updatedPost);
+    } catch (e) {
+      console.warn('Failed to sync updated article to Firestore:', e);
+    }
+  };
+
   const handleDeleteArticle = async (postId: string) => {
     setBlogPosts((prev) => prev.filter((p) => p.id !== postId));
     if (activeBlogPost && activeBlogPost.id === postId) {
@@ -639,6 +652,7 @@ https://www.kelaspakhafiz.my.id/
             onLikePost={handleLikeArticle}
             isAdmin={isAdmin}
             onDeletePost={handleDeleteArticle}
+            onUpdatePost={handleUpdateArticle}
           />
         ) : (
           /* Main Landing Page Layout with All Sections */
@@ -646,6 +660,8 @@ https://www.kelaspakhafiz.my.id/
             <Hero
               onOpenMainPortal={handleOpenMainPortal}
               onExploreClick={handleExploreClick}
+              isAdmin={isAdmin}
+              onAddToast={addToast}
             />
 
             <GallerySection
@@ -688,11 +704,17 @@ https://www.kelaspakhafiz.my.id/
               setIsAdmin={setIsAdmin}
               onAddPost={handleAddArticle}
               onDeletePost={handleDeleteArticle}
+              onUpdatePost={handleUpdateArticle}
               onAddToast={addToast}
             />
 
             <LearningPlatformCTA
               onOpenMainPortal={handleOpenMainPortal}
+            />
+
+            <ProfilePortfolioSection
+              isAdmin={isAdmin}
+              onAddToast={addToast}
             />
 
             <ContactSection

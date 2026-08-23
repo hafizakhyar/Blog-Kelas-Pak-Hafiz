@@ -23,7 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
     { label: 'Galeri Praktikum', href: '#galeri', id: 'galeri' },
     { label: 'Catatan Kelas', href: '#catatan-kelas', id: 'catatan-kelas' },
     { label: 'Perangkat Ajar', href: '#modul', id: 'modul' },
-    { label: 'Artikel & Blog', href: '#blog', id: 'blog' },
+    { label: 'Artikel Sains', href: '#blog', id: 'blog' },
+    { label: 'Profil', href: '#profil', id: 'profil' },
     { label: 'Hubungi', href: '#kontak', id: 'kontak' },
   ];
 

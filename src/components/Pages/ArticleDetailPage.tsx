@@ -15,10 +15,13 @@ import {
   ChevronRight,
   BookmarkCheck,
   Quote,
-  MessageCircle
+  MessageCircle,
+  Camera
 } from 'lucide-react';
 import { BlogPost } from '../../types';
 import { TEACHER_INFO } from '../../data/mockData';
+import { PhotoChangerModal } from '../Modals/PhotoChangerModal';
+import { STORAGE_FOLDERS } from '../../lib/firebase';
 
 interface ArticleDetailPageProps {
   post: BlogPost;
@@ -30,6 +33,7 @@ interface ArticleDetailPageProps {
   onLikePost?: (postId: string) => void;
   isAdmin?: boolean;
   onDeletePost?: (postId: string) => void;
+  onUpdatePost?: (post: BlogPost) => void;
 }
 
 export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
@@ -42,10 +46,12 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
   onLikePost,
   isAdmin = false,
   onDeletePost,
+  onUpdatePost,
 }) => {
   const [likes, setLikes] = useState<number>(post.reactions || 0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setLikes(post.reactions || 0);
@@ -101,7 +107,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#E2E8F0] text-[#0F172A] hover:text-[#0284C7] hover:border-[#0284C7] text-xs sm:text-sm font-semibold transition-all shadow-2xs cursor-pointer group"
           >
             <ArrowLeft className="w-4 h-4 text-[#64748B] group-hover:text-[#0284C7] group-hover:-translate-x-0.5 transition-transform" />
-            <span>Kembali ke Daftar Artikel</span>
+            <span>Kembali ke Artikel Sains</span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -178,7 +184,7 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
           </div>
 
           {/* Large Main Header Image */}
-          <div className="relative aspect-16/9 sm:aspect-21/9 w-full bg-[#0F172A] overflow-hidden">
+          <div className="relative aspect-16/9 sm:aspect-21/9 w-full bg-[#0F172A] overflow-hidden group">
             <img
               src={post.coverImage}
               alt={post.title}
@@ -186,6 +192,20 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+            
+            {/* Teacher Quick Photo Changer */}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsPhotoModalOpen(true)}
+                className="absolute top-4 right-4 z-20 px-3.5 py-2 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] hover:border-[#0284C7] text-xs font-bold shadow-lg transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md transform hover:scale-105"
+                title="Ganti / Cari Foto via Google atau Unggah dari HP/Laptop"
+              >
+                <Camera className="w-4 h-4" />
+                <span>Ganti / Cari Foto (Google / Upload)</span>
+              </button>
+            )}
+
             <div className="absolute bottom-4 left-6 text-white text-xs font-medium backdrop-blur-sm bg-black/40 px-3 py-1.5 rounded-lg border border-white/15">
               🔬 Dokumentasi & Ilustrasi Sains Kelas Pak Hafiz
             </div>
@@ -373,6 +393,29 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
         )}
 
       </div>
+
+      {/* Teacher Photo Changer Modal */}
+      {isPhotoModalOpen && (
+        <PhotoChangerModal
+          isOpen={isPhotoModalOpen}
+          onClose={() => setIsPhotoModalOpen(false)}
+          currentImageUrl={post.coverImage}
+          itemTitle={post.title}
+          modalTitle="Ganti Sampul Artikel Sains"
+          storageFolder={STORAGE_FOLDERS.ARTICLE_IMAGES}
+          onSavePhoto={(newUrl) => {
+            if (onUpdatePost) {
+              onUpdatePost({
+                ...post,
+                coverImage: newUrl
+              });
+            }
+            onAddToast('Sampul Artikel Diperbarui', 'Foto sampul artikel berhasil disimpan.', 'success');
+            setIsPhotoModalOpen(false);
+          }}
+          onAddToast={onAddToast}
+        />
+      )}
     </div>
   );
 };

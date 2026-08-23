@@ -950,3 +950,114 @@ export const INITIAL_CLASS_NOTES: ClassNote[] = [
   }
 ];
 
+export const INITIAL_PROFILE_EXPERIENCES: import('../types').ProfileExperienceItem[] = [
+  {
+    id: 'prof-1',
+    title: 'Lulusan S-1 Kimia (S.Si.)',
+    institution: 'UIN Syarif Hidayatullah Jakarta',
+    period: 'Alumni',
+    category: 'Pendidikan',
+    description: 'Fokus studi Kimia Murni dengan spesialisasi Kimia Organik & Kimia Analitik, aktif dalam riset laboratorium dan asistensi praktikum mahasiswa.',
+    subItems: [
+      'Skripsi bidang ekstraksi dan karakterisasi senyawa aktif bahan alam.',
+      'Praktisi instrumentasi spektrofotometer UV-Vis, kromatografi, dan titrimetri.'
+    ]
+  },
+  {
+    id: 'prof-2',
+    title: 'Asisten Laboratorium Kimia',
+    institution: 'UIN Syarif Hidayatullah Jakarta',
+    period: 'Pengalaman Asistensi',
+    category: 'Pengalaman',
+    description: 'Membimbing praktikum Kimia Dasar dan Kimia Organik bagi mahasiswa baru, menyiapkan reagen standar, serta menguji validitas modul praktikum.',
+    subItems: [
+      'Instruktur keselamatan kerja dan SOP laboratorium kimia.',
+      'Pengelolaan inventaris bahan kimia dan preparasi larutan reagen.'
+    ]
+  },
+  {
+    id: 'prof-3',
+    title: 'Asisten Laboratorium Kimia & Fisika',
+    institution: 'Institut Teknologi Indonesia (ITI) Serpong',
+    period: 'Pengalaman Asistensi',
+    category: 'Pengalaman',
+    description: 'Memandu sesi praktikum sains terintegrasi (Kimia dan Fisika Dasar) untuk mahasiswa teknik, kalibrasi alat ukur presisi, dan evaluasi laporan praktikum.',
+    subItems: [
+      'Pendampingan uji eksperimen termokimia dan mekanika fluida.',
+      'Pembimbingan analisis data hasil pengamatan eksperimen.'
+    ]
+  },
+  {
+    id: 'prof-4',
+    title: 'Laboran Analisis Development (R&D)',
+    institution: 'NCU Jakarta',
+    period: 'Pengalaman Laboratorium',
+    category: 'Pengalaman',
+    description: 'Melakukan pengujian mutu analitik sampel, validasi metode analisis kimia, penanganan instrumen laboratorium, serta dokumentasi data riset produk.',
+    subItems: [
+      'Quality control pengujian kadar zat aktif dan uji stabilitas larutan.',
+      'Penyusunan standar operating procedure (SOP) pengujian kimia.'
+    ]
+  },
+  {
+    id: 'prof-5',
+    title: 'Pengajar IPA dan Kimia SMA',
+    institution: 'SMA IAS Jakarta',
+    period: 'Pendidik Aktif',
+    category: 'Pengalaman',
+    description: 'Merancang kurikulum pembelajaran kimia kontekstual, memimpin praktikum sains interaktif berbasis indikator alami, serta membina siswa menuju olimpiade sains & seleksi masuk PTN (SNBT).',
+    subItems: [
+      'Inovator modul ajar LKPD praktikum kimia ramah lingkungan.',
+      'Pengembang media belajar digital interaktif Kelas Pak Hafiz.'
+    ]
+  }
+];
+
+export const INITIAL_PORTFOLIO_CERTIFICATES: import('../types').PortfolioCertificateItem[] = [
+  {
+    id: 'cert-1',
+    title: 'Sertifikat Kompetensi Asisten Laboratorium Kimia',
+    category: 'Sertifikat',
+    issuer: 'Laboratorium Terpadu UIN Syarif Hidayatullah Jakarta',
+    year: '2023',
+    imageUrl: 'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=800&q=80',
+    description: 'Kompetensi teruji dalam keselamatan kerja laboratorium (K3), preparasi larutan reagen baku, dan asistensi praktikum sains.'
+  },
+  {
+    id: 'cert-2',
+    title: 'Sertifikasi Pengujian Analisis & Mutu Laboratorium',
+    category: 'Sertifikat',
+    issuer: 'NCU Development Laboratory',
+    year: '2024',
+    imageUrl: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80',
+    description: 'Sertifikasi keahlian dalam verifikasi metode analisis kuantitatif, spektroskopi, dan pengendalian mutu laboratorium kimia.'
+  },
+  {
+    id: 'cert-3',
+    title: 'Karya Riset & Modul: Kimia Kontekstual Indikator Alami',
+    category: 'Karya Riset',
+    issuer: 'SMA IAS Jakarta & Edukasi Sains',
+    year: '2025',
+    imageUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80',
+    description: 'Pengembangan kurikulum lembar kerja praktikum (LKPD) berbasis bahan alam lokal (Kunyit & Bunga Telang) untuk siswa SMA.'
+  },
+  {
+    id: 'cert-4',
+    title: 'Piagam Pembina & Fasilitator Olimpiade Sains Kimia SMA',
+    category: 'Penghargaan',
+    issuer: 'SMA IAS Jakarta',
+    year: '2025',
+    imageUrl: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80',
+    description: 'Apresiasi atas dedikasi pembinaan intensif persiapan siswa dalam kompetisi sains dan pembekalan materi kimia tingkat lanjut.'
+  },
+  {
+    id: 'cert-5',
+    title: 'Pelatihan Pedagogi & Media Pembelajaran Sains Digital',
+    category: 'Pelatihan',
+    issuer: 'Asosiasi Pendidik Sains Indonesia',
+    year: '2026',
+    imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80',
+    description: 'Pelatihan pembuatan media simulasi kimia interaktif dan gamifikasi pembelajaran untuk peningkatan pemahaman konsep siswa.'
+  }
+];
+

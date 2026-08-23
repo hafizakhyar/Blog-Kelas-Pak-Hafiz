@@ -10,11 +10,10 @@ import {
   Sparkles,
   ExternalLink,
   CloudUpload,
-  RefreshCw,
-  Layers,
-  HelpCircle,
   Link as LinkIcon,
-  CheckCheck
+  CheckCheck,
+  Camera,
+  FolderOpen
 } from 'lucide-react';
 import {
   CURATED_CHEMISTRY_IMAGES,
@@ -30,21 +29,25 @@ interface PhotoChangerModalProps {
   onClose: () => void;
   currentImageUrl: string;
   itemTitle: string;
+  modalTitle?: string;
+  storageFolder?: string;
   onSavePhoto: (newImageUrl: string) => void;
-  onAddToast: (title: string, description?: string, type?: 'success' | 'info') => void;
+  onAddToast?: (title: string, description?: string, type?: 'success' | 'info') => void;
 }
 
-type TabType = 'upload' | 'search' | 'url';
+type TabType = 'google' | 'upload' | 'url';
 
 export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
   isOpen,
   onClose,
   currentImageUrl,
   itemTitle,
+  modalTitle = 'Ganti / Edit Foto',
+  storageFolder = STORAGE_FOLDERS.GALLERY_IMAGES,
   onSavePhoto,
-  onAddToast
+  onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {}
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('search');
+  const [activeTab, setActiveTab] = useState<TabType>('google');
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>(currentImageUrl);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [customUrlInput, setCustomUrlInput] = useState<string>('');
@@ -57,11 +60,11 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setSelectedImageUrl(currentImageUrl);
-      setCustomUrlInput(currentImageUrl.startsWith('http') ? currentImageUrl : '');
-      setSearchQuery('');
+      setCustomUrlInput(currentImageUrl && currentImageUrl.startsWith('http') ? currentImageUrl : '');
+      setSearchQuery(itemTitle || '');
       setImageError(false);
     }
-  }, [isOpen, currentImageUrl]);
+  }, [isOpen, currentImageUrl, itemTitle]);
 
   const searchResults = searchCuratedLabImages(searchQuery || itemTitle);
 
@@ -70,27 +73,27 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      onAddToast('Format Tidak Didukung', 'Harap pilih file gambar (JPG, PNG, WebP).', 'info');
+      onAddToast('Format Tidak Didukung', 'Harap pilih file gambar (JPG, PNG, WebP, GIF).', 'info');
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      onAddToast('Ukuran Terlalu Besar', 'Maksimal ukuran foto adalah 10MB.', 'info');
+    if (file.size > 12 * 1024 * 1024) {
+      onAddToast('Ukuran Terlalu Besar', 'Maksimal ukuran foto adalah 12MB.', 'info');
       return;
     }
 
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(15);
 
     try {
       const downloadUrl = await uploadFileToFirebaseStorage(
         file,
-        STORAGE_FOLDERS.GALLERY_IMAGES,
+        storageFolder,
         (progress) => setUploadProgress(progress)
       );
       setSelectedImageUrl(downloadUrl);
       setImageError(false);
-      onAddToast('Foto Berhasil Diunggah', 'Tersimpan di Firebase Storage (catatan_foto/galeri).', 'success');
+      onAddToast('Foto Berhasil Diunggah', `Tersimpan di Cloud Storage (${storageFolder}).`, 'success');
     } catch (err) {
       console.warn('Firebase Storage upload fallback:', err);
       const reader = new FileReader();
@@ -98,7 +101,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
         const localData = event.target?.result as string;
         setSelectedImageUrl(localData);
         setImageError(false);
-        onAddToast('Foto Terpasang', 'Foto disimpan secara lokal.', 'info');
+        onAddToast('Foto Terpasang', 'Foto disimpan secara lokal pada peramban.', 'info');
       };
       reader.readAsDataURL(file);
     } finally {
@@ -117,10 +120,11 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
 
   const handleConfirmSave = () => {
     if (!selectedImageUrl) {
-      onAddToast('Pilih Foto Terlebih Dahulu', 'Harap unggah atau pilih foto laboratorium.', 'info');
+      onAddToast('Pilih Foto Terlebih Dahulu', 'Harap unggah atau pilih foto terlebih dahulu.', 'info');
       return;
     }
     onSavePhoto(selectedImageUrl);
+    onAddToast('Foto Diperbarui', 'Perubahan gambar berhasil disimpan.', 'success');
     onClose();
   };
 
@@ -130,7 +134,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
     window.open(url, '_blank', 'noopener,noreferrer');
     onAddToast(
       'Membuka Google Images',
-      'Salin alamat gambar (Right Click → Copy Image Address) lalu tempel di tab URL.',
+      'Cari foto di Google, klik kanan "Salin Alamat Gambar" (Copy image address) lalu tempel di tab URL.',
       'info'
     );
   };
@@ -158,15 +162,20 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shadow-xs">
-              <ImageIcon className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center shadow-xs">
+              <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold text-[#0F172A] font-heading">
-                Ganti Foto Praktikum
-              </h3>
-              <p className="text-xs text-[#64748B] line-clamp-1">
-                {itemTitle}
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-[#0F172A] font-heading">
+                  {modalTitle}
+                </h3>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#E0F2FE] text-[#0284C7] text-[10px] font-bold">
+                  Mode Guru
+                </span>
+              </div>
+              <p className="text-xs text-[#64748B] line-clamp-1 mt-0.5">
+                {itemTitle || 'Ubah foto, unggah dari perangkat, atau cari via Google'}
               </p>
             </div>
           </div>
@@ -184,15 +193,15 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
         <div className="flex items-center gap-1.5 p-1 bg-[#F1F5F9] rounded-2xl mb-5">
           <button
             type="button"
-            onClick={() => setActiveTab('search')}
+            onClick={() => setActiveTab('google')}
             className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              activeTab === 'search'
+              activeTab === 'google'
                 ? 'bg-white text-[#0284C7] shadow-xs'
                 : 'text-[#64748B] hover:text-[#0F172A]'
             }`}
           >
-            <Search className="w-3.5 h-3.5" />
-            <span>Cari Google & Sampel Lab</span>
+            <Globe className="w-3.5 h-3.5" />
+            <span>Cari Langsung via Google</span>
           </button>
 
           <button
@@ -205,7 +214,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
             }`}
           >
             <Upload className="w-3.5 h-3.5" />
-            <span>Unggah dari File</span>
+            <span>Unggah dari File / HP</span>
           </button>
 
           <button
@@ -224,10 +233,10 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
 
         {/* Main Tab Content */}
         <div className="flex-1 space-y-4">
-          {/* TAB 1: SEARCH GOOGLE & CURATED LAB IMAGES */}
-          {activeTab === 'search' && (
+          {/* TAB 1: CARI LANGSUNG VIA GOOGLE & KOLEKSI SAINS */}
+          {activeTab === 'google' && (
             <div className="space-y-4">
-              {/* Search Bar + Google Search Helper Button */}
+              {/* Google Search Bar + Direct Button */}
               <div className="flex flex-col sm:flex-row gap-2.5">
                 <div className="relative flex-1">
                   <Search className="w-4 h-4 text-[#0284C7] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -235,7 +244,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Ketik topik (contoh: titrasi, kunyit, buret, uji nyala)..."
+                    placeholder="Ketik kata kunci foto (contoh: titrasi, asam basa, bunga telang)..."
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7]"
                   />
                   {searchQuery && (
@@ -252,19 +261,19 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
                 <button
                   type="button"
                   onClick={openGoogleImagesTab}
-                  className="px-4 py-2.5 rounded-xl bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-2xs cursor-pointer border border-[#BAE6FD] shrink-0"
-                  title="Buka Google Images di tab baru dengan kata kunci yang sesuai"
+                  className="px-4 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer shrink-0"
+                  title="Buka Google Images di tab baru"
                 >
                   <Globe className="w-3.5 h-3.5" />
                   <span>Cari di Google Images</span>
-                  <ExternalLink className="w-3 h-3" />
+                  <ExternalLink className="w-3 h-3 text-[#38BDF8]" />
                 </button>
               </div>
 
-              {/* Popular Chemistry Topics Chips */}
+              {/* Keyword chips */}
               <div>
                 <span className="text-[11px] font-bold text-[#64748B] block mb-1.5 uppercase tracking-wider">
-                  ⚡ Saran Topik Praktikum:
+                  ⚡ Saran Kata Kunci Cepat:
                 </span>
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                   {POPULAR_IMAGE_SEARCH_TOPICS.map((topic, i) => (
@@ -280,16 +289,16 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
                 </div>
               </div>
 
-              {/* Results Grid */}
+              {/* Curated Grid Selection */}
               <div className="border border-[#E2E8F0] rounded-2xl p-3 bg-[#F8FAFC]">
                 <div className="flex items-center justify-between mb-2.5 px-1">
                   <span className="text-xs font-bold text-[#0F172A]">
-                    Pilihan Foto Laboratorium & Eksperimen Kimia ({searchResults.length}):
+                    Koleksi Foto HD Laboratorium & Kimia ({searchResults.length}):
                   </span>
-                  <span className="text-[10px] text-[#64748B]">Klik foto untuk memilih</span>
+                  <span className="text-[10px] text-[#64748B]">Klik foto untuk langsung memilih</span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-60 overflow-y-auto p-1">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-56 overflow-y-auto p-1 custom-scrollbar">
                   {searchResults.map((img) => {
                     const isSelected = selectedImageUrl === img.url;
                     return (
@@ -330,7 +339,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: UPLOAD FILE */}
+          {/* TAB 2: UNGGAH DARI FILE / PERANGKAT */}
           {activeTab === 'upload' && (
             <div className="space-y-4">
               <input
@@ -350,21 +359,21 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
                 </div>
                 <div>
                   <h4 className="text-xs sm:text-sm font-bold text-[#0F172A]">
-                    Klik untuk Memilih Foto dari Perangkat
+                    Klik untuk Memilih Foto dari Laptop atau HP
                   </h4>
                   <p className="text-xs text-[#64748B] mt-0.5">
-                    Mendukung JPG, PNG, WebP (Maksimal 10MB)
+                    Mendukung format JPG, PNG, WebP, dan GIF (Maksimal 12MB)
                   </p>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-white border border-[#BAE6FD] text-[#0369A1] text-[10px] font-bold shadow-2xs">
-                  📁 Disimpan di Firebase Storage (catatan_foto/galeri)
+                  📁 Folder Penyimpanan Cloud: {storageFolder}
                 </span>
               </div>
 
               {isUploading && (
                 <div className="p-3.5 rounded-xl bg-[#E0F2FE] border border-[#BAE6FD] space-y-1.5">
                   <div className="flex justify-between text-xs font-bold text-[#0369A1]">
-                    <span>Mengunggah foto ke Cloud...</span>
+                    <span>Mengunggah foto ke Firebase Storage...</span>
                     <span>{uploadProgress}%</span>
                   </div>
                   <div className="w-full h-2 rounded-full bg-white overflow-hidden">
@@ -378,18 +387,18 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: PASTE DIRECT IMAGE URL */}
+          {/* TAB 3: TEMPEL URL GAMBAR LANGSUNG */}
           {activeTab === 'url' && (
             <div className="space-y-4">
               <div className="p-3.5 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD] text-xs text-[#0369A1] space-y-1">
                 <p className="font-bold flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-                  <span>Tips Mendapatkan URL Gambar dari Google Images:</span>
+                  <span>Cara Mudah Mengambil Foto dari Google Images:</span>
                 </p>
                 <ol className="list-decimal list-inside space-y-0.5 text-[11px] text-[#0F172A]/80 leading-relaxed">
-                  <li>Buka gambar di Google Images yang kamu sukai.</li>
+                  <li>Buka gambar yang kamu inginkan di Google Images.</li>
                   <li>Klik kanan pada gambar & pilih <b>"Salin Alamat Gambar" (Copy Image Address)</b>.</li>
-                  <li>Tempel (Paste) tautan pada kolom di bawah ini.</li>
+                  <li>Tempel (Paste) link URL di bawah ini lalu klik tombol <b>Terapkan URL</b>.</li>
                 </ol>
               </div>
 
@@ -398,7 +407,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
                   type="url"
                   value={customUrlInput}
                   onChange={(e) => setCustomUrlInput(e.target.value)}
-                  placeholder="https://images.unsplash.com/... atau tautan gambar langsung"
+                  placeholder="https://images.unsplash.com/... atau https://..."
                   className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs sm:text-sm text-[#0F172A] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7]"
                 />
                 <button
@@ -416,7 +425,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
                   onClick={openGoogleImagesTab}
                   className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <span>Cari referensi di Google Images</span>
+                  <span>Cari referensi langsung di Google Images</span>
                   <ExternalLink className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -428,7 +437,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
                 <ImageIcon className="w-3.5 h-3.5 text-[#0284C7]" />
-                <span>Pratinjau Foto Terpilih:</span>
+                <span>Pratinjau Foto yang Dipilih:</span>
               </span>
               {selectedImageUrl && (
                 <span className="text-[10px] text-[#0284C7] font-semibold truncate max-w-xs">
@@ -438,10 +447,10 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
             </div>
 
             {selectedImageUrl && !imageError ? (
-              <div className="relative w-full h-44 sm:h-52 rounded-xl overflow-hidden border border-[#CBD5E1] bg-black/5 shadow-inner">
+              <div className="relative w-full h-40 sm:h-48 rounded-xl overflow-hidden border border-[#CBD5E1] bg-black/5 shadow-inner">
                 <img
                   src={selectedImageUrl}
-                  alt="Pratinjau Foto Praktikum"
+                  alt="Pratinjau"
                   referrerPolicy="no-referrer"
                   onError={() => setImageError(true)}
                   className="w-full h-full object-cover"
@@ -452,7 +461,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="w-full h-32 rounded-xl border border-dashed border-[#CBD5E1] bg-white flex flex-col items-center justify-center text-center p-3">
+              <div className="w-full h-28 rounded-xl border border-dashed border-[#CBD5E1] bg-white flex flex-col items-center justify-center text-center p-3">
                 <ImageIcon className="w-6 h-6 text-[#94A3B8] mb-1" />
                 <p className="text-xs font-semibold text-[#64748B]">
                   {imageError ? 'Gagal memuat URL gambar. Harap periksa tautan gambar.' : 'Belum ada foto yang dipilih.'}

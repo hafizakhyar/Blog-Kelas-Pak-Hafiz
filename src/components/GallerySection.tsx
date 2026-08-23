@@ -28,7 +28,8 @@ import {
   HelpCircle,
   Tag,
   Layers,
-  Globe
+  Globe,
+  Camera
 } from 'lucide-react';
 import { GALLERY_ITEMS } from '../data/mockData';
 import { GalleryItem } from '../types';
@@ -436,19 +437,22 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                     {item.category}
                   </span>
 
-                  {/* Badge & Quick Photo Changer */}
-                  <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setItemForPhotoChange(item);
-                      }}
-                      className="px-2.5 py-1 rounded-full bg-white/90 hover:bg-[#0284C7] text-[#0F172A] hover:text-white text-[10px] font-bold backdrop-blur-xs shadow-xs transition-colors flex items-center gap-1 cursor-pointer"
-                      title="Ganti Foto (Unggah File / Cari Google)"
-                    >
-                      <ImageIcon className="w-3 h-3" />
-                      <span>Ganti Foto</span>
-                    </button>
+                  {/* Badge & Teacher Photo Changer */}
+                  <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5 z-10">
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setItemForPhotoChange(item);
+                        }}
+                        className="px-3 py-1.5 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] hover:border-[#0284C7] text-[11px] font-bold backdrop-blur-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer transform hover:scale-105"
+                        title="Ganti / Cari Foto via Google atau Unggah dari HP/Laptop"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>Ganti / Cari Foto</span>
+                      </button>
+                    )}
                     <span className="px-3 py-1 text-[11px] font-medium rounded-full bg-[#0F172A]/80 text-white backdrop-blur-xs">
                       {item.badge}
                     </span>

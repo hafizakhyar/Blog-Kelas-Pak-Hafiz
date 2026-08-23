@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   BookOpen,
@@ -20,11 +20,17 @@ import {
   Lock,
   KeyRound,
   ShieldCheck,
-  Image as ImageIcon
+  Image as ImageIcon,
+  CheckCircle2,
+  Layers,
+  ArrowUpRight,
+  Compass,
+  Camera
 } from 'lucide-react';
 import { BLOG_POSTS, TEACHER_INFO } from '../data/mockData';
 import { BlogPost } from '../types';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../lib/firebase';
+import { PhotoChangerModal } from './Modals/PhotoChangerModal';
 
 const ADMIN_AUTH_KEY = 'kelaspakhafiz_admin_auth';
 const DEFAULT_ADMIN_PASSCODE = 'hafiz2026';
@@ -37,6 +43,7 @@ interface BlogSectionProps {
   setIsAdmin?: (val: boolean) => void;
   onAddPost?: (post: BlogPost) => void;
   onDeletePost?: (postId: string) => void;
+  onUpdatePost?: (post: BlogPost) => void;
   onAddToast?: (title: string, description?: string, type?: 'success' | 'info') => void;
 }
 
@@ -48,10 +55,17 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
   setIsAdmin,
   onAddPost,
   onDeletePost,
+  onUpdatePost,
   onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {}
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // Spotlight / Active Article on the Large Preview Side
+  const [activePostId, setActivePostId] = useState<string>('');
+
+  // Quick Photo Changer for Teacher
+  const [itemForPhotoChange, setItemForPhotoChange] = useState<BlogPost | null>(null);
 
   // Admin Passcode Modal
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
@@ -60,7 +74,11 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passcodeAttempt.trim() === DEFAULT_ADMIN_PASSCODE || passcodeAttempt.trim() === 'admin123' || passcodeAttempt.trim() === 'hafiz2026') {
+    if (
+      passcodeAttempt.trim() === DEFAULT_ADMIN_PASSCODE ||
+      passcodeAttempt.trim() === 'admin123' ||
+      passcodeAttempt.trim() === 'hafiz2026'
+    ) {
       if (setIsAdmin) setIsAdmin(true);
       localStorage.setItem(ADMIN_AUTH_KEY, 'true');
       setIsAdminModalOpen(false);
@@ -90,14 +108,29 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
 
   const categories = ['Semua', 'Kimia Sehari-hari', 'Tips Belajar', 'Eksperimen Kreatif', 'Fakta Unik'];
 
-  const filteredPosts = posts.filter((post) => {
-    const matchesCategory = selectedCategory === 'Semua' || post.category === selectedCategory;
-    const matchesSearch =
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
+  const filteredPosts = useMemo(() => {
+    return posts.filter((post) => {
+      const matchesCategory = selectedCategory === 'Semua' || post.category === selectedCategory;
+      const matchesSearch =
+        post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.summary.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        post.tags.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchesCategory && matchesSearch;
+    });
+  }, [posts, selectedCategory, searchQuery]);
+
+  // Keep active post updated with the filtered list
+  useEffect(() => {
+    if (filteredPosts.length > 0) {
+      if (!activePostId || !filteredPosts.some((p) => p.id === activePostId)) {
+        setActivePostId(filteredPosts[0].id);
+      }
+    }
+  }, [filteredPosts, activePostId]);
+
+  const activePost = useMemo(() => {
+    return filteredPosts.find((p) => p.id === activePostId) || filteredPosts[0] || null;
+  }, [filteredPosts, activePostId]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -179,6 +212,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
       onAddPost(newPost);
     }
 
+    setActivePostId(newPost.id);
     setIsAddModalOpen(false);
     setFormTitle('');
     setFormSummary('');
@@ -188,20 +222,20 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
   };
 
   return (
-    <section id="blog" className="py-20 bg-[#F4F8FC]">
+    <section id="blog" className="py-20 sm:py-24 bg-[#F4F8FC] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] text-[#0F172A] text-xs font-semibold mb-3 shadow-2xs">
               <BookOpen className="w-3.5 h-3.5 text-[#0284C7]" />
               <span className="uppercase tracking-widest text-[10px] text-[#0284C7] font-bold">Wawasan & Eksplorasi</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-light font-heading text-[#0F172A] tracking-tight">
-              Artikel & Catatan <span className="font-semibold text-[#0284C7]">Belajar Kimia</span>
+              Artikel <span className="font-semibold text-[#0284C7]">Sains</span>
             </h2>
-            <p className="text-[#64748B] text-sm sm:text-base mt-2 max-w-xl">
+            <p className="text-[#64748B] text-xs sm:text-sm mt-2 max-w-xl">
               Ulasan fenomena sains sehari-hari, tips belajar efektif menembus ujian kimia SMA, dan fakta sains menarik.
             </p>
           </div>
@@ -214,9 +248,17 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari artikel (sabun, asam basa)..."
-                className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-full bg-white border border-[#E2E8F0] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] text-[#0F172A] placeholder:text-[#94A3B8] shadow-2xs transition-all"
+                placeholder="Cari artikel sains..."
+                className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-full bg-white border border-[#CBD5E1] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] text-[#0F172A] placeholder:text-[#94A3B8] shadow-2xs transition-all"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Action Buttons */}
@@ -241,16 +283,16 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
           </div>
         </div>
 
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none">
+        {/* Category Pills Filter */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-8 scrollbar-none">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer border ${
                 selectedCategory === cat
-                  ? 'bg-[#0284C7] text-white shadow-xs'
-                  : 'bg-white text-[#64748B] hover:bg-[#E0F2FE] hover:text-[#0F172A] border border-[#E2E8F0]'
+                  ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-xs'
+                  : 'bg-white text-[#64748B] hover:bg-[#E0F2FE] hover:text-[#0284C7] border-[#E2E8F0]'
               }`}
             >
               {cat}
@@ -258,123 +300,400 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
           ))}
         </div>
 
-        {/* Blog Grid */}
-        <motion.div
-          layout
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
-        >
-          <AnimatePresence>
-            {filteredPosts.map((post) => (
-              <motion.article
-                layout
-                key={post.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="group relative bg-white rounded-[24px] overflow-hidden border border-[#E2E8F0] shadow-[0_4px_20px_rgba(2,132,199,0.06)] hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col justify-between cursor-pointer"
-              >
-                {/* Image Cover */}
-                <div
-                  onClick={() => onSelectPost(post)}
-                  className="relative aspect-16/9 w-full overflow-hidden bg-[#E2E8F0]"
+        {/* 2-Sisi Layout (Large Spotlight View on Left, Scrollable Vertical List on Right) */}
+        {filteredPosts.length > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            {/* SISI KIRI: TAMPILAN BESAR (FEATURED / ACTIVE ARTICLE SPOTLIGHT) */}
+            <div className="lg:col-span-7 xl:col-span-7">
+              {activePost && (
+                <motion.article
+                  key={activePost.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-white rounded-3xl overflow-hidden border border-[#CBD5E1] shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col"
                 >
-                  <img
-                    src={post.coverImage}
-                    alt={post.title}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-[#0F172A]/70 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
-                  
-                  {/* Category Pill */}
-                  <span className="absolute top-3.5 left-3.5 px-3 py-1 text-[11px] font-bold rounded-full bg-white/90 text-[#0284C7] backdrop-blur-xs shadow-xs border border-white/60">
-                    {post.category}
-                  </span>
+                  {/* Large Cover Image */}
+                  <div
+                    onClick={() => onSelectPost(activePost)}
+                    className="relative aspect-16/9 sm:aspect-21/9 lg:aspect-16/9 w-full overflow-hidden bg-[#E2E8F0] cursor-pointer group"
+                  >
+                    <img
+                      src={activePost.coverImage}
+                      alt={activePost.title}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-[#0F172A]/85 via-[#0F172A]/30 to-transparent" />
+                    
+                    {/* Top Badges & Teacher Photo Changer */}
+                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
+                      <div className="flex items-center gap-2">
+                        <span className="px-3.5 py-1 text-xs font-bold rounded-full bg-white/95 text-[#0284C7] backdrop-blur-md shadow-xs border border-white/60">
+                          {activePost.category}
+                        </span>
+                        <span className="px-3 py-1 text-[11px] font-bold rounded-full bg-emerald-500/90 text-white backdrop-blur-md shadow-xs flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Sorotan Utama</span>
+                        </span>
+                      </div>
 
-                  <span className="absolute bottom-3 right-3 flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-black/60 text-white text-[11px] backdrop-blur-xs font-mono">
-                    <Clock className="w-3 h-3" />
-                    <span>{post.readTime}</span>
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div onClick={() => onSelectPost(post)}>
-                    <div className="flex items-center gap-2 text-xs text-[#64748B] mb-2.5">
-                      <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
-                      <span>{post.date}</span>
-                    </div>
-
-                    <h3 className="text-base font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#0284C7] transition-colors mb-2.5 line-clamp-2">
-                      {post.title}
-                    </h3>
-
-                    <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2 mb-4">
-                      {post.summary}
-                    </p>
-                  </div>
-
-                  <div className="pt-4 border-t border-[#E2E8F0] flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={post.author.avatar}
-                        alt={post.author.name}
-                        referrerPolicy="no-referrer"
-                        className="w-6 h-6 rounded-full object-cover border border-[#CBD5E1]"
-                      />
-                      <span className="text-[11px] font-semibold text-[#0F172A] line-clamp-1">{post.author.name}</span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
                       {isAdmin && (
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setPostToDelete(post);
+                            setItemForPhotoChange(activePost);
                           }}
-                          className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
-                          title="Hapus Artikel"
+                          className="px-3 py-1.5 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] hover:border-[#0284C7] text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md transform hover:scale-105"
+                          title="Ganti / Cari Foto via Google atau Unggah dari HP/Laptop"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Ganti / Cari Foto</span>
                         </button>
                       )}
-                      
-                      <button
-                        onClick={() => onSelectPost(post)}
-                        className="text-xs font-bold text-[#0284C7] group-hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        Baca
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
+                    </div>
+
+                    {/* Bottom Metadata inside Image */}
+                    <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white text-xs">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3.5 h-3.5 text-[#38BDF8]" />
+                        <span className="font-medium text-slate-200">{activePost.date}</span>
+                      </div>
+                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-black/60 text-white text-[11px] backdrop-blur-md font-mono">
+                        <Clock className="w-3 h-3 text-[#38BDF8]" />
+                        <span>{activePost.readTime}</span>
+                      </span>
                     </div>
                   </div>
-                </div>
-              </motion.article>
-            ))}
-          </AnimatePresence>
-        </motion.div>
 
-        {filteredPosts.length === 0 && (
-          <div className="text-center py-16 bg-white rounded-[24px] border border-[#E2E8F0] p-8">
-            <p className="text-[#64748B] text-sm">
-              Tidak ada artikel yang cocok dengan kata kunci "{searchQuery}".
+                  {/* Content Area */}
+                  <div className="p-6 sm:p-8 flex flex-col justify-between space-y-5">
+                    <div>
+                      {/* Title */}
+                      <h3
+                        onClick={() => onSelectPost(activePost)}
+                        className="text-xl sm:text-2xl lg:text-2xl font-bold font-heading text-[#0F172A] leading-tight hover:text-[#0284C7] transition-colors cursor-pointer"
+                      >
+                        {activePost.title}
+                      </h3>
+
+                      {/* Summary */}
+                      <p className="text-[#64748B] text-xs sm:text-sm leading-relaxed mt-3">
+                        {activePost.summary}
+                      </p>
+
+                      {/* Key Takeaways Highlights if available */}
+                      {activePost.keyTakeaways && activePost.keyTakeaways.length > 0 && (
+                        <div className="mt-5 p-4 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD]/80">
+                          <span className="text-[11px] font-bold text-[#0369A1] uppercase tracking-wider block mb-2 flex items-center gap-1.5">
+                            <BookmarkCheck className="w-3.5 h-3.5 text-[#0284C7]" />
+                            <span>Poin Inti Wawasan:</span>
+                          </span>
+                          <ul className="space-y-1.5 text-xs text-[#334155]">
+                            {activePost.keyTakeaways.map((item, idx) => (
+                              <li key={idx} className="flex items-start gap-2">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-[#0284C7] shrink-0 mt-0.5" />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {activePost.tags && activePost.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-4">
+                          {activePost.tags.map((tag, i) => (
+                            <span
+                              key={i}
+                              className="px-2.5 py-1 rounded-lg bg-[#F1F5F9] text-[#475569] text-[11px] font-medium border border-[#E2E8F0]"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Author & CTA Bar */}
+                    <div className="pt-5 border-t border-[#E2E8F0] flex items-center justify-between flex-wrap gap-4">
+                      {/* Author */}
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={activePost.author.avatar}
+                          alt={activePost.author.name}
+                          referrerPolicy="no-referrer"
+                          className="w-9 h-9 rounded-full object-cover border border-[#CBD5E1]"
+                        />
+                        <div>
+                          <div className="text-xs font-bold text-[#0F172A]">{activePost.author.name}</div>
+                          <div className="text-[10px] text-[#64748B]">{activePost.author.role}</div>
+                        </div>
+                      </div>
+
+                      {/* Action Controls */}
+                      <div className="flex items-center gap-2">
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPostToDelete(activePost);
+                            }}
+                            className="p-2 rounded-xl bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                            title="Hapus Artikel ini"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => onSelectPost(activePost)}
+                          className="px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-md shadow-[#0284C7]/20 transition-all cursor-pointer group"
+                        >
+                          <span>Baca Artikel Lengkap</span>
+                          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </motion.article>
+              )}
+            </div>
+
+            {/* SISI KANAN: TAMPILAN KECIL DI SAMPING BERURUTAN KE BAWAH 1 KOLOM YANG BISA DI-SCROLL */}
+            <div className="lg:col-span-5 xl:col-span-5 flex flex-col">
+              
+              {/* Header Box for Side List */}
+              <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#CBD5E1]">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center font-bold text-xs">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Daftar Artikel Sains</h3>
+                    <p className="text-[11px] text-[#64748B]">
+                      {filteredPosts.length} artikel tersedia • Klik untuk melihat
+                    </p>
+                  </div>
+                </div>
+
+                <span className="text-[10px] font-semibold text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded-md border border-[#BAE6FD]">
+                  Bisa di-scroll ↓
+                </span>
+              </div>
+
+              {/* Scrollable Column Container */}
+              <div className="space-y-3 max-h-[640px] overflow-y-auto pr-2 custom-scrollbar focus:outline-none">
+                {filteredPosts.map((post) => {
+                  const isCurrentActive = activePost?.id === post.id;
+                  return (
+                    <motion.div
+                      key={post.id}
+                      onClick={() => setActivePostId(post.id)}
+                      className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex gap-3.5 items-start ${
+                        isCurrentActive
+                          ? 'bg-white border-[#0284C7] ring-2 ring-[#0284C7]/20 shadow-md'
+                          : 'bg-white hover:bg-[#F8FAFC] border-[#E2E8F0] hover:border-[#CBD5E1] shadow-2xs'
+                      }`}
+                    >
+                      {/* Compact Thumbnail Image */}
+                      <div className="relative w-24 h-24 sm:w-28 sm:h-24 rounded-xl overflow-hidden bg-[#E2E8F0] shrink-0 group/thumb">
+                        <img
+                          src={post.coverImage}
+                          alt={post.title}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover"
+                        />
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setItemForPhotoChange(post);
+                            }}
+                            className="absolute top-1 right-1 z-10 p-1.5 rounded-full bg-white/90 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] text-[10px] shadow-xs cursor-pointer transition-colors"
+                            title="Ganti Foto Artikel via Google / Upload"
+                          >
+                            <Camera className="w-3 h-3" />
+                          </button>
+                        )}
+                        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 text-white text-[9px] font-mono">
+                          {post.readTime}
+                        </span>
+                      </div>
+
+                      {/* Info & Metadata */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between h-24 py-0.5">
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[10px] font-bold text-[#0284C7] bg-[#E0F2FE] px-2 py-0.5 rounded-md truncate max-w-[120px]">
+                              {post.category}
+                            </span>
+                            <span className="text-[10px] text-[#94A3B8] shrink-0 font-mono">
+                              {post.date}
+                            </span>
+                          </div>
+
+                          <h4 className="text-xs font-bold text-[#0F172A] leading-snug line-clamp-2 hover:text-[#0284C7] transition-colors">
+                            {post.title}
+                          </h4>
+                        </div>
+
+                        {/* Card Bottom Actions */}
+                        <div className="flex items-center justify-between pt-1 border-t border-[#F1F5F9]">
+                          <span className="text-[10px] text-[#64748B] truncate max-w-[110px]">
+                            {post.author.name}
+                          </span>
+
+                          <div className="flex items-center gap-1.5">
+                            {isAdmin && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPostToDelete(post);
+                                }}
+                                className="p-1 rounded-md text-[#EF4444] hover:bg-[#FEE2E2] transition-colors"
+                                title="Hapus artikel"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectPost(post);
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0284C7] hover:underline"
+                            >
+                              <span>Buka</span>
+                              <ArrowUpRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+            </div>
+
+          </div>
+        ) : (
+          /* Empty Search State */
+          <div className="text-center py-16 bg-white rounded-3xl border border-[#CBD5E1] p-8 max-w-md mx-auto">
+            <BookOpen className="w-12 h-12 text-[#CBD5E1] mx-auto mb-3" />
+            <h4 className="text-sm font-bold text-[#0F172A]">Tidak ada artikel sains yang cocok</h4>
+            <p className="text-xs text-[#64748B] mt-1">
+              Tidak ditemukan artikel untuk kata kunci "{searchQuery}".
             </p>
             <button
               onClick={() => {
                 setSearchQuery('');
                 setSelectedCategory('Semua');
               }}
-              className="mt-3 px-5 py-2 text-xs font-bold text-white bg-[#0284C7] rounded-full"
+              className="mt-4 px-5 py-2 text-xs font-bold text-white bg-[#0284C7] hover:bg-[#0369A1] rounded-full transition-all cursor-pointer"
             >
-              Reset Filter
+              Reset Pencarian
             </button>
           </div>
         )}
 
       </div>
 
-      {/* Add New Article Modal */}
+      {/* ========================================================================= */}
+      {/* MODAL 1: Admin / Teacher Passcode Verification */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {isAdminModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAdminModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-[#CBD5E1] p-6 z-10"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Akses Menu Guru</h3>
+                    <p className="text-[10px] text-[#64748B]">Tulis & Publikasikan Artikel Sains</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsAdminModalOpen(false)}
+                  className="p-1.5 rounded-full hover:bg-[#F1F5F9] text-[#64748B] cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAdminLogin} className="space-y-4 text-xs">
+                <p className="text-[#475569] text-xs leading-relaxed">
+                  Masukkan kata sandi guru untuk mempublikasikan artikel pembelajaran baru.
+                </p>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0F172A] mb-1">Kata Sandi Guru</label>
+                  <input
+                    type="password"
+                    autoFocus
+                    required
+                    value={passcodeAttempt}
+                    onChange={(e) => {
+                      setPasscodeAttempt(e.target.value);
+                      setPasscodeError(false);
+                    }}
+                    placeholder="Masukkan kata sandi..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] font-mono text-sm focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7]"
+                  />
+                  {passcodeError && (
+                    <p className="text-[11px] text-[#EF4444] mt-1 font-semibold">
+                      Kata sandi salah. Coba gunakan hafiz2026.
+                    </p>
+                  )}
+                  <p className="text-[10px] text-[#94A3B8] mt-1">
+                    Kata sandi default: <code className="font-mono text-[#0284C7]">hafiz2026</code>
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2E8F0]">
+                  <button
+                    type="button"
+                    onClick={() => setIsAdminModalOpen(false)}
+                    className="px-4 py-2 rounded-full border border-[#CBD5E1] text-[#64748B] hover:bg-[#F1F5F9] font-semibold cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold shadow-xs cursor-pointer"
+                  >
+                    Buka Akses
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* MODAL 2: Add New Article Modal */}
+      {/* ========================================================================= */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -397,7 +716,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                     <BookOpen className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-[#0F172A]">Tulis Artikel Pembelajaran Baru</h3>
+                    <h3 className="text-sm font-bold text-[#0F172A]">Tulis Artikel Sains Baru</h3>
                     <p className="text-[11px] text-[#64748B]">Simpan ke Firebase Firestore & Storage</p>
                   </div>
                 </div>
@@ -555,7 +874,9 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Modal */}
+      {/* ========================================================================= */}
+      {/* MODAL 3: Delete Confirmation Modal */}
+      {/* ========================================================================= */}
       <AnimatePresence>
         {postToDelete && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -575,14 +896,14 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
               <div className="w-12 h-12 rounded-full bg-[#FEE2E2] text-[#EF4444] flex items-center justify-center mx-auto mb-3">
                 <Trash2 className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-bold text-[#0F172A] mb-1">Hapus Artikel Belajar?</h3>
+              <h3 className="text-base font-bold text-[#0F172A] mb-1">Hapus Artikel Sains?</h3>
               <p className="text-xs text-[#64748B] mb-5">
                 Artikel "{postToDelete.title}" akan dihapus permanen dari Firebase Firestore.
               </p>
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => setPostToDelete(null)}
-                  className="px-4 py-2 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B]"
+                  className="px-4 py-2 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B] cursor-pointer"
                 >
                   Batal
                 </button>
@@ -594,7 +915,7 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                     onAddToast('Artikel Dihapus', `Artikel "${postToDelete.title}" telah dihapus.`, 'info');
                     setPostToDelete(null);
                   }}
-                  className="px-4 py-2 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold shadow-xs"
+                  className="px-4 py-2 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
                   Hapus Permanen
                 </button>
@@ -604,105 +925,29 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Admin Passcode Modal for Teachers */}
-      <AnimatePresence>
-        {isAdminModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => {
-                setIsAdminModalOpen(false);
-                setPasscodeError(false);
-              }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-6 sm:p-8 z-10"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-[#0F172A]">Mode Pengajar (Pak Hafiz)</h3>
-                    <p className="text-xs text-[#64748B]">Buka akses untuk menulis artikel kimia baru</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    setIsAdminModalOpen(false);
-                    setPasscodeError(false);
-                  }}
-                  className="p-1.5 rounded-full text-[#94A3B8] hover:text-[#0F172A] hover:bg-[#F1F5F9]"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      {/* Quick Photo Changer Modal for Teacher */}
+      {itemForPhotoChange && (
+        <PhotoChangerModal
+          isOpen={!!itemForPhotoChange}
+          onClose={() => setItemForPhotoChange(null)}
+          currentImageUrl={itemForPhotoChange.coverImage}
+          itemTitle={itemForPhotoChange.title}
+          modalTitle="Ganti Sampul Artikel Sains"
+          storageFolder={STORAGE_FOLDERS.ARTICLE_IMAGES}
+          onSavePhoto={(newUrl) => {
+            if (onUpdatePost && itemForPhotoChange) {
+              onUpdatePost({
+                ...itemForPhotoChange,
+                coverImage: newUrl
+              });
+            }
+            onAddToast('Sampul Artikel Diperbarui', 'Foto sampul artikel berhasil disimpan.', 'success');
+            setItemForPhotoChange(null);
+          }}
+          onAddToast={onAddToast}
+        />
+      )}
 
-              <form onSubmit={handleAdminLogin} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-[#334155] uppercase tracking-wider mb-2">
-                    Passcode Guru
-                  </label>
-                  <div className="relative">
-                    <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
-                    <input
-                      type="password"
-                      autoFocus
-                      placeholder="Ketik passcode (hafiz2026)..."
-                      value={passcodeAttempt}
-                      onChange={(e) => {
-                        setPasscodeAttempt(e.target.value);
-                        setPasscodeError(false);
-                      }}
-                      className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm focus:outline-none transition-all ${
-                        passcodeError
-                          ? 'border-[#EF4444] bg-[#FEF2F2] text-[#991B1B]'
-                          : 'border-[#CBD5E1] bg-[#F8FAFC] text-[#0F172A] focus:border-[#0284C7]'
-                      }`}
-                    />
-                  </div>
-                  {passcodeError ? (
-                    <p className="text-xs text-[#EF4444] mt-1.5 font-medium">
-                      Passcode salah. Gunakan: hafiz2026
-                    </p>
-                  ) : (
-                    <p className="text-[11px] text-[#64748B] mt-1.5">
-                      Gunakan kode akses pengajar bawaan: <code className="bg-[#F1F5F9] px-1.5 py-0.5 rounded text-[#0284C7] font-bold">hafiz2026</code>
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsAdminModalOpen(false);
-                      setPasscodeError(false);
-                    }}
-                    className="px-4 py-2 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9]"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-xs flex items-center gap-1.5"
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Buka Mode Guru</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </section>
   );
 };
