@@ -19,14 +19,15 @@ import {
   uploadBytesResumable,
   getDownloadURL
 } from 'firebase/storage';
-import { ClassNote, GalleryItem, DocumentItem, BlogPost, ProfileExperienceItem, PortfolioCertificateItem } from '../types';
+import { ClassNote, GalleryItem, DocumentItem, BlogPost, ProfileExperienceItem, PortfolioCertificateItem, TeacherBioProfile } from '../types';
 import {
   INITIAL_CLASS_NOTES,
   GALLERY_ITEMS,
   DOCUMENT_ITEMS,
   BLOG_POSTS,
   INITIAL_PROFILE_EXPERIENCES,
-  INITIAL_PORTFOLIO_CERTIFICATES
+  INITIAL_PORTFOLIO_CERTIFICATES,
+  INITIAL_TEACHER_PROFILE
 } from '../data/mockData';
 
 // User's exact Firebase Project Configuration
@@ -61,6 +62,7 @@ export const COLLECTIONS = {
   DOCUMENTS: 'catatan_dokumen',
   PROFILES: 'catatan_profil',
   PORTFOLIOS: 'catatan_portofolio',
+  TEACHER_BIO: 'catatan_biodata_guru',
 } as const;
 
 // Storage Folder Names prefixed with "catatan_"
@@ -634,5 +636,74 @@ export async function savePortfolioCertificateToFirestore(cert: PortfolioCertifi
 
 export async function deletePortfolioCertificateFromFirestore(certId: string): Promise<void> {
   await deleteWithFallback(COLLECTIONS.PORTFOLIOS, certId);
+}
+
+// --- Biodata Profil & Keahlian Guru (catatan_biodata_guru) ---
+export function subscribeToTeacherBioProfile(
+  onData: (profile: TeacherBioProfile) => void,
+  onError?: (err: Error) => void
+) {
+  const docId = 'main-teacher-profile';
+
+  const parseDocSnapshot = (docSnap: any) => {
+    if (!docSnap.exists()) {
+      onData(INITIAL_TEACHER_PROFILE);
+      return;
+    }
+    const data = docSnap.data();
+    const profile: TeacherBioProfile = {
+      id: docSnap.id,
+      name: data.name || INITIAL_TEACHER_PROFILE.name,
+      title: data.title || INITIAL_TEACHER_PROFILE.title,
+      verifiedBadgeText: data.verifiedBadgeText || INITIAL_TEACHER_PROFILE.verifiedBadgeText,
+      avatarUrl: data.avatarUrl || INITIAL_TEACHER_PROFILE.avatarUrl,
+      bioDescription: data.bioDescription || INITIAL_TEACHER_PROFILE.bioDescription,
+      skillsAndFocus: Array.isArray(data.skillsAndFocus) ? data.skillsAndFocus : INITIAL_TEACHER_PROFILE.skillsAndFocus,
+      contacts: Array.isArray(data.contacts) ? data.contacts : INITIAL_TEACHER_PROFILE.contacts,
+      updatedAt: data.updatedAt
+    };
+
+    console.log('[Firebase Firestore] onSnapshot: Memuat data biodata guru (catatan_biodata_guru).');
+    onData(profile);
+  };
+
+  let unsubDefault: (() => void) | null = null;
+  const unsubCustom = onSnapshot(
+    doc(customDb, COLLECTIONS.TEACHER_BIO, docId),
+    parseDocSnapshot,
+    (err) => {
+      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_biodata_guru gagal, beralih ke defaultDb:', err.message);
+      unsubDefault = onSnapshot(
+        doc(defaultDb, COLLECTIONS.TEACHER_BIO, docId),
+        parseDocSnapshot,
+        (defaultErr) => {
+          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_biodata_guru error:', defaultErr);
+          if (onError) onError(defaultErr);
+        }
+      );
+    }
+  );
+
+  return () => {
+    unsubCustom();
+    if (unsubDefault) unsubDefault();
+  };
+}
+
+export async function saveTeacherBioProfileToFirestore(profile: TeacherBioProfile): Promise<void> {
+  const docId = profile.id || 'main-teacher-profile';
+  const payload: Record<string, any> = {
+    id: docId,
+    name: profile.name || '',
+    title: profile.title || '',
+    verifiedBadgeText: profile.verifiedBadgeText || 'Pendidik Terverifikasi',
+    avatarUrl: profile.avatarUrl || '',
+    bioDescription: profile.bioDescription || '',
+    skillsAndFocus: profile.skillsAndFocus || [],
+    contacts: profile.contacts || [],
+    updatedAt: serverTimestamp()
+  };
+
+  await writeWithFallback(COLLECTIONS.TEACHER_BIO, docId, payload);
 }
 

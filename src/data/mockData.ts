@@ -1,4 +1,4 @@
-import { GalleryItem, DocumentItem, BlogPost, NaturalIndicator, TestSolution, ClassNote } from '../types';
+import { GalleryItem, DocumentItem, BlogPost, NaturalIndicator, TestSolution, ClassNote, TeacherBioProfile } from '../types';
 
 export const TEACHER_INFO = {
   name: 'Pak Hafiz Akhyar, S.Si.',
@@ -1063,4 +1063,43 @@ export const INITIAL_PORTFOLIO_CERTIFICATES: import('../types').PortfolioCertifi
     description: 'Pelatihan pembuatan media simulasi kimia interaktif dan gamifikasi pembelajaran untuk peningkatan pemahaman konsep siswa.'
   }
 ];
+
+export const INITIAL_TEACHER_PROFILE: TeacherBioProfile = {
+  id: 'main-teacher-profile',
+  name: 'Pak Hafiz Akhyar, S.Si.',
+  title: 'Guru Kimia & Praktisi Lab',
+  verifiedBadgeText: 'Pendidik Terverifikasi',
+  avatarUrl: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi',
+  bioDescription: 'Mendedikasikan pembelajaran sains kimia secara kontekstual, berbasis laboratorium ramah lingkungan, serta menumbuhkan nalar kritis siswa menuju prestasi olimpiade dan perguruan tinggi.',
+  skillsAndFocus: [
+    'S-1 Kimia UIN Jakarta',
+    'Kimia Organik & Analitik',
+    'Instruktur Lab & K3',
+    'Modul LKPD Indikator Alami',
+    'Pembina Olimpiade Sains (OSN)'
+  ],
+  contacts: [
+    {
+      id: 'cnt-email',
+      type: 'email',
+      label: 'kelaspakhafiz@gmail.com',
+      value: 'kelaspakhafiz@gmail.com',
+      url: 'mailto:kelaspakhafiz@gmail.com'
+    },
+    {
+      id: 'cnt-ig',
+      type: 'instagram',
+      label: '@kelaspakhafiz (Instagram)',
+      value: '@kelaspakhafiz',
+      url: 'https://www.instagram.com/kelaspakhafiz/'
+    },
+    {
+      id: 'cnt-yt',
+      type: 'youtube',
+      label: 'Kelas Pak Hafiz (YouTube)',
+      value: 'Kelas Pak Hafiz',
+      url: 'https://www.youtube.com/@KelasPakHafiz'
+    }
+  ]
+};
 

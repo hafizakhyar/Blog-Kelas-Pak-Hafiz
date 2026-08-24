@@ -110,3 +110,23 @@ export interface PortfolioCertificateItem {
   description?: string;
 }
 
+export interface TeacherBioContact {
+  id?: string;
+  type: 'email' | 'instagram' | 'youtube' | 'whatsapp' | 'tiktok' | 'website' | 'other' | string;
+  label: string;
+  value: string;
+  url?: string;
+}
+
+export interface TeacherBioProfile {
+  id: string;
+  name: string;
+  title: string;
+  verifiedBadgeText?: string;
+  avatarUrl: string;
+  bioDescription: string;
+  skillsAndFocus: string[];
+  contacts: TeacherBioContact[];
+  updatedAt?: any;
+}
+
