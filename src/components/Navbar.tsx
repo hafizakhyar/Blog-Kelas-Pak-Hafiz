@@ -33,8 +33,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { label: 'Catatan Kelas', href: '#catatan-kelas', id: 'catatan-kelas' },
     { label: 'Perangkat Ajar', href: '#modul', id: 'modul' },
     { label: 'Artikel Sains', href: '#blog', id: 'blog' },
+    { label: 'Portofolio', href: '#portofolio', id: 'portofolio' },
     { label: 'Profil', href: '#profil', id: 'profil' },
-    { label: 'Hubungi', href: '#kontak', id: 'kontak' },
   ];
 
   return (

@@ -109,13 +109,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
                 </a>
               </li>
               <li>
-                <a href="#profil" className="hover:text-white transition-colors">
-                  Profil & Portofolio Guru
+                <a href="#portofolio" className="hover:text-white transition-colors">
+                  Portofolio & Sertifikat Guru
                 </a>
               </li>
               <li>
-                <a href="#kontak" className="hover:text-white transition-colors">
-                  Tanya Jawab & Hubungi
+                <a href="#profil" className="hover:text-white transition-colors">
+                  Profil & Riwayat Pengalaman
                 </a>
               </li>
             </ul>

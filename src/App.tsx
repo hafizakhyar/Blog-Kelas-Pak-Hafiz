@@ -6,8 +6,8 @@ import { GallerySection } from './components/GallerySection';
 import { DocumentsSection } from './components/DocumentsSection';
 import { BlogSection } from './components/BlogSection';
 import { LearningPlatformCTA } from './components/LearningPlatformCTA';
-import { ProfilePortfolioSection } from './components/ProfilePortfolioSection';
-import { ContactSection } from './components/ContactSection';
+import { PortfolioSection } from './components/PortfolioSection';
+import { ProfileSection } from './components/ProfileSection';
 import { Footer } from './components/Footer';
 import { GalleryDetailModal } from './components/Modals/GalleryDetailModal';
 import { MainPlatformModal } from './components/Modals/MainPlatformModal';
@@ -783,13 +783,14 @@ https://www.kelaspakhafiz.my.id/
               onOpenMainPortal={handleOpenMainPortal}
             />
 
-            <ProfilePortfolioSection
+            <PortfolioSection
               isAdmin={isAdmin}
               onAddToast={addToast}
             />
 
-            <ContactSection
-              onSubmitSuccess={handleContactSubmitSuccess}
+            <ProfileSection
+              isAdmin={isAdmin}
+              onAddToast={addToast}
             />
           </>
         )}

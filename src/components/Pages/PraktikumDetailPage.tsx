@@ -337,14 +337,16 @@ ${item.results}
 
                 {/* Overlay Action Buttons */}
                 <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                  <button
-                    onClick={() => setIsPhotoChangerOpen(true)}
-                    className="px-3.5 py-2 rounded-xl bg-white/95 hover:bg-white text-[#0F172A] hover:text-[#0284C7] text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer backdrop-blur-xs"
-                    title="Ganti foto ini dengan mengunggah berkas baru atau mencari di Google"
-                  >
-                    <Upload className="w-3.5 h-3.5 text-[#0284C7]" />
-                    <span>Ganti Foto</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setIsPhotoChangerOpen(true)}
+                      className="px-3.5 py-2 rounded-xl bg-white/95 hover:bg-white text-[#0F172A] hover:text-[#0284C7] text-xs font-bold shadow-lg flex items-center gap-1.5 transition-all transform hover:-translate-y-0.5 cursor-pointer backdrop-blur-xs"
+                      title="Ganti foto ini dengan mengunggah berkas baru atau mencari di Google"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-[#0284C7]" />
+                      <span>Ganti Foto</span>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => setIsLightboxOpen(true)}
@@ -367,22 +369,24 @@ ${item.results}
                 </div>
               </div>
 
-              {/* Photo Change Banner Action */}
-              <div className="p-3 bg-[#F0F9FF] border-t border-[#BAE6FD] flex flex-wrap items-center justify-between gap-2 px-6">
-                <div className="flex items-center gap-2 text-xs text-[#0369A1]">
-                  <Sparkles className="w-4 h-4 text-[#0284C7] shrink-0" />
-                  <span className="font-semibold">
-                    Foto dapat diganti kapan saja via unggah file atau pencarian Google Images.
-                  </span>
+              {/* Photo Change Banner Action (Teacher / Admin Mode Only) */}
+              {isAdmin && (
+                <div className="p-3 bg-[#F0F9FF] border-t border-[#BAE6FD] flex flex-wrap items-center justify-between gap-2 px-6">
+                  <div className="flex items-center gap-2 text-xs text-[#0369A1]">
+                    <Sparkles className="w-4 h-4 text-[#0284C7] shrink-0" />
+                    <span className="font-semibold">
+                      Foto dapat diganti kapan saja via unggah file atau pencarian Google Images.
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsPhotoChangerOpen(true)}
+                    className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Cari Google / Unggah Baru</span>
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsPhotoChangerOpen(true)}
-                  className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>Cari Google / Unggah Baru</span>
-                </button>
-              </div>
+              )}
             </div>
 
             {/* 1. Tujuan & Ringkasan Eksperimen */}
@@ -592,17 +596,19 @@ ${item.results}
             {/* Quick Action Toolbar Card */}
             <div className="bg-white rounded-[24px] p-6 border border-[#E2E8F0] shadow-sm space-y-3.5 sticky top-28">
               <h3 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider text-[11px] text-[#64748B]">
-                Aksi Cepat Siswa & Guru
+                {isAdmin ? 'Aksi Cepat Guru & Siswa' : 'Aksi Cepat Siswa'}
               </h3>
 
-              {/* Photo Changer Button */}
-              <button
-                onClick={() => setIsPhotoChangerOpen(true)}
-                className="w-full py-3 px-4 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer transform hover:-translate-y-0.5"
-              >
-                <ImageIcon className="w-4 h-4" />
-                <span>Ganti Foto (Upload / Google)</span>
-              </button>
+              {/* Photo Changer Button (Teacher / Admin Only) */}
+              {isAdmin && (
+                <button
+                  onClick={() => setIsPhotoChangerOpen(true)}
+                  className="w-full py-3 px-4 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer transform hover:-translate-y-0.5"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span>Ganti Foto (Upload / Google)</span>
+                </button>
+              )}
 
               {/* Copy Full Report Button */}
               <button
