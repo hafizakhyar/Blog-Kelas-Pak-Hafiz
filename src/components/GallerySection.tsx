@@ -39,6 +39,8 @@ import { GALLERY_ITEMS } from '../data/mockData';
 import { GalleryItem } from '../types';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../lib/firebase';
 import { PhotoChangerModal } from './Modals/PhotoChangerModal';
+import { WhatsAppShareButton } from './Common/WhatsAppShareButton';
+import { sharePraktikumToWhatsApp } from '../utils/share';
 import {
   generateLabExperimentFromTitle,
   LAB_CATEGORY_SUGGESTIONS,
@@ -709,6 +711,15 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                         </button>
                         
                         <div className="flex items-center gap-1.5">
+                          <WhatsAppShareButton
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              sharePraktikumToWhatsApp(item);
+                              onAddToast('Membuka WhatsApp', `Membagikan praktikum "${item.title}" ke WhatsApp.`, 'info');
+                            }}
+                            size="icon"
+                            title="Bagikan Praktikum ke WhatsApp"
+                          />
                           {isAdmin && (
                             <button
                               onClick={(e) => {

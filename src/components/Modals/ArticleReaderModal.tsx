@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Clock, Calendar, Heart, Share2, BookmarkCheck, ArrowRight, Sparkles, BookOpen } from 'lucide-react';
 import { BlogPost } from '../../types';
+import { WhatsAppShareButton } from '../Common/WhatsAppShareButton';
+import { shareArticleToWhatsApp } from '../../utils/share';
 
 interface ArticleReaderModalProps {
   post: BlogPost | null;
@@ -53,10 +55,16 @@ export const ArticleReaderModal: React.FC<ArticleReaderModalProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-2">
+              <WhatsAppShareButton
+                onClick={() => shareArticleToWhatsApp(post)}
+                label="WhatsApp"
+                size="sm"
+                title="Bagikan Artikel ke WhatsApp"
+              />
               <button
                 onClick={() => onShare(post.title)}
                 className="p-2 text-[#64748B] hover:text-[#0F172A] hover:bg-[#E2E8F0]/60 rounded-full transition-colors cursor-pointer"
-                title="Bagikan Artikel"
+                title="Salin Judul Artikel"
               >
                 <Share2 className="w-4 h-4" />
               </button>

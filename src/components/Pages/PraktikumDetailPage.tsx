@@ -36,6 +36,8 @@ import { GalleryItem } from '../../types';
 import { TEACHER_INFO } from '../../data/mockData';
 import { PhotoChangerModal } from '../Modals/PhotoChangerModal';
 import { generateLabExperimentFromTitle, QUICK_LAB_EXPERIMENT_PRESETS } from '../../lib/chemistryAutoGenerator';
+import { WhatsAppIcon } from '../Common/WhatsAppShareButton';
+import { sharePraktikumToWhatsApp } from '../../utils/share';
 
 interface PraktikumDetailPageProps {
   item: GalleryItem;
@@ -175,6 +177,15 @@ ${item.results}
   };
 
   // Share link
+  const handleShareWhatsApp = () => {
+    sharePraktikumToWhatsApp(item);
+    onAddToast(
+      'Membuka WhatsApp',
+      `Membagikan dokumentasi praktikum "${item.title}" ke WhatsApp.`,
+      'info'
+    );
+  };
+
   const handleShareLink = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
@@ -279,12 +290,20 @@ ${item.results}
               </div>
             )}
             <button
+              onClick={handleShareWhatsApp}
+              className="px-3.5 py-1.5 rounded-full bg-[#25D366]/10 hover:bg-[#25D366] text-[#128C7E] hover:text-white border border-[#25D366]/30 hover:border-[#25D366] text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
+              title="Bagikan ke WhatsApp Siswa / Grup"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Bagikan WhatsApp</span>
+            </button>
+            <button
               onClick={handleShareLink}
               className="px-3 py-1.5 rounded-full bg-white border border-[#CBD5E1] hover:bg-[#E0F2FE] text-[#0284C7] text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs cursor-pointer"
               title="Bagikan tautan halaman ini"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Bagikan</span>
+              <span className="hidden sm:inline">Salin Link</span>
             </button>
           </div>
         </div>

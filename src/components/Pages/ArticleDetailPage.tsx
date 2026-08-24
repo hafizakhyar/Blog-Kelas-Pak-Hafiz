@@ -22,6 +22,8 @@ import { BlogPost } from '../../types';
 import { TEACHER_INFO } from '../../data/mockData';
 import { PhotoChangerModal } from '../Modals/PhotoChangerModal';
 import { STORAGE_FOLDERS } from '../../lib/firebase';
+import { WhatsAppIcon } from '../Common/WhatsAppShareButton';
+import { shareArticleToWhatsApp } from '../../utils/share';
 
 interface ArticleDetailPageProps {
   post: BlogPost;
@@ -85,10 +87,8 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
   };
 
   const handleShareWhatsApp = () => {
-    const shareText = encodeURIComponent(
-      `📖 *Artikel Sains & Kimia: ${post.title}*\nOleh: ${post.author.name}\n\nBaca artikel ulasan selengkapnya di sini:\n${window.location.href}`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank', 'noopener,noreferrer');
+    shareArticleToWhatsApp(post);
+    onAddToast('Membuka WhatsApp', `Membagikan artikel "${post.title}" ke WhatsApp.`, 'info');
   };
 
   // Related articles in same category or others
@@ -113,10 +113,10 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={handleShareWhatsApp}
-              className="px-3.5 py-2 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] border border-[#25D366]/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-full bg-[#25D366]/10 hover:bg-[#25D366] text-[#128C7E] hover:text-white border border-[#25D366]/30 hover:border-[#25D366] text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
               title="Bagikan ke WhatsApp"
             >
-              <Share2 className="w-3.5 h-3.5" />
+              <WhatsAppIcon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Bagikan WhatsApp</span>
             </button>
 

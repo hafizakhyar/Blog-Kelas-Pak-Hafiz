@@ -31,6 +31,8 @@ import { BLOG_POSTS, TEACHER_INFO } from '../data/mockData';
 import { BlogPost } from '../types';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../lib/firebase';
 import { PhotoChangerModal } from './Modals/PhotoChangerModal';
+import { WhatsAppShareButton } from './Common/WhatsAppShareButton';
+import { shareArticleToWhatsApp } from '../utils/share';
 
 const ADMIN_AUTH_KEY = 'kelaspakhafiz_admin_auth';
 const DEFAULT_ADMIN_PASSCODE = 'hafiz2026';
@@ -435,6 +437,16 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
 
                       {/* Action Controls */}
                       <div className="flex items-center gap-2">
+                        <WhatsAppShareButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            shareArticleToWhatsApp(activePost);
+                          }}
+                          label="Bagikan WA"
+                          size="sm"
+                          title="Bagikan Artikel ke WhatsApp"
+                        />
+
                         {isAdmin && (
                           <button
                             onClick={(e) => {
@@ -548,6 +560,15 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
                           </span>
 
                           <div className="flex items-center gap-1.5">
+                            <WhatsAppShareButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                shareArticleToWhatsApp(post);
+                              }}
+                              size="icon"
+                              title="Bagikan Artikel ke WhatsApp"
+                            />
+
                             {isAdmin && (
                               <button
                                 onClick={(e) => {

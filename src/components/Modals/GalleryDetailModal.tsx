@@ -2,6 +2,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Calendar, Sparkles, CheckCircle2, Clock, Share2, ArrowRight, BookOpen } from 'lucide-react';
 import { GalleryItem } from '../../types';
+import { WhatsAppShareButton } from '../Common/WhatsAppShareButton';
+import { sharePraktikumToWhatsApp } from '../../utils/share';
 
 interface GalleryDetailModalProps {
   item: GalleryItem | null;
@@ -76,13 +78,21 @@ export const GalleryDetailModal: React.FC<GalleryDetailModalProps> = ({
                 <Calendar className="w-4 h-4 text-[#0284C7]" />
                 {item.date}
               </span>
-              <button
-                onClick={() => onShare(item.title)}
-                className="flex items-center gap-1 text-[#0F172A] hover:text-[#0284C7] font-semibold transition-colors cursor-pointer"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                Bagikan
-              </button>
+              <div className="flex items-center gap-2">
+                <WhatsAppShareButton
+                  onClick={() => sharePraktikumToWhatsApp(item)}
+                  label="WhatsApp"
+                  size="sm"
+                  title="Bagikan ke WhatsApp"
+                />
+                <button
+                  onClick={() => onShare(item.title)}
+                  className="flex items-center gap-1 text-[#0F172A] hover:text-[#0284C7] font-semibold transition-colors cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Salin
+                </button>
+              </div>
             </div>
 
             <div>

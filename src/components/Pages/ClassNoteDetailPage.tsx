@@ -32,6 +32,8 @@ import { ClassNote } from '../../types';
 import { TEACHER_INFO } from '../../data/mockData';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../../lib/firebase';
 import { generateChemistryContentFromTitle } from '../../lib/chemistryAutoGenerator';
+import { WhatsAppIcon } from '../Common/WhatsAppShareButton';
+import { shareClassNoteToWhatsApp } from '../../utils/share';
 
 interface ClassNoteDetailPageProps {
   note: ClassNote;
@@ -177,10 +179,8 @@ ${
   };
 
   const handleShareWhatsApp = () => {
-    const shareText = encodeURIComponent(
-      `📚 *Catatan Kimia: ${note.title}*\nJenjang: ${note.classGrade} | Topik: ${note.category}\nPengajar: ${note.authorName}\n\nPelajari rangkuman dan rumus lengkapnya di sini:\n${window.location.href}`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank', 'noopener,noreferrer');
+    shareClassNoteToWhatsApp(note);
+    onAddToast('Membuka WhatsApp', `Membagikan catatan "${note.title}" ke WhatsApp.`, 'info');
   };
 
   const handleUploadEditImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,10 +283,10 @@ ${
             {/* Share WhatsApp Button */}
             <button
               onClick={handleShareWhatsApp}
-              className="px-3.5 py-2 rounded-full bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128C7E] border border-[#25D366]/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2 rounded-full bg-[#25D366]/10 hover:bg-[#25D366] text-[#128C7E] hover:text-white border border-[#25D366]/30 hover:border-[#25D366] text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
               title="Bagikan ke WhatsApp Siswa"
             >
-              <Share2 className="w-3.5 h-3.5" />
+              <WhatsAppIcon className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Bagikan WhatsApp</span>
             </button>
 

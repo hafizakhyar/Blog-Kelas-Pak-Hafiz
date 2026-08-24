@@ -50,6 +50,8 @@ import {
   QUICK_CHEMISTRY_TOPIC_PRESETS
 } from '../lib/chemistryAutoGenerator';
 import { PhotoChangerModal } from './Modals/PhotoChangerModal';
+import { WhatsAppShareButton } from './Common/WhatsAppShareButton';
+import { shareClassNoteToWhatsApp } from '../utils/share';
 
 interface ClassNotesSectionProps {
   onAddToast: (title: string, description?: string, type?: 'success' | 'info') => void;
@@ -1545,6 +1547,16 @@ ${
                             </>
                           )}
                         </button>
+
+                        <WhatsAppShareButton
+                          onClick={() => {
+                            shareClassNoteToWhatsApp(note);
+                            onAddToast('Membuka WhatsApp', `Membagikan catatan "${note.title}" ke WhatsApp.`, 'info');
+                          }}
+                          label="WA"
+                          size="sm"
+                          title="Bagikan Catatan ke WhatsApp"
+                        />
 
                         {isAdmin && (
                           <button
