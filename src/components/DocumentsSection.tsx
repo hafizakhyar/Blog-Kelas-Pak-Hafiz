@@ -293,13 +293,13 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({
             </p>
           </div>
 
-          {/* Teacher Access & Actions Toolbar */}
+          {/* Teacher Access & Actions Toolbar (Mode Guru Only) */}
           <div className="flex items-center gap-2.5 shrink-0">
-            {isAdmin ? (
+            {isAdmin && (
               <div className="flex items-center gap-2 p-1.5 pl-3 rounded-full bg-emerald-50 border border-emerald-300 shadow-2xs">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span className="hidden sm:inline">Menu Guru</span>
+                  <span className="hidden sm:inline">Mode Guru Aktif</span>
                 </div>
                 <button
                   onClick={handleOpenAddModal}
@@ -311,25 +311,12 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({
                 </button>
                 <button
                   onClick={handleAdminLogout}
-                  className="p-1.5 rounded-full hover:bg-emerald-200 text-emerald-800 transition-colors cursor-pointer"
-                  title="Kunci / Keluar dari Menu Guru"
+                  className="p-1.5 rounded-full hover:bg-rose-100 text-rose-700 transition-colors cursor-pointer"
+                  title="Kunci / Keluar dari Mode Guru"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={() => {
-                  setPasscodeInput('');
-                  setAuthError('');
-                  setIsAuthModalOpen(true);
-                }}
-                className="px-3.5 py-2 rounded-full bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#007AFF] border border-[#CBD5E1] hover:border-[#007AFF] text-xs font-bold flex items-center gap-2 transition-all shadow-2xs cursor-pointer group"
-                title="Masuk sebagai Guru untuk mengedit judul dan link download"
-              >
-                <KeyRound className="w-3.5 h-3.5 text-[#007AFF] group-hover:rotate-12 transition-transform" />
-                <span>Menu Guru</span>
-              </button>
             )}
           </div>
         </div>

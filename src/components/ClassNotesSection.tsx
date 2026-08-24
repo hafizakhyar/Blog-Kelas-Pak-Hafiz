@@ -779,17 +779,18 @@ ${
 
           {/* Action Bar: Admin Controls vs Public Admin Toggle */}
           <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
-            {isAdmin ? (
+            {isAdmin && (
               /* Admin Active Controls */
-              <div className="flex items-center gap-2 p-1.5 bg-white border border-[#38BDF8] rounded-full shadow-xs">
-                <div className="px-3 py-1 bg-[#E0F2FE] rounded-full flex items-center gap-1.5 text-xs font-bold text-[#0369A1]">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#0284C7]" />
-                  <span>Mode Pengajar</span>
+              <div className="flex items-center gap-2 p-1.5 bg-emerald-50 border border-emerald-300 rounded-full shadow-xs">
+                <div className="px-3 py-1 bg-emerald-100/70 rounded-full flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Mode Pengajar Aktif</span>
                 </div>
 
                 <button
                   onClick={handleResetToDefault}
-                  className="p-2 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+                  className="p-2 rounded-full text-[#64748B] hover:text-[#0F172A] hover:bg-white transition-colors cursor-pointer"
                   title="Reset materi ke awal"
                 >
                   <RotateCcw className="w-3.5 h-3.5 text-[#0284C7]" />
@@ -805,25 +806,12 @@ ${
 
                 <button
                   onClick={handleAdminLogout}
-                  className="p-2 rounded-full text-[#EF4444] hover:bg-[#FEE2E2] transition-colors cursor-pointer"
-                  title="Keluar dari Mode Admin"
+                  className="p-2 rounded-full text-[#EF4444] hover:bg-rose-100 transition-colors cursor-pointer"
+                  title="Keluar dari Mode Guru"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
-            ) : (
-              /* Public View: Prominent Admin Login / Create Note Button */
-              <button
-                onClick={() => {
-                  setPendingAction('create');
-                  setIsAdminModalOpen(true);
-                }}
-                className="px-4 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer group"
-                title="Tulis materi atau ringkasan kimia baru (Mode Pengajar Pak Hafiz)"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Tulis Catatan (Guru)</span>
-              </button>
             )}
           </div>
         </div>
@@ -1259,27 +1247,30 @@ ${
                             <span>{note.likes || 0}</span>
                           </button>
 
-                          <button
-                            onClick={() => handleCopyNote(note)}
-                            className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                              copiedNoteId === note.id
-                                ? 'bg-emerald-500 text-white shadow-2xs'
-                                : 'bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#E2E8F0]'
-                            }`}
-                            title="Salin tulisan catatan ke clipboard"
-                          >
-                            {copiedNoteId === note.id ? (
-                              <>
-                                <Check className="w-3 h-3" />
-                                <span>Tersalin!</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" />
-                                <span>Salin</span>
-                              </>
-                            )}
-                          </button>
+                          {/* Copy only in admin mode */}
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleCopyNote(note)}
+                              className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                                copiedNoteId === note.id
+                                  ? 'bg-emerald-500 text-white shadow-2xs'
+                                  : 'bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#E2E8F0]'
+                              }`}
+                              title="Salin tulisan catatan ke clipboard"
+                            >
+                              {copiedNoteId === note.id ? (
+                                <>
+                                  <Check className="w-3 h-3" />
+                                  <span>Tersalin!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Salin</span>
+                                </>
+                              )}
+                            </button>
+                          )}
 
                           {isAdmin && (
                             <button
@@ -1526,27 +1517,30 @@ ${
                           <span>{note.likes || 0}</span>
                         </button>
 
-                        <button
-                          onClick={() => handleCopyNote(note)}
-                          className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-                            copiedNoteId === note.id
-                              ? 'bg-emerald-500 text-white shadow-2xs'
-                              : 'bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#E2E8F0]'
-                          }`}
-                          title="Salin tulisan catatan ke clipboard"
-                        >
-                          {copiedNoteId === note.id ? (
-                            <>
-                              <Check className="w-3 h-3" />
-                              <span>Tersalin!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" />
-                              <span>Salin</span>
-                            </>
-                          )}
-                        </button>
+                        {/* Copy only in admin mode */}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleCopyNote(note)}
+                            className={`px-3 py-1 rounded-full text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                              copiedNoteId === note.id
+                                ? 'bg-emerald-500 text-white shadow-2xs'
+                                : 'bg-[#F8FAFC] hover:bg-[#E0F2FE] text-[#0284C7] border border-[#E2E8F0]'
+                            }`}
+                            title="Salin tulisan catatan ke clipboard"
+                          >
+                            {copiedNoteId === note.id ? (
+                              <>
+                                <Check className="w-3 h-3" />
+                                <span>Tersalin!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Salin</span>
+                              </>
+                            )}
+                          </button>
+                        )}
 
                         <WhatsAppShareButton
                           onClick={() => {

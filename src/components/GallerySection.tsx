@@ -460,8 +460,8 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               />
             </div>
 
-            {/* Upload Photo Button */}
-            {isAdmin ? (
+            {/* Upload Photo Button (Mode Guru Only) */}
+            {isAdmin && (
               <button
                 onClick={() => {
                   setIsUploadModalOpen(true);
@@ -471,15 +471,6 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Unggah Foto Lab</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsAdminModalOpen(true)}
-                className="px-4 py-2.5 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0284C7] border border-[#38BDF8] text-xs font-bold flex items-center gap-2 transition-all shadow-2xs shrink-0 cursor-pointer group"
-                title="Unggah foto kegiatan praktikum lab (Mode Pengajar)"
-              >
-                <Plus className="w-4 h-4 text-[#0284C7]" />
-                <span className="hidden sm:inline">Unggah Foto (Guru)</span>
               </button>
             )}
           </div>

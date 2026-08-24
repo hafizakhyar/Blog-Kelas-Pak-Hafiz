@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ExternalLink, Sparkles, BookOpen, FlaskConical, Download, Newspaper, MessageSquare, ChevronRight, Instagram, Youtube } from 'lucide-react';
+import { Menu, X, ExternalLink, Sparkles, BookOpen, FlaskConical, Download, Newspaper, MessageSquare, ChevronRight, Instagram, Youtube, ShieldCheck, KeyRound, LogOut } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMainPortal: () => void;
   activeSection: string;
+  isAdmin: boolean;
+  onOpenAdminModal: () => void;
+  onLogoutAdmin: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenMainPortal,
+  activeSection,
+  isAdmin,
+  onOpenAdminModal,
+  onLogoutAdmin,
+}) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -32,8 +41,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
     <header
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         isScrolled
-          ? 'bg-[#F4F8FC]/92 backdrop-blur-md shadow-xs border-b border-[#E2E8F0] py-3'
-          : 'bg-transparent py-4 sm:py-5'
+          ? 'bg-[#F4F8FC]/95 backdrop-blur-md shadow-xs border-b border-[#E2E8F0] py-2.5'
+          : 'bg-[#F4F8FC]/60 backdrop-blur-xs py-3 sm:py-4'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
           {/* Brand Logo */}
           <a
             href="#beranda"
-            className="flex items-center gap-3 group focus:outline-none"
+            className="flex items-center gap-2.5 sm:gap-3 group focus:outline-none shrink-0"
             aria-label="Kelas Pak Hafiz Beranda"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-center overflow-hidden shrink-0 group-hover:border-[#0284C7] transition-all p-0.5">
@@ -51,7 +60,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover rounded-full"
                 onError={(e) => {
-                  // Fallback to letter icon if drive image preview fails
                   const target = e.currentTarget;
                   target.style.display = 'none';
                   if (target.parentElement) {
@@ -62,24 +70,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-base sm:text-lg font-bold font-heading text-[#0F172A] tracking-tight uppercase group-hover:text-[#0284C7] transition-colors">
+              <span className="text-sm sm:text-base font-bold font-heading text-[#0F172A] tracking-tight uppercase group-hover:text-[#0284C7] transition-colors whitespace-nowrap">
                 Kelas Pak Hafiz
               </span>
-              <span className="text-[10px] font-semibold text-[#64748B] tracking-wider uppercase -mt-0.5">
+              <span className="text-[10px] font-semibold text-[#64748B] tracking-wider uppercase -mt-0.5 whitespace-nowrap">
                 Kimia & IPA SMA
               </span>
             </div>
           </a>
 
           {/* Desktop Nav Items */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white/90 p-1.5 rounded-full border border-[#E2E8F0] shadow-xs backdrop-blur-xs">
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 bg-white/95 p-1 rounded-full border border-[#E2E8F0] shadow-xs backdrop-blur-xs">
             {navLinks.map((link) => {
               const isActive = activeSection === link.id;
               return (
                 <a
                   key={link.id}
                   href={link.href}
-                  className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                  className={`px-3 xl:px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all whitespace-nowrap ${
                     isActive
                       ? 'bg-[#0284C7] text-white shadow-xs'
                       : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#E0F2FE]'
@@ -91,49 +99,95 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
             })}
           </nav>
 
-          {/* Social Links & CTA Button */}
-          <div className="hidden sm:flex items-center gap-2.5">
-            <a
-              href="https://www.instagram.com/kelaspakhafiz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-full text-[#64748B] hover:text-[#E1306C] hover:bg-[#E0F2FE] transition-colors"
-              title="Instagram @kelaspakhafiz"
-            >
-              <Instagram className="w-4 h-4" />
-            </a>
-            <a
-              href="https://www.youtube.com/@KelasPakHafiz"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-2 rounded-full text-[#64748B] hover:text-[#FF0000] hover:bg-[#E0F2FE] transition-colors"
-              title="YouTube @KelasPakHafiz"
-            >
-              <Youtube className="w-4 h-4" />
-            </a>
+          {/* Right Action Area: Portal LMS & Mode Control underneath */}
+          <div className="hidden md:flex flex-col items-end justify-center shrink-0">
+            {/* Top row: Socials + Portal LMS */}
+            <div className="flex items-center gap-2">
+              {/* Social Links */}
+              <div className="flex items-center gap-1">
+                <a
+                  href="https://www.instagram.com/kelaspakhafiz/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-full text-[#64748B] hover:text-[#E1306C] hover:bg-[#E0F2FE] transition-colors"
+                  title="Instagram @kelaspakhafiz"
+                >
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+                <a
+                  href="https://www.youtube.com/@KelasPakHafiz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 rounded-full text-[#64748B] hover:text-[#FF0000] hover:bg-[#E0F2FE] transition-colors"
+                  title="YouTube @KelasPakHafiz"
+                >
+                  <Youtube className="w-3.5 h-3.5" />
+                </a>
+              </div>
 
-            <a
-              href="https://www.kelaspakhafiz.my.id/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold text-white bg-[#0284C7] hover:bg-[#0369A1] shadow-xs hover:shadow-md transition-all transform hover:-translate-y-0.5"
-            >
-              <span>Portal Pembelajaran</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+              {/* Portal LMS Button */}
+              <a
+                href="https://www.kelaspakhafiz.my.id/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-white bg-[#0284C7] hover:bg-[#0369A1] shadow-2xs hover:shadow-xs transition-all transform hover:-translate-y-0.2 shrink-0"
+              >
+                <span>Portal LMS</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            {/* Bottom Row: Mode Guru / Mode Siswa Button (positioned directly below Portal LMS) */}
+            <div className="mt-1 flex items-center justify-end">
+              {isAdmin ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50/95 border border-emerald-300 text-emerald-800 text-[11px] font-bold shadow-2xs">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <ShieldCheck className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span className="whitespace-nowrap">Mode Guru (Edit Aktif)</span>
+                  <button
+                    type="button"
+                    onClick={onLogoutAdmin}
+                    className="ml-1 px-1.5 py-0.2 rounded-full bg-white hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-bold transition-all cursor-pointer shadow-2xs hover:scale-105"
+                    title="Kembali ke Mode Umum (Tampilan Siswa)"
+                  >
+                    Keluar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onOpenAdminModal}
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/90 hover:bg-[#E0F2FE] border border-[#E2E8F0] hover:border-[#BAE6FD] text-[#64748B] hover:text-[#0284C7] text-[10.5px] font-semibold transition-all shadow-2xs cursor-pointer group"
+                  title="Masuk sebagai Pengajar Pak Hafiz untuk mengaktifkan akses edit"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+                  <span className="whitespace-nowrap">Mode Siswa</span>
+                  <span className="text-[9.5px] bg-[#F1F5F9] group-hover:bg-[#0284C7] text-[#64748B] group-hover:text-white px-1.5 py-0.2 rounded-full font-bold transition-colors">
+                    Masuk Guru
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Mobile Hamburger Button */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <a
-              href="https://www.kelaspakhafiz.my.id/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="sm:hidden px-3.5 py-1.5 text-xs font-bold text-white bg-[#0284C7] rounded-full flex items-center gap-1"
-            >
-              <span>Portal LMS</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+          {/* Mobile Right Controls: Mode Badge + Hamburger */}
+          <div className="flex items-center gap-2 md:hidden">
+            {isAdmin ? (
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Guru</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenAdminModal}
+                className="px-2.5 py-1 rounded-full bg-white border border-[#E2E8F0] text-[11px] font-bold text-[#64748B] hover:text-[#0284C7] cursor-pointer"
+                title="Masuk Mode Guru"
+              >
+                Mode Siswa
+              </button>
+            )}
+
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 rounded-xl text-[#0F172A] hover:bg-[#E2E8F0]/60 transition-colors"
@@ -147,14 +201,61 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
 
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-x-0 top-[65px] bg-[#F4F8FC]/98 backdrop-blur-md border-b border-[#E2E8F0] shadow-xl px-6 py-6 transition-all">
-          <nav className="flex flex-col gap-2">
+        <div className="md:hidden fixed inset-x-0 top-[60px] bg-[#F4F8FC]/98 backdrop-blur-md border-b border-[#E2E8F0] shadow-xl px-5 py-5 transition-all max-h-[85vh] overflow-y-auto">
+          {/* Mode Indicator in Mobile Drawer */}
+          <div className="mb-4 p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              {isAdmin ? (
+                <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-[#F1F5F9] text-[#64748B] flex items-center justify-center font-bold">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+              )}
+              <div>
+                <div className="text-xs font-bold text-[#0F172A]">
+                  {isAdmin ? 'Mode Guru Aktif' : 'Mode Umum (Siswa)'}
+                </div>
+                <div className="text-[10px] text-[#64748B]">
+                  {isAdmin ? 'Akses edit & kelola data aktif' : 'Tampilan baca saja untuk siswa'}
+                </div>
+              </div>
+            </div>
+
+            {isAdmin ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onLogoutAdmin();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold hover:bg-rose-100"
+              >
+                Keluar
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenAdminModal();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="px-3 py-1 rounded-full bg-[#0284C7] text-white text-xs font-bold hover:bg-[#0369A1]"
+              >
+                Masuk Guru
+              </button>
+            )}
+          </div>
+
+          <nav className="flex flex-col gap-1.5">
             {navLinks.map((link) => (
               <a
                 key={link.id}
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-[#334155] hover:bg-white hover:text-[#0284C7] transition-colors border border-transparent hover:border-[#E2E8F0]"
+                className="flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold text-[#334155] hover:bg-white hover:text-[#0284C7] transition-colors border border-transparent hover:border-[#E2E8F0]"
               >
                 <span>{link.label}</span>
                 <ChevronRight className="w-4 h-4 text-[#0284C7]" />
@@ -201,3 +302,4 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMainPortal, activeSection 
     </header>
   );
 };
+

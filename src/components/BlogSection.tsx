@@ -263,23 +263,14 @@ export const BlogSection: React.FC<BlogSectionProps> = ({
               )}
             </div>
 
-            {/* Action Buttons */}
-            {isAdmin ? (
+            {/* Action Buttons (Mode Guru Only) */}
+            {isAdmin && (
               <button
                 onClick={() => setIsAddModalOpen(true)}
                 className="px-4 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Tulis Artikel Baru</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsAdminModalOpen(true)}
-                className="px-4 py-2.5 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0284C7] border border-[#38BDF8] text-xs font-bold flex items-center gap-2 transition-all shadow-2xs shrink-0 cursor-pointer group"
-                title="Tulis artikel pembelajaran kimia (Mode Pengajar)"
-              >
-                <Plus className="w-4 h-4 text-[#0284C7]" />
-                <span className="hidden sm:inline">Tulis Artikel (Guru)</span>
               </button>
             )}
           </div>

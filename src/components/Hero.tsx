@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, ArrowRight, BookOpen, ExternalLink, CheckCircle2, Camera, Globe, Upload } from 'lucide-react';
+import { Sparkles, ArrowRight, BookOpen, ExternalLink, CheckCircle2, Camera, FlaskConical, FileText, Layers, FolderDown, ArrowUpRight } from 'lucide-react';
 import { PhotoChangerModal } from './Modals/PhotoChangerModal';
 import { STORAGE_FOLDERS } from '../lib/firebase';
 
@@ -9,17 +9,24 @@ interface HeroProps {
   onExploreClick: () => void;
   isAdmin?: boolean;
   onAddToast?: (title: string, description?: string, type?: 'success' | 'info') => void;
+  praktikumCount?: number;
+  notesCount?: number;
+  documentsCount?: number;
+  articlesCount?: number;
 }
 
 const DEFAULT_AVATAR = 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi';
 const DEFAULT_LOGO = 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge';
-const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=900&q=85';
 
 export const Hero: React.FC<HeroProps> = ({
   onOpenMainPortal,
   onExploreClick,
   isAdmin = false,
-  onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {}
+  onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {},
+  praktikumCount = 0,
+  notesCount = 0,
+  documentsCount = 0,
+  articlesCount = 0,
 }) => {
   // Stored in localStorage for instant personalization
   const [avatarUrl, setAvatarUrl] = useState<string>(() => {
@@ -28,14 +35,11 @@ export const Hero: React.FC<HeroProps> = ({
   const [logoUrl, setLogoUrl] = useState<string>(() => {
     return localStorage.getItem('hero_teacher_logo') || DEFAULT_LOGO;
   });
-  const [bannerUrl, setBannerUrl] = useState<string>(() => {
-    return localStorage.getItem('hero_lab_banner') || DEFAULT_BANNER;
-  });
 
   // Modal active states
   const [photoModalState, setPhotoModalState] = useState<{
     isOpen: boolean;
-    type: 'avatar' | 'logo' | 'banner';
+    type: 'avatar' | 'logo';
     currentUrl: string;
     title: string;
     modalTitle: string;
@@ -47,7 +51,7 @@ export const Hero: React.FC<HeroProps> = ({
     modalTitle: ''
   });
 
-  const handleOpenPhotoModal = (type: 'avatar' | 'logo' | 'banner') => {
+  const handleOpenPhotoModal = (type: 'avatar' | 'logo') => {
     if (type === 'avatar') {
       setPhotoModalState({
         isOpen: true,
@@ -56,21 +60,13 @@ export const Hero: React.FC<HeroProps> = ({
         title: 'Foto Profil Pak Hafiz Akhyar, S.Si.',
         modalTitle: 'Ganti Foto Profil Guru'
       });
-    } else if (type === 'logo') {
+    } else {
       setPhotoModalState({
         isOpen: true,
         type: 'logo',
         currentUrl: logoUrl,
         title: 'Logo Resmi Kelas Pak Hafiz',
         modalTitle: 'Ganti Logo Brand'
-      });
-    } else {
-      setPhotoModalState({
-        isOpen: true,
-        type: 'banner',
-        currentUrl: bannerUrl,
-        title: 'Banner Latar Laboratorium Sains',
-        modalTitle: 'Ganti Gambar Latar Hero'
       });
     }
   };
@@ -84,12 +80,15 @@ export const Hero: React.FC<HeroProps> = ({
       setLogoUrl(newUrl);
       localStorage.setItem('hero_teacher_logo', newUrl);
       onAddToast('Logo Diperbarui', 'Logo brand berhasil diganti.', 'success');
-    } else if (photoModalState.type === 'banner') {
-      setBannerUrl(newUrl);
-      localStorage.setItem('hero_lab_banner', newUrl);
-      onAddToast('Latar Laboratorium Diperbarui', 'Banner hero berhasil diganti.', 'success');
     }
     setPhotoModalState((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -109,7 +108,7 @@ export const Hero: React.FC<HeroProps> = ({
             >
               {/* Eyebrow with Educator Tag */}
               <div className="flex items-center gap-2.5 mb-4 flex-wrap">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E0F2FE] border border-[#BAE6FD] text-[#0369A1] text-xs font-semibold shadow-2xs">
+                <div className="relative group/avatar inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E0F2FE] border border-[#BAE6FD] text-[#0369A1] text-xs font-semibold shadow-2xs">
                   <img
                     src={avatarUrl}
                     alt="Pak Hafiz Akhyar, S.Si."
@@ -117,7 +116,19 @@ export const Hero: React.FC<HeroProps> = ({
                     className="w-4 h-4 rounded-full object-cover border border-[#0284C7]/30"
                   />
                   <span>Diasuh oleh Pak Hafiz Akhyar, S.Si.</span>
+
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPhotoModal('avatar')}
+                      className="ml-1 text-[10px] text-[#0284C7] hover:underline font-bold"
+                      title="Ganti Foto Avatar"
+                    >
+                      (Ubah)
+                    </button>
+                  )}
                 </div>
+
                 <span className="text-[#0284C7] font-bold text-xs uppercase tracking-widest hidden sm:inline">
                   • Kimia & Sains SMA
                 </span>
@@ -131,11 +142,11 @@ export const Hero: React.FC<HeroProps> = ({
 
               {/* Subtitle */}
               <p className="text-sm sm:text-base text-[#475569] leading-relaxed max-w-xl mb-8">
-                Ruang dokumentasi, galeri eksperimen praktikum, dan catatan belajar Kimia SMA yang dibuat simpel, relevan, dan menyenangkan. Menghubungkan rumus konseptual dengan fenomena nyata di sekitarmu.
+                Ruang dokumentasi, galeri eksperimen praktikum, modul kurikulum, dan catatan belajar Kimia SMA yang dibuat simpel, relevan, dan menyenangkan. Menghubungkan rumus konseptual dengan fenomena nyata di sekitarmu.
               </p>
 
               {/* CTA Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3.5 w-full sm:w-auto mb-8">
+              <div className="flex flex-wrap items-center gap-3.5 w-full sm:w-auto mb-6">
                 <button
                   onClick={onExploreClick}
                   className="w-full sm:w-auto bg-[#0F172A] hover:bg-[#1E293B] text-white px-8 py-3.5 rounded-xl text-sm font-medium shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5 cursor-pointer"
@@ -156,128 +167,150 @@ export const Hero: React.FC<HeroProps> = ({
                 </a>
               </div>
 
-              {/* Trust & Key Metrics */}
-              <div className="grid grid-cols-3 gap-4 sm:gap-6 pt-6 border-t border-[#E2E8F0] w-full max-w-lg">
-                <div>
-                  <div className="text-xl sm:text-2xl font-bold font-heading text-[#0F172A]">35+</div>
-                  <div className="text-[11px] text-[#64748B] mt-0.5 font-medium">Praktikum Selesai</div>
+              {/* Feature Highlights Pills */}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-[#64748B]">
+                <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-lg">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
+                  <span>Kurikulum Merdeka</span>
                 </div>
-                <div className="border-x border-[#E2E8F0] px-3 sm:px-4">
-                  <div className="text-xl sm:text-2xl font-bold font-heading text-[#0284C7]">18+</div>
-                  <div className="text-[11px] text-[#64748B] mt-0.5 font-medium">Modul & LKPD Bebas</div>
+                <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-lg">
+                  <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
+                  <span>Praktikum Interaktif</span>
                 </div>
-                <div>
-                  <div className="text-xl sm:text-2xl font-bold font-heading text-[#0369A1]">100%</div>
-                  <div className="text-[11px] text-[#64748B] mt-0.5 font-medium">Aplikasi Nyata</div>
+                <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-lg">
+                  <span className="font-semibold text-[#0F172A]">SMA Islam Al-Jannah</span>
                 </div>
               </div>
             </motion.div>
 
-            {/* Visual Column (5 cols) with Educator Profile & Laboratory Visual */}
+            {/* Right Column (5 cols): Real-Time Statistics Dashboard */}
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6, delay: 0.1, ease: 'easeOut' }}
-              className="lg:col-span-5 relative"
+              className="lg:col-span-5"
             >
-              <div className="relative h-[340px] sm:h-[380px] bg-[#E0F2FE]/50 rounded-[24px] overflow-hidden flex items-center justify-center shadow-inner border border-[#BAE6FD]/60 p-5 group/banner">
-                {/* Background Image layer with subtle soft overlay */}
-                <img
-                  src={bannerUrl}
-                  alt="Eksperimen Laboratorium Kimia SMA"
-                  referrerPolicy="no-referrer"
-                  className="absolute inset-0 w-full h-full object-cover opacity-25 group-hover/banner:scale-105 transition-transform duration-700"
-                />
+              <div className="bg-[#F8FAFC] rounded-[24px] border border-[#E2E8F0] p-5 sm:p-6 shadow-xs">
                 
-                {/* Admin button to change laboratory background */}
-                {isAdmin && (
+                {/* Header of Statistics Card */}
+                <div className="flex items-center justify-between mb-5 pb-3.5 border-b border-[#E2E8F0]">
+                  <div>
+                    <h2 className="text-base font-bold text-[#0F172A]">
+                      Statistik Portal & Konten
+                    </h2>
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      Sinkronisasi otomatis dengan isi setiap menu
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669] text-[10px] font-bold uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                    Live
+                  </span>
+                </div>
+
+                {/* 2x2 Statistics Bento Grid */}
+                <div className="grid grid-cols-2 gap-3.5">
+                  
+                  {/* Card 1: Praktikum */}
                   <button
                     type="button"
-                    onClick={() => handleOpenPhotoModal('banner')}
-                    className="absolute top-3 right-3 z-30 px-3 py-1.5 rounded-full bg-white/95 hover:bg-[#0284C7] text-[#0284C7] hover:text-white border border-[#BAE6FD] text-[10px] font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-xs"
-                    title="Ganti Background Lab Hero via Upload / Google Search"
+                    onClick={() => scrollToSection('galeri')}
+                    className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
                   >
-                    <Camera className="w-3 h-3" />
-                    <span>Ganti Background Lab</span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <FlaskConical className="w-4 h-4" />
+                      </div>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#0284C7] transition-colors" />
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-bold font-heading text-[#0F172A]">
+                      {praktikumCount}
+                    </div>
+                    <div className="text-xs font-semibold text-[#0F172A] mt-1">
+                      Praktikum Selesai
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
+                      Galeri & Laporan Eksperimen
+                    </div>
                   </button>
-                )}
 
-                {/* Geometric color wash */}
-                <div className="absolute inset-0 bg-linear-to-tr from-[#0284C7]/20 via-white/40 to-transparent pointer-events-none" />
-
-                {/* Main Profile Card in Hero */}
-                <div className="relative z-10 w-full max-w-xs bg-white/95 backdrop-blur-md rounded-2xl p-5 shadow-lg border border-white/80 flex flex-col items-center text-center">
-                  {/* Avatar Container with Official Logo Floating Badge */}
-                  <div className="relative mb-3 group/avatar">
-                    <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-full ring-4 ring-[#BAE6FD] overflow-hidden shadow-md bg-white">
-                      <img
-                        src={avatarUrl}
-                        alt="Pak Hafiz Akhyar, S.Si."
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
-                      />
+                  {/* Card 2: Catatan Kelas */}
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection('catatan')}
+                    className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#E0F2FE] text-[#0369A1] flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#0369A1] transition-colors" />
                     </div>
-
-                    {/* Teacher Avatar Edit Button */}
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenPhotoModal('avatar')}
-                        className="absolute inset-0 rounded-full bg-black/50 text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity flex flex-col items-center justify-center text-[9px] font-bold cursor-pointer"
-                        title="Ganti Foto Profil Guru"
-                      >
-                        <Camera className="w-4 h-4 mb-0.5" />
-                        <span>Ganti Foto</span>
-                      </button>
-                    )}
-
-                    {/* Official Logo Floating Badge */}
-                    <div
-                      className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white ring-2 ring-[#0284C7] shadow-sm flex items-center justify-center overflow-hidden p-0.5 group/logo"
-                      title={isAdmin ? 'Klik untuk ganti Logo' : 'Logo Resmi Kelas Pak Hafiz'}
-                      onClick={isAdmin ? () => handleOpenPhotoModal('logo') : undefined}
-                    >
-                      <img
-                        src={logoUrl}
-                        alt="Logo"
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover rounded-full cursor-pointer"
-                      />
-                      {isAdmin && (
-                        <div className="absolute inset-0 bg-black/60 text-white opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
-                          <Camera className="w-3 h-3" />
-                        </div>
-                      )}
+                    <div className="text-2xl sm:text-3xl font-bold font-heading text-[#0284C7]">
+                      {notesCount}
                     </div>
-                  </div>
+                    <div className="text-xs font-semibold text-[#0F172A] mt-1">
+                      Catatan Kelas
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
+                      Materi & Rangkuman Kimia
+                    </div>
+                  </button>
 
-                  <h3 className="text-base sm:text-lg font-bold font-heading text-[#0F172A] leading-tight">
-                    Pak Hafiz Akhyar, S.Si.
-                  </h3>
-                  <p className="text-xs text-[#0284C7] font-semibold mt-0.5">
-                    Guru Kimia & Edukator Sains SMA
-                  </p>
-                  
-                  <div className="mt-3.5 pt-3 border-t border-[#E2E8F0] w-full flex items-center justify-center gap-4 text-xs text-[#475569]">
-                    <div className="flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-                      <span>Eksperimen Interaktif</span>
+                  {/* Card 3: Modul & LKPD */}
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection('dokumen')}
+                    className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <FolderDown className="w-4 h-4" />
+                      </div>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#16A34A] transition-colors" />
                     </div>
-                    <div className="flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                      <span>Modul Kurikulum</span>
+                    <div className="text-2xl sm:text-3xl font-bold font-heading text-[#0F172A]">
+                      {documentsCount}
                     </div>
-                  </div>
+                    <div className="text-xs font-semibold text-[#0F172A] mt-1">
+                      Modul & LKPD
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
+                      Bahan Ajar Bebas Unduh
+                    </div>
+                  </button>
+
+                  {/* Card 4: Artikel Sains */}
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection('blog')}
+                    className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#FAF5FF] text-[#9333EA] flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#9333EA] transition-colors" />
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-bold font-heading text-[#0F172A]">
+                      {articlesCount}
+                    </div>
+                    <div className="text-xs font-semibold text-[#0F172A] mt-1">
+                      Artikel Sains
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
+                      Ulasan & Literasi Kimia
+                    </div>
+                  </button>
+
                 </div>
 
-                {/* Bottom Overlay Pill Card */}
-                <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/80 flex justify-between items-center shadow-xs z-20">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#0284C7] animate-pulse" />
-                    <span className="text-[11px] font-semibold text-[#0F172A]">Projek: Indikator Alami Nusantara</span>
-                  </div>
-                  <span className="text-[10px] font-bold text-[#0284C7] uppercase tracking-wider">Aktif</span>
+                {/* Footer Info of Statistics Card */}
+                <div className="mt-4 pt-3.5 border-t border-[#E2E8F0] flex items-center justify-between text-[11px] text-[#64748B]">
+                  <span>Klik pada kartu untuk menuju menu terkait</span>
+                  <span className="font-medium text-[#0284C7]">100% Terbuka</span>
                 </div>
+
               </div>
             </motion.div>
 
@@ -300,3 +333,5 @@ export const Hero: React.FC<HeroProps> = ({
     </section>
   );
 };
+
+

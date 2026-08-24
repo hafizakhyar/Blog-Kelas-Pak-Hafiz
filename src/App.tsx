@@ -11,6 +11,7 @@ import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { GalleryDetailModal } from './components/Modals/GalleryDetailModal';
 import { MainPlatformModal } from './components/Modals/MainPlatformModal';
+import { AdminAuthModal } from './components/Modals/AdminAuthModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { ClassNoteDetailPage } from './components/Pages/ClassNoteDetailPage';
 import { PraktikumDetailPage } from './components/Pages/PraktikumDetailPage';
@@ -82,7 +83,7 @@ export default function App() {
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(BLOG_POSTS);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(GALLERY_ITEMS);
 
-  // Admin Auth State
+  // Admin Auth State & Modal
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     try {
       return localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
@@ -90,6 +91,47 @@ export default function App() {
       return false;
     }
   });
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState<boolean>(false);
+
+  const handleOpenAdminModal = useCallback(() => {
+    setIsAdminAuthModalOpen(true);
+  }, []);
+
+  const handleAdminLoginSuccess = useCallback(() => {
+    setIsAdmin(true);
+    try {
+      localStorage.setItem(ADMIN_AUTH_KEY, 'true');
+    } catch (e) {
+      console.warn('Failed to save admin state to localStorage', e);
+    }
+    setToasts((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        title: 'Mode Guru Aktif (Pak Hafiz)',
+        description: 'Semua fitur kelola, edit, tambah, dan hapus berkas & materi telah diaktifkan.',
+        type: 'success',
+      },
+    ]);
+  }, []);
+
+  const handleAdminLogout = useCallback(() => {
+    setIsAdmin(false);
+    try {
+      localStorage.setItem(ADMIN_AUTH_KEY, 'false');
+    } catch (e) {
+      console.warn('Failed to clear admin state from localStorage', e);
+    }
+    setToasts((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        title: 'Mode Umum / Siswa Aktif',
+        description: 'Tampilan kembali ke mode baca & unduh untuk siswa.',
+        type: 'info',
+      },
+    ]);
+  }, []);
 
   // Subscribe to Firebase Firestore Realtime collections
   useEffect(() => {
@@ -621,6 +663,9 @@ https://www.kelaspakhafiz.my.id/
       <Navbar
         onOpenMainPortal={handleOpenMainPortal}
         activeSection={activeSection}
+        isAdmin={isAdmin}
+        onOpenAdminModal={handleOpenAdminModal}
+        onLogoutAdmin={handleAdminLogout}
       />
 
       {/* Route-driven Content Rendering */}
@@ -684,6 +729,10 @@ https://www.kelaspakhafiz.my.id/
               onExploreClick={handleExploreClick}
               isAdmin={isAdmin}
               onAddToast={addToast}
+              praktikumCount={galleryItems.length}
+              notesCount={notes.length}
+              documentsCount={documents.length}
+              articlesCount={blogPosts.length}
             />
 
             <GallerySection
@@ -761,6 +810,13 @@ https://www.kelaspakhafiz.my.id/
         isOpen={isMainPortalModalOpen}
         onClose={() => setIsMainPortalModalOpen(false)}
         onConfirmRedirect={handleConfirmRedirect}
+      />
+
+      {/* Admin Auth Modal (Mode Guru Login) */}
+      <AdminAuthModal
+        isOpen={isAdminAuthModalOpen}
+        onClose={() => setIsAdminAuthModalOpen(false)}
+        onSuccess={handleAdminLoginSuccess}
       />
     </div>
   );
