@@ -16,7 +16,7 @@ interface HeroProps {
 }
 
 const DEFAULT_AVATAR = 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi';
-const DEFAULT_LOGO = 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge';
+const DEFAULT_LOGO = '/logo.svg';
 
 export const Hero: React.FC<HeroProps> = ({
   onOpenMainPortal,
@@ -171,14 +171,14 @@ export const Hero: React.FC<HeroProps> = ({
               <div className="flex flex-wrap items-center gap-3 text-xs text-[#64748B]">
                 <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-lg">
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
-                  <span>Kurikulum Merdeka</span>
+                  <span>Pengajar IPA dan Kimia</span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-lg">
                   <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-                  <span>Praktikum Interaktif</span>
+                  <span>Digitalisasi Pendidikan</span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-lg">
-                  <span className="font-semibold text-[#0F172A]">SMA Islam Al-Jannah</span>
+                  <span className="font-semibold text-[#0F172A]">SMA Islam Alam dan Sains Al-Jannah</span>
                 </div>
               </div>
             </motion.div>

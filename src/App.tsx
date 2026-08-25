@@ -203,23 +203,19 @@ export default function App() {
 
   // Ensure favicon matches the official Kelas Pak Hafiz logo with transparent circular shape
   useEffect(() => {
-    const logo = localStorage.getItem('hero_teacher_logo') || 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge';
-    createCircularFavicon(logo, 64).then((circularFavicon) => {
-      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
-      if (!link) {
-        link = document.createElement('link');
-        link.rel = 'icon';
-        document.head.appendChild(link);
-      }
-      link.type = 'image/png';
-      link.href = circularFavicon;
-
-      // Update apple-touch-icon as well
-      let appleIcon: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
-      if (appleIcon) {
-        appleIcon.href = circularFavicon;
-      }
-    });
+    const customLogo = localStorage.getItem('hero_teacher_logo');
+    if (customLogo) {
+      createCircularFavicon(customLogo, 192).then((circularFavicon) => {
+        const link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+        if (link) {
+          link.href = circularFavicon;
+        }
+        const appleIcon: HTMLLinkElement | null = document.querySelector("link[rel='apple-touch-icon']");
+        if (appleIcon) {
+          appleIcon.href = circularFavicon;
+        }
+      });
+    }
   }, []);
 
   // Toast Helper
@@ -251,13 +247,29 @@ export default function App() {
       hash !== '#praktikum'
     ) {
       const rawParam = hash.replace(/^#(praktikum|galeri)-/, '').toLowerCase();
-      const matchedItem = galleryItems.find(
-        (g) =>
-          g.id.toLowerCase() === rawParam ||
-          g.id.toLowerCase() === `gal-${rawParam}` ||
-          g.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(rawParam) ||
-          rawParam.includes(g.id.toLowerCase())
-      );
+      // First: exact ID match
+      let matchedItem = galleryItems.find((g) => g.id.toLowerCase() === rawParam);
+
+      // Second: exact ID match with prefix normalization
+      if (!matchedItem) {
+        matchedItem = galleryItems.find(
+          (g) =>
+            g.id.toLowerCase() === `gal-${rawParam}` ||
+            (rawParam.startsWith('gal-') && g.id.toLowerCase() === rawParam.replace(/^gal-/, ''))
+        );
+      }
+
+      // Third: slug match
+      if (!matchedItem) {
+        matchedItem = galleryItems.find((g) => g.slug && g.slug.toLowerCase() === rawParam);
+      }
+
+      // Fourth: slugified title exact match
+      if (!matchedItem) {
+        matchedItem = galleryItems.find(
+          (g) => g.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
+        );
+      }
 
       if (matchedItem) {
         setActiveGalleryItem(matchedItem);
@@ -271,13 +283,25 @@ export default function App() {
     // 2. Check Catatan Kelas detail: #catatan-... (excluding #catatan-kelas)
     if (hash.startsWith('#catatan-') && hash !== '#catatan-kelas') {
       const rawParam = hash.replace('#catatan-', '').toLowerCase();
-      const matchedNote = notes.find(
-        (n) =>
-          n.id.toLowerCase() === rawParam ||
-          n.id.toLowerCase() === `note-${rawParam}` ||
-          n.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(rawParam) ||
-          rawParam.includes(n.id.toLowerCase())
-      );
+      let matchedNote = notes.find((n) => n.id.toLowerCase() === rawParam);
+
+      if (!matchedNote) {
+        matchedNote = notes.find(
+          (n) =>
+            n.id.toLowerCase() === `note-${rawParam}` ||
+            (rawParam.startsWith('note-') && n.id.toLowerCase() === rawParam.replace(/^note-/, ''))
+        );
+      }
+
+      if (!matchedNote) {
+        matchedNote = notes.find((n) => n.slug && n.slug.toLowerCase() === rawParam);
+      }
+
+      if (!matchedNote) {
+        matchedNote = notes.find(
+          (n) => n.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
+        );
+      }
 
       if (matchedNote) {
         setActiveNote(matchedNote);
@@ -288,20 +312,32 @@ export default function App() {
       }
     }
 
-    // 3. Check Document detail: #file-... or #modul-... (excluding #modul)
+    // 3. Check Document detail: #file-... or #modul-... (excluding #modul and #dokumentasi-file)
     if (
       (hash.startsWith('#file-') || hash.startsWith('#dokumentasi-') || hash.startsWith('#modul-')) &&
       hash !== '#modul' &&
       hash !== '#dokumentasi-file'
     ) {
       const rawParam = hash.replace(/^#(file|dokumentasi|modul)-/, '').toLowerCase();
-      const matchedDoc = documents.find(
-        (d) =>
-          d.id.toLowerCase() === rawParam ||
-          d.id.toLowerCase() === `doc-${rawParam}` ||
-          d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(rawParam) ||
-          rawParam.includes(d.id.toLowerCase())
-      );
+      let matchedDoc = documents.find((d) => d.id.toLowerCase() === rawParam);
+
+      if (!matchedDoc) {
+        matchedDoc = documents.find(
+          (d) =>
+            d.id.toLowerCase() === `doc-${rawParam}` ||
+            (rawParam.startsWith('doc-') && d.id.toLowerCase() === rawParam.replace(/^doc-/, ''))
+        );
+      }
+
+      if (!matchedDoc) {
+        matchedDoc = documents.find((d) => d.slug && d.slug.toLowerCase() === rawParam);
+      }
+
+      if (!matchedDoc) {
+        matchedDoc = documents.find(
+          (d) => d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
+        );
+      }
 
       if (matchedDoc) {
         setActiveDocument(matchedDoc);
@@ -312,17 +348,28 @@ export default function App() {
       }
     }
 
-    // 4. Check Blog Post detail: #blog-... or #artikel-... (excluding #blog)
+    // 4. Check Blog Post detail: #blog-... or #artikel-... (excluding #blog and #artikel)
     if ((hash.startsWith('#blog-') || hash.startsWith('#artikel-')) && hash !== '#blog' && hash !== '#artikel') {
       const rawParam = hash.replace(/^#(blog|artikel)-/, '').toLowerCase();
-      const matchedPost = blogPosts.find(
-        (p) =>
-          p.id.toLowerCase() === rawParam ||
-          p.id.toLowerCase() === `post-${rawParam}` ||
-          p.slug?.toLowerCase() === rawParam ||
-          p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').includes(rawParam) ||
-          rawParam.includes(p.id.toLowerCase())
-      );
+      let matchedPost = blogPosts.find((p) => p.id.toLowerCase() === rawParam);
+
+      if (!matchedPost) {
+        matchedPost = blogPosts.find(
+          (p) =>
+            p.id.toLowerCase() === `post-${rawParam}` ||
+            (rawParam.startsWith('post-') && p.id.toLowerCase() === rawParam.replace(/^post-/, ''))
+        );
+      }
+
+      if (!matchedPost) {
+        matchedPost = blogPosts.find((p) => p.slug && p.slug.toLowerCase() === rawParam);
+      }
+
+      if (!matchedPost) {
+        matchedPost = blogPosts.find(
+          (p) => p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
+        );
+      }
 
       if (matchedPost) {
         setActiveBlogPost(matchedPost);

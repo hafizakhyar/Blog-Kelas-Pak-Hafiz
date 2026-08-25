@@ -275,6 +275,25 @@ const TOPIC_RULES: TopicRule[] = [
     })
   },
 
+  // 15. Sifat Koligatif Larutan
+  {
+    keywords: ['koligatif', 'tekanan uap', 'titik didih', 'titik beku', 'osmotik', 'van\'t hoff', 'vant hoff', 'raoult', 'molalitas'],
+    category: 'Materi Kimia',
+    classGrade: 'Kelas XII',
+    generate: (title) => ({
+      content: `Ringkasan rumus & aplikasi "${title}". Sifat koligatif larutan bergantung semata-mata pada jumlah partikel zat terlarut dalam sejumlah pelarut tertentu, bukan pada jenis partikelnya. Meliputi penurunan tekanan uap (ΔP), kenaikan titik didih (ΔTb), penurunan titik beku (ΔTf), dan tekanan osmotik (π). Untuk zat elektrolit, selalu kalikan dengan faktor Van't Hoff i = 1 + (n - 1)α.`,
+      keyPoints: [
+        '1. Penurunan Tekanan Uap: ΔP = P° × Xt | P = P° × Xp (Hukum Raoult)',
+        '2. Kenaikan Titik Didih: ΔTb = m × Kb × i | Tb = Tb° + ΔTb',
+        '3. Penurunan Titik Beku: ΔTf = m × Kf × i | Tf = Tf° - ΔTf',
+        '4. Tekanan Osmotik: π = M × R × T × i (R = 0,082 L.atm/mol.K)',
+        'Molalitas: m = (gram / Mr) × (1000 / p_gram_pelarut)',
+        'Aplikasi Kehidupan: Mencairkan salju dengan garam, etilen glikol radiator, cairan infus isotonik tubuh, dan desalinasi reverse osmosis.'
+      ],
+      tags: ['SifatKoligatif', 'PenurunanTitikBeku', 'TekananOsmotik', 'FaktorVantHoff', 'KelasXII']
+    })
+  },
+
   // 15. Kimia Karbon & Gugus Fungsi Organik
   {
     keywords: ['karbon', 'alkana', 'alkena', 'alkuna', 'alkohol', 'eter', 'aldehid', 'keton', 'asam karboksilat', 'ester', 'haloalkana', 'isomer'],
@@ -434,6 +453,24 @@ export function generateChemistryContentFromTitle(
  * Suggested popular chemistry topic ideas for 1-click creation
  */
 export const QUICK_CHEMISTRY_TOPIC_PRESETS = [
+  {
+    title: 'Peta Konsep & Karakteristik Ikatan Kimia: Ionik, Kovalen, dan Logam',
+    category: 'Struktur Atom & Ikatan',
+    grade: 'Kelas X' as const,
+    badge: 'Ikatan Kimia'
+  },
+  {
+    title: 'Ringkasan Rumus & Penerapan Sifat Koligatif Larutan (Elektrolit & Non-Elektrolit)',
+    category: 'Sifat Koligatif Larutan',
+    grade: 'Kelas XII' as const,
+    badge: 'Sifat Koligatif'
+  },
+  {
+    title: 'Master Tren Sifat Periodik Unsur & Pengaruh Muatan Inti Efektif',
+    category: 'Struktur Atom & Sifat Periodik',
+    grade: 'Kelas X' as const,
+    badge: 'Sifat Periodik'
+  },
   {
     title: 'Trik Jembatan Mol & Stoikiometri',
     category: 'Materi Kimia',

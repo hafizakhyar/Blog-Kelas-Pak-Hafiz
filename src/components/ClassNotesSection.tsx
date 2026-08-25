@@ -69,11 +69,13 @@ const DEFAULT_ADMIN_PASSCODE = 'hafiz2026';
 
 const CATEGORY_OPTIONS = [
   'Tips Belajar di Kelas',
+  'Struktur Atom & Sifat Periodik',
+  'Struktur Atom & Ikatan',
+  'Sifat Koligatif Larutan',
   'Redoks & Elektrokimia',
   'Kimia Organik',
   'Stoikiometri',
   'Larutan Asam Basa',
-  'Struktur Atom & Ikatan',
   'Termokimia',
   'Laju Reaksi & Kesetimbangan',
   'Tips Cepat & UTBK',

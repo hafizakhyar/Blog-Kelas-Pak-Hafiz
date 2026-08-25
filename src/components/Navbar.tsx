@@ -55,17 +55,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#E2E8F0] shadow-xs flex items-center justify-center overflow-hidden shrink-0 group-hover:border-[#0284C7] transition-all p-0.5">
               <img
-                src="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge"
+                src="/logo.svg"
                 alt="Logo Kelas Pak Hafiz"
                 referrerPolicy="no-referrer"
-                className="w-full h-full object-cover rounded-full"
+                className="w-full h-full object-contain"
                 onError={(e) => {
                   const target = e.currentTarget;
-                  target.style.display = 'none';
-                  if (target.parentElement) {
-                    target.parentElement.classList.add('bg-[#0284C7]', 'text-white', 'font-bold', 'text-sm');
-                    target.parentElement.innerText = 'H';
-                  }
+                  target.src = '/icon-192.png';
                 }}
               />
             </div>

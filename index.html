@@ -4,70 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kelas Pak Hafiz — Sains Dalam Sudut Pandang yang Lebih Segar</title>
-    <link rel="icon" type="image/png" id="app-favicon" href="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge" />
-    <link rel="shortcut icon" type="image/png" href="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge" />
-    <link rel="apple-touch-icon" href="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge" />
-    <script>
-      (function() {
-        try {
-          var logoUrl = localStorage.getItem('hero_teacher_logo') || 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge';
-          var img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = function() {
-            try {
-              var size = 64;
-              var canvas = document.createElement('canvas');
-              canvas.width = size;
-              canvas.height = size;
-              var ctx = canvas.getContext('2d');
-              if (!ctx) return;
-              ctx.clearRect(0, 0, size, size);
-              ctx.beginPath();
-              ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2, true);
-              ctx.closePath();
-              ctx.clip();
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#144186" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Kelas Pak Hafiz" />
+    <meta name="application-name" content="Kelas Pak Hafiz" />
 
-              var imgAspect = img.width / img.height;
-              var drawWidth = size;
-              var drawHeight = size;
-              var offsetX = 0;
-              var offsetY = 0;
-              if (imgAspect > 1) {
-                drawWidth = size * imgAspect;
-                offsetX = -(drawWidth - size) / 2;
-              } else {
-                drawHeight = size / imgAspect;
-                offsetY = -(drawHeight - size) / 2;
-              }
-              ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-
-              var imgData = ctx.getImageData(0, 0, size, size);
-              var data = imgData.data;
-              var center = size / 2;
-              var radiusSq = (size / 2) * (size / 2);
-              for (var y = 0; y < size; y++) {
-                for (var x = 0; x < size; x++) {
-                  var idx = (y * size + x) * 4;
-                  var dx = x - center;
-                  var dy = y - center;
-                  if (dx * dx + dy * dy > radiusSq) {
-                    data[idx + 3] = 0;
-                  }
-                }
-              }
-              ctx.putImageData(imgData, 0, 0);
-
-              var circularDataUrl = canvas.toDataURL('image/png');
-              var favicons = document.querySelectorAll("link[rel*='icon'], link[rel='apple-touch-icon']");
-              favicons.forEach(function(el) {
-                el.href = circularDataUrl;
-              });
-            } catch (e) {}
-          };
-          img.src = logoUrl;
-        } catch (err) {}
-      })();
-    </script>
+    <!-- High-Resolution App Icons & Favicons -->
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/favicon-32x32.png" />
+    
+    <!-- iOS Home Screen Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png" />
+    <link rel="mask-icon" href="/logo.svg" color="#144186" />
     <meta name="description" content="Ruang dokumentasi, galeri eksperimen, modul belajar, dan blog pembelajaran Kimia & IPA SMA oleh Pak Hafiz. Estetis, simpel, dan inspiratif." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

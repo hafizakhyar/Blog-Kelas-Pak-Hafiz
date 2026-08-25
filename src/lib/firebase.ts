@@ -254,6 +254,18 @@ export function subscribeToClassNotes(
       } as ClassNote);
     });
 
+    const existingIds = new Set(items.map((i) => i.id));
+    const missingNotes = INITIAL_CLASS_NOTES.filter((n) => !existingIds.has(n.id));
+    if (missingNotes.length > 0) {
+      missingNotes.forEach((missing) => {
+        items.push(missing);
+        writeWithFallback(COLLECTIONS.NOTES, missing.id, {
+          ...missing,
+          updatedAt: serverTimestamp()
+        }).catch((err) => console.warn('Sync missing note to Firestore error:', err));
+      });
+    }
+
     items.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;

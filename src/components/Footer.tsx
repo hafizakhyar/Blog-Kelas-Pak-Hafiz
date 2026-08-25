@@ -22,16 +22,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-full bg-white border border-white/20 flex items-center justify-center overflow-hidden shrink-0 p-0.5 shadow-md shadow-[#0284C7]/20">
                 <img
-                  src="https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge"
+                  src="/logo.svg"
                   alt="Logo Kelas Pak Hafiz"
                   referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover rounded-full"
+                  className="w-full h-full object-contain"
                   onError={(e) => {
                     const target = e.currentTarget;
-                    target.style.display = 'none';
-                    if (target.parentElement) {
-                      target.parentElement.classList.add('bg-[#0284C7]');
-                    }
+                    target.src = '/icon-192.png';
                   }}
                 />
               </div>

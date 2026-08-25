@@ -6,7 +6,7 @@ export const TEACHER_INFO = {
   title: 'Guru Kimia & Edukator Sains SMA',
   email: 'kelaspakhafiz@gmail.com',
   avatar: 'https://lh3.googleusercontent.com/d/1h5jWX2SAGVVR08dJ9okT7lgLr2mUZXLi',
-  logo: 'https://lh3.googleusercontent.com/d/1Oqck2N6fpJ_lbowm_21Kz4KGGt1Szuge',
+  logo: '/logo.svg',
   website: 'https://www.kelaspakhafiz.my.id/',
   instagram: 'https://www.instagram.com/kelaspakhafiz/',
   youtube: 'https://www.youtube.com/@KelasPakHafiz',
@@ -950,6 +950,69 @@ export const INITIAL_CLASS_NOTES: ClassNote[] = [
     isPinned: false,
     likes: 49,
     tags: ['KeselamatanLab', 'PraktikumKimia', 'EtikaLab', 'Meniskus', 'TipsSains']
+  },
+  {
+    id: 'note-10',
+    title: 'Peta Konsep & Karakteristik Ikatan Kimia: Ionik, Kovalen, dan Logam',
+    category: 'Struktur Atom & Ikatan',
+    classGrade: 'Kelas X',
+    content: 'Ikatan kimia terbentuk agar atom-atom mencapai kestabilan konfigurasi elektron seperti gas mulia (Kaidah Duplet & Oktet). Pemahaman kunci terletak pada perbedaan keelektronegatifan, proses serah-terima elektron, atau pemakaian bersama pasangan elektron (PEI).',
+    keyPoints: [
+      'Ikatan Ion (Elektrovalen): Terjadi antara kation logam (melepas e⁻) dan anion non-logam (menerima e⁻) melalui gaya tarik elektrostatik. Memiliki titik leleh/didih tinggi serta lelehan & larutannya menghantarkan arus listrik (Contoh: NaCl, MgO, CaCl₂).',
+      'Ikatan Kovalen: Terjadi akibat pemakaian bersama pasangan elektron antar sesama unsur non-logam. Terdiri atas Kovalen Tunggal (H-H), Kovalen Rangkap Dua (O=O), dan Kovalen Rangkap Tiga (N≡N).',
+      'Kovalen Polar vs Non-Polar: Senyawa polar memiliki perbedaan keelektronegatifan, momen dipol ≠ 0, dan bentuk asimetris dengan pasangan elektron bebas/PEB pada atom pusat (Contoh: H₂O, NH₃, HF). Senyawa nonpolar simetris tanpa PEB (Contoh: CH₄, CO₂, Cl₂).',
+      'Ikatan Kovalen Koordinasi (Datif): Pasangan elektron ikatan (PEI) hanya disumbangkan oleh salah satu atom penyusun (Contoh: NH₄⁺, H₃O⁺, SO₃).',
+      'Ikatan Logam: Terbentuk akibat gaya elektrostatik antara kation logam bermuatan positif dengan "Lautan Elektron" valensi yang terdelokalisasi, menjadikan logam sebagai konduktor listrik & panas yang unggul serta dapat ditempa.',
+      'Gaya Antarmolekul: Ikatan Hidrogen (sangat kuat, terjadi jika atom H terikat langsung pada atom F, O, atau N) menghasilkan anomali titik didih tinggi pada air (H₂O). Diikuti oleh gaya tarik dipol-dipol dan gaya dispersi London.'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b4?auto=format&fit=crop&w=800&q=80',
+    date: '25 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: true,
+    likes: 58,
+    tags: ['IkatanKimia', 'IkatanIon', 'IkatanKovalen', 'KovalenKoordinasi', 'GayaAntarmolekul', 'KelasX']
+  },
+  {
+    id: 'note-11',
+    title: 'Ringkasan Rumus & Penerapan Sifat Koligatif Larutan (Elektrolit & Non-Elektrolit)',
+    category: 'Sifat Koligatif Larutan',
+    classGrade: 'Kelas XII',
+    content: 'Sifat koligatif adalah sifat larutan yang hanya bergantung pada jumlah (konsentrasi) partikel zat terlarut, bukan pada jenis partikelnya. Untuk larutan elektrolit, selalu gunakan pengali Faktor Van\'t Hoff: i = 1 + (n - 1)α.',
+    keyPoints: [
+      '1. Penurunan Tekanan Uap (ΔP): Hukum Raoult: ΔP = P° × Xt dan P_larutan = P° × Xp. Penambahan zat terlarut non-volatil menurunkan tekanan uap jenuh pelarut murni.',
+      '2. Kenaikan Titik Didih (ΔTb): ΔTb = m × Kb × i dan Tb_larutan = Tb° + ΔTb. Molekul zat terlarut menghalangi pelarut untuk lepas ke fase gas sehingga dibutuhkan temperatur lebih tinggi.',
+      '3. Penurunan Titik Beku (ΔTf): ΔTf = m × Kf × i dan Tf_larutan = Tf° - ΔTf. Penerapan aplikatif: Penggunaan garam NaCl/CaCl₂ untuk mencairkan salju di jalan serta etilen glikol sebagai zat antibeku radiator kendaraan.',
+      '4. Tekanan Osmotik (π): π = M × R × T × i (R = 0,082 L.atm/mol.K, T dalam Kelvin). Penerapan nyata: Cairan infus fisiologis isotonik tubuh (NaCl 0,9%) dan teknologi pemurnian air laut (Reverse Osmosis).',
+      'Molalitas (m) vs Molaritas (M): Molalitas m = (gram / Mr) × (1000 / p_gram_pelarut). Molalitas tidak berubah terhadap fluktuasi temperatur karena berbasis massa pelarut.',
+      'Faktor Van\'t Hoff (i): Larutan non-elektrolit memiliki i = 1; sedangkan larutan elektrolit kuat (α = 1) memiliki i = jumlah ion (n) (misal: NaCl -> i = 2; H₂SO₄ -> i = 3).'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=800&q=80',
+    date: '25 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: true,
+    likes: 64,
+    tags: ['SifatKoligatif', 'TekananUap', 'KenaikanTitikDidih', 'PenurunanTitikBeku', 'TekananOsmotik', 'FaktorVantHoff', 'KelasXII']
+  },
+  {
+    id: 'note-12',
+    title: 'Master Tren Sifat Periodik Unsur & Pengaruh Muatan Inti Efektif',
+    category: 'Struktur Atom & Sifat Periodik',
+    classGrade: 'Kelas X',
+    content: 'Sifat periodik unsur berulang secara teratur seiring bertambahnya nomor atom dalam tabel periodik. Pola ini dikendalikan oleh dua faktor utama: jumlah kulit elektron (efek perisai) dan muatan inti efektif (jumlah proton penarik elektron).',
+    keyPoints: [
+      '1. Jari-Jari Atom: Jarak inti atom ke elektron terluar. Dalam satu GOLONGAN (atas ke bawah) MAKIN BESAR karena jumlah kulit bertambah. Dalam satu PERIODE (kiri ke kanan) MAKIN KECIL karena jumlah proton bertambah sehingga tarikan inti makin kuat.',
+      '2. Energi Ionisasi (EI): Energi minimum untuk melepas 1 elektron valensi pada fase gas. Tren: Kiri ke Kanan MAKIN BESAR, Atas ke Bawah MAKIN KECIL. (Pengecualian kestabilan subkulit penuh/setengah penuh: Golongan IIA > IIIA dan VA > VIA).',
+      '3. Afinitas Elektron (AE): Energi yang dilepas/diserap saat atom netral fase gas menangkap elektron membentuk ion negatif. Tren: Kiri ke Kanan MAKIN BESAR (lebih mudah membentuk anion, tertinggi pada Halogen VIIA seperti Cl dan F).',
+      '4. Keelektronegatifan (Elektronegativitas): Kecenderungan atom menarik pasangan elektron dalam ikatan. Fluor (F = 4,0 Skala Pauling) adalah unsur paling elektronegatif. Tren: Kiri ke Kanan MAKIN BESAR, Atas ke Bawah MAKIN KECIL.',
+      '5. Sifat Logam & Basa: Karakter logam dan sifat basa oksida makin kuat ke arah KIRI-BAWAH (Fransium dan Cesium paling reaktif sebagai logam). Sifat non-logam dan asam oksida makin kuat ke KANAN-ATAS.',
+      'Jembatan Keledai Tren: Sifat yang bertambah ke KANAN-ATAS adalah "K-E-A-S" (Keelektronegatifan, Energi Ionisasi, Afinitas Elektron, Sifat Asam). Sedangkan yang bertambah ke KIRI-BAWAH adalah "J-L-B" (Jari-jari, sifat Logam, sifat Basa).'
+    ],
+    imageUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80',
+    date: '25 Agustus 2026',
+    authorName: 'Pak Hafiz Akhyar, S.Si.',
+    isPinned: true,
+    likes: 72,
+    tags: ['SifatPeriodik', 'TabelPeriodik', 'JariJariAtom', 'EnergiIonisasi', 'Elektronegativitas', 'AfinitasElektron', 'KelasX']
   }
 ];
 
