@@ -1,11 +1,13 @@
 import React from 'react';
-import { FlaskConical, ExternalLink, ArrowUp, Heart, BookOpen, Download, Mail, Youtube, Instagram, Send } from 'lucide-react';
+import { FlaskConical, ExternalLink, ArrowUp, Heart, BookOpen, Download, Mail, Youtube, Instagram, Send, Moon, Sun } from 'lucide-react';
 
 interface FooterProps {
   onOpenMainPortal: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal, isDarkMode, onToggleDarkMode }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -146,7 +148,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
 
         </div>
 
-        {/* Bottom copyright & quote */}
+        {/* Bottom copyright & quote & Theme switcher */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B]">
           <div className="text-center sm:text-left">
             <p className="italic text-[#94A3B8] mb-1">
@@ -155,13 +157,36 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal }) => {
             <p>© {new Date().getFullYear()} Kelas Pak Hafiz (www.kelaspakhafiz.my.id). Hak cipta dilindungi undang-undang.</p>
           </div>
 
-          <button
-            onClick={scrollToTop}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#334155] transition-colors border border-[#334155] cursor-pointer"
-          >
-            <span>Kembali ke Atas</span>
-            <ArrowUp className="w-3.5 h-3.5 text-[#38BDF8]" />
-          </button>
+          <div className="flex items-center gap-2.5">
+            {onToggleDarkMode && (
+              <button
+                type="button"
+                onClick={onToggleDarkMode}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#334155] transition-colors border border-[#334155] cursor-pointer"
+                title={isDarkMode ? 'Beralih ke Mode Terang (Siang)' : 'Beralih ke Mode Gelap (Malam)'}
+              >
+                {isDarkMode ? (
+                  <>
+                    <Sun className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Mode Terang</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Mode Gelap</span>
+                  </>
+                )}
+              </button>
+            )}
+
+            <button
+              onClick={scrollToTop}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#1E293B] text-[#94A3B8] hover:text-white hover:bg-[#334155] transition-colors border border-[#334155] cursor-pointer"
+            >
+              <span>Kembali ke Atas</span>
+              <ArrowUp className="w-3.5 h-3.5 text-[#38BDF8]" />
+            </button>
+          </div>
         </div>
 
       </div>

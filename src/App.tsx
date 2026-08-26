@@ -39,6 +39,7 @@ import {
 
 const NOTES_STORAGE_KEY = 'kelaspakhafiz_class_notes_v2';
 const ADMIN_AUTH_KEY = 'kelaspakhafiz_admin_auth_v1';
+const DARK_MODE_STORAGE_KEY = 'kelaspakhafiz_dark_mode_v1';
 
 type RouteView = 'main' | 'praktikum-detail' | 'catatan-detail' | 'document-detail' | 'article-detail';
 
@@ -46,6 +47,36 @@ export default function App() {
   // Navigation & View Route State
   const [currentRoute, setCurrentRoute] = useState<RouteView>('main');
   const [activeSection, setActiveSection] = useState<string>('beranda');
+
+  // Dark Mode State with LocalStorage Persistence
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(DARK_MODE_STORAGE_KEY);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+    } catch (e) {
+      console.error('Failed to load dark mode setting', e);
+    }
+    return false;
+  });
+
+  // Sync dark class on root html
+  useEffect(() => {
+    try {
+      localStorage.setItem(DARK_MODE_STORAGE_KEY, String(isDarkMode));
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch (e) {
+      console.error('Failed to sync dark mode class', e);
+    }
+  }, [isDarkMode]);
 
   // Active items for dedicated detail pages
   const [activeGalleryItem, setActiveGalleryItem] = useState<GalleryItem | null>(null);
@@ -230,6 +261,21 @@ export default function App() {
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
+
+  // Toggle Dark Mode Handler
+  const handleToggleDarkMode = useCallback(() => {
+    setIsDarkMode((prev) => {
+      const next = !prev;
+      addToast(
+        next ? 'Mode Gelap (Malam) Aktif' : 'Mode Terang (Siang) Aktif',
+        next
+          ? 'Kenyamanan membaca di malam hari kini terjaga dengan tampilan visual yang ramah mata.'
+          : 'Tampilan kembali ke tema terang standar.',
+        'info'
+      );
+      return next;
+    });
+  }, []);
 
   // Helper to resolve route from URL hash
   const parseHashRoute = useCallback(() => {
@@ -713,6 +759,8 @@ https://www.kelaspakhafiz.my.id/
         isAdmin={isAdmin}
         onOpenAdminModal={handleOpenAdminModal}
         onLogoutAdmin={handleAdminLogout}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={handleToggleDarkMode}
       />
 
       {/* Route-driven Content Rendering */}
@@ -844,7 +892,11 @@ https://www.kelaspakhafiz.my.id/
       </main>
 
       {/* Footer */}
-      <Footer onOpenMainPortal={handleOpenMainPortal} />
+      <Footer
+        onOpenMainPortal={handleOpenMainPortal}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={handleToggleDarkMode}
+      />
 
       {/* Interactive Modals (Gallery Detail Lightbox & Portal Confirmation) */}
       <GalleryDetailModal

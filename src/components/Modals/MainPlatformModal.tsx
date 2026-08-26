@@ -13,8 +13,6 @@ export const MainPlatformModal: React.FC<MainPlatformModalProps> = ({
   onClose,
   onConfirmRedirect
 }) => {
-  if (!isOpen) return null;
-
   const features = [
     {
       icon: <PlayCircle className="w-5 h-5 text-[#0284C7]" />,
@@ -40,14 +38,27 @@ export const MainPlatformModal: React.FC<MainPlatformModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-[#0F172A]/70 backdrop-blur-xs">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: 15 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-2xl bg-white rounded-[28px] shadow-2xl border border-[#E2E8F0] overflow-hidden my-auto"
-        >
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            onClick={onClose}
+            className="fixed inset-0 bg-[#0F172A]/70 backdrop-blur-xs"
+          />
+
+          {/* Modal Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 15 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-2xl bg-white rounded-[28px] shadow-2xl border border-[#E2E8F0] overflow-hidden my-auto z-10"
+          >
           {/* Accent Header Banner */}
           <div className="relative p-6 sm:p-8 bg-linear-to-br from-[#0F172A] via-[#1E293B] to-[#0369A1] text-white">
             <button
@@ -128,6 +139,7 @@ export const MainPlatformModal: React.FC<MainPlatformModalProps> = ({
           </div>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>
   );
 };

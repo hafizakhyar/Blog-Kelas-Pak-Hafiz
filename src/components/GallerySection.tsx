@@ -697,7 +697,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                           onClick={() => onSelectItem(item)}
                           className="text-xs font-semibold text-[#0284C7] group-hover:underline flex items-center gap-1 cursor-pointer"
                         >
-                          <span>Lihat Data & Reaksi</span>
+                          <span>Baca lebih lengkap</span>
                           <ArrowUpRight className="w-3.5 h-3.5" />
                         </button>
                         

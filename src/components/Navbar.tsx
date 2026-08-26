@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ExternalLink, Sparkles, BookOpen, FlaskConical, Download, Newspaper, MessageSquare, ChevronRight, Instagram, Youtube, ShieldCheck, KeyRound, LogOut } from 'lucide-react';
+import { Menu, X, ExternalLink, Sparkles, BookOpen, FlaskConical, Download, Newspaper, MessageSquare, ChevronRight, Instagram, Youtube, ShieldCheck, KeyRound, LogOut, Sun, Moon } from 'lucide-react';
 
 interface NavbarProps {
   onOpenMainPortal: () => void;
@@ -7,6 +7,8 @@ interface NavbarProps {
   isAdmin: boolean;
   onOpenAdminModal: () => void;
   onLogoutAdmin: () => void;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -15,6 +17,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   isAdmin,
   onOpenAdminModal,
   onLogoutAdmin,
+  isDarkMode,
+  onToggleDarkMode,
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -97,8 +101,37 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Action Area: Portal LMS & Mode Control underneath */}
           <div className="hidden md:flex flex-col items-end justify-center shrink-0">
-            {/* Top row: Socials + Portal LMS */}
+            {/* Top row: Dark Mode Switch + Socials + Portal LMS */}
             <div className="flex items-center gap-2">
+              {/* Dark Mode Switch Button */}
+              <button
+                type="button"
+                onClick={onToggleDarkMode}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all duration-300 cursor-pointer shadow-2xs group ${
+                  isDarkMode
+                    ? 'bg-[#1E293B] hover:bg-[#334155] border-[#334155] text-amber-300'
+                    : 'bg-white hover:bg-[#E0F2FE] border-[#E2E8F0] text-[#64748B] hover:text-[#0284C7]'
+                }`}
+                title={isDarkMode ? 'Klik untuk beralih ke Mode Terang (Siang)' : 'Klik untuk beralih ke Mode Gelap (Malam - Nyaman di Mata)'}
+                aria-label="Toggle Dark Mode"
+              >
+                <div className="relative w-4 h-4 flex items-center justify-center">
+                  {isDarkMode ? (
+                    <Moon className="w-3.5 h-3.5 text-amber-300 fill-amber-300/30 transition-transform duration-300 rotate-0" />
+                  ) : (
+                    <Sun className="w-3.5 h-3.5 text-amber-500 transition-transform duration-300 hover:rotate-45" />
+                  )}
+                </div>
+                <span className="text-[11px] font-semibold tracking-tight">
+                  {isDarkMode ? 'Mode Gelap' : 'Mode Terang'}
+                </span>
+                <span
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    isDarkMode ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-slate-300'
+                  }`}
+                />
+              </button>
+
               {/* Social Links */}
               <div className="flex items-center gap-1">
                 <a
@@ -166,8 +199,27 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Mobile Right Controls: Mode Badge + Hamburger */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Mobile Right Controls: Dark Mode Switch + Mode Badge + Hamburger */}
+          <div className="flex items-center gap-1.5 md:hidden">
+            {/* Quick Mobile Theme Toggle */}
+            <button
+              type="button"
+              onClick={onToggleDarkMode}
+              className={`p-1.5 rounded-full border transition-all cursor-pointer ${
+                isDarkMode
+                  ? 'bg-[#1E293B] border-[#334155] text-amber-300'
+                  : 'bg-white border-[#E2E8F0] text-[#64748B] hover:text-amber-500'
+              }`}
+              title={isDarkMode ? 'Beralih ke Mode Terang' : 'Beralih ke Mode Gelap'}
+              aria-label="Toggle Dark Mode"
+            >
+              {isDarkMode ? (
+                <Moon className="w-4 h-4 text-amber-300 fill-amber-300/30" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-500" />
+              )}
+            </button>
+
             {isAdmin ? (
               <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -198,6 +250,47 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Drawer Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-x-0 top-[60px] bg-[#F4F8FC]/98 backdrop-blur-md border-b border-[#E2E8F0] shadow-xl px-5 py-5 transition-all max-h-[85vh] overflow-y-auto">
+          {/* Dark Mode Switch in Mobile Drawer */}
+          <div className="mb-3 p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-amber-400/20 text-amber-300' : 'bg-amber-100 text-amber-600'}`}>
+                {isDarkMode ? <Moon className="w-4 h-4 fill-amber-300/30" /> : <Sun className="w-4 h-4" />}
+              </div>
+              <div>
+                <div className="text-xs font-bold text-[#0F172A]">
+                  {isDarkMode ? 'Mode Gelap (Malam) Aktif' : 'Mode Terang (Siang)'}
+                </div>
+                <div className="text-[10px] text-[#64748B]">
+                  {isDarkMode ? 'Kenyamanan membaca materi di malam hari' : 'Ketuk switch untuk kenyamanan malam hari'}
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onToggleDarkMode}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                isDarkMode ? 'bg-[#0284C7]' : 'bg-slate-300'
+              }`}
+              role="switch"
+              aria-checked={isDarkMode}
+              title="Toggle Dark Mode"
+            >
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+                  isDarkMode ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              >
+                {isDarkMode ? (
+                  <Moon className="w-3 h-3 text-[#0284C7]" />
+                ) : (
+                  <Sun className="w-3 h-3 text-amber-500" />
+                )}
+              </span>
+            </button>
+          </div>
+
           {/* Mode Indicator in Mobile Drawer */}
           <div className="mb-4 p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
