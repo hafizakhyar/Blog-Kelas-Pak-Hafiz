@@ -1,7 +1,7 @@
 export interface GalleryItem {
   id: string;
   title: string;
-  category: 'Indikator Alami' | 'Eksperimen Lab' | 'Karya Siswa' | 'Video Tutorial';
+  category: 'Indikator Alami' | 'Eksperimen Lab' | 'Karya Siswa' | 'Video Tutorial' | string;
   date: string;
   image: string;
   badge: string;
@@ -12,6 +12,23 @@ export interface GalleryItem {
   results: string;
   videoDuration?: string;
   isPinned?: boolean;
+}
+
+export interface PracticalVideoItem {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  youtubeId: string;
+  thumbnailUrl?: string;
+  category: string;
+  badge?: string;
+  duration?: string;
+  date: string;
+  description: string;
+  chemistryConcept?: string;
+  isPinned?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface DocumentItem {

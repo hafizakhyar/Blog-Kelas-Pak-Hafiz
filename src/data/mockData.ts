@@ -1,4 +1,4 @@
-import { GalleryItem, DocumentItem, BlogPost, NaturalIndicator, TestSolution, ClassNote, TeacherBioProfile } from '../types';
+import { GalleryItem, DocumentItem, BlogPost, NaturalIndicator, TestSolution, ClassNote, TeacherBioProfile, PracticalVideoItem } from '../types';
 
 export const TEACHER_INFO = {
   name: 'Pak Hafiz Akhyar, S.Si.',
@@ -1165,4 +1165,78 @@ export const INITIAL_TEACHER_PROFILE: TeacherBioProfile = {
     }
   ]
 };
+
+export const INITIAL_PRACTICAL_VIDEOS: PracticalVideoItem[] = [
+  {
+    id: 'vid-1',
+    title: 'Praktikum Indikator Alami Asam Basa: Ekstrak Kunyit & Bunga Telang',
+    youtubeUrl: 'https://www.youtube.com/watch?v=kYdK8N-2b_U',
+    youtubeId: 'kYdK8N-2b_U',
+    thumbnailUrl: 'https://img.youtube.com/vi/kYdK8N-2b_U/hqdefault.jpg',
+    category: 'Indikator Alami',
+    badge: 'Video Utama Kelas XI',
+    duration: '06:45',
+    date: '16 Agustus 2026',
+    description: 'Panduan lengkap demonstrasi pengujian sifat asam basa larutan rumah tangga menggunakan ekstrak rimpang kunyit dan bunga telang segar.',
+    chemistryConcept: 'Pergeseran ion flavilium dan kurkuminoid akibat perubahan pH larutan.',
+    isPinned: true
+  },
+  {
+    id: 'vid-2',
+    title: 'Teknik Titrasi Asam Basa & Cara Menentukan Titik Akhir Indikator PP',
+    youtubeUrl: 'https://www.youtube.com/watch?v=sFpFCPTDv2w',
+    youtubeId: 'sFpFCPTDv2w',
+    thumbnailUrl: 'https://img.youtube.com/vi/sFpFCPTDv2w/hqdefault.jpg',
+    category: 'Eksperimen Lab',
+    badge: 'Keterampilan Lab',
+    duration: '08:20',
+    date: '10 Agustus 2026',
+    description: 'Tata cara pembacaan meniskus buret yang benar, pengaturan tetesan titran NaOH, dan deteksi warna merah muda seulas indikator PP.',
+    chemistryConcept: 'Stoikiometri titrasi asam monoprotik dan kurva pH netralisasi.',
+    isPinned: true
+  },
+  {
+    id: 'vid-3',
+    title: 'Uji Daya Hantar Listrik: Elektrolit Kuat, Lemah, dan Non-Elektrolit',
+    youtubeUrl: 'https://www.youtube.com/watch?v=t_98g0B4yFw',
+    youtubeId: 't_98g0B4yFw',
+    thumbnailUrl: 'https://img.youtube.com/vi/t_98g0B4yFw/hqdefault.jpg',
+    category: 'Larutan Elektrolit',
+    badge: 'Eksperimen Kelas X',
+    duration: '05:15',
+    date: '2 Agustus 2026',
+    description: 'Rangkaian alat uji elektrolit sederhana dengan elektroda karbon dan lampu LED untuk membedakan derajat ionisasi larutan.',
+    chemistryConcept: 'Disosiasi ion bebas dalam pelarut air yang menghantarkan arus listrik.',
+    isPinned: true
+  },
+  {
+    id: 'vid-4',
+    title: 'Sifat Koloid: Efek Tyndall & Pembuatan Gel Sederhana di Rumah',
+    youtubeUrl: 'https://www.youtube.com/watch?v=F3x94L3N5g8',
+    youtubeId: 'F3x94L3N5g8',
+    thumbnailUrl: 'https://img.youtube.com/vi/F3x94L3N5g8/hqdefault.jpg',
+    category: 'Sistem Koloid',
+    badge: 'Proyek Siswa',
+    duration: '07:10',
+    date: '24 Juli 2026',
+    description: 'Perbandingan penghamburan berkas sinar laser pada larutan sejati (gula), koloid (susu/agar-agar), dan suspensi (kopi).',
+    chemistryConcept: 'Efek Tyndall akibat ukuran partikel fase terdispersi berkisar antara 1 hingga 100 nm.',
+    isPinned: false
+  },
+  {
+    id: 'vid-5',
+    title: 'Termokimia: Mengamati Reaksi Eksoterm & Endoterm Menggunakan Termometer',
+    youtubeUrl: 'https://www.youtube.com/watch?v=eK9j1n_N-7g',
+    youtubeId: 'eK9j1n_N-7g',
+    thumbnailUrl: 'https://img.youtube.com/vi/eK9j1n_N-7g/hqdefault.jpg',
+    category: 'Termokimia',
+    badge: 'Praktikum Inti',
+    duration: '05:50',
+    date: '15 Juli 2026',
+    description: 'Pengukuran kenaikan suhu pada pelarutan soda api (NaOH) dan penurunan suhu drastis pada pelarutan pupuk urea dalam kalorimeter sederhana.',
+    chemistryConcept: 'Perubahan entalpi pelarutan (ΔH) dan perpindahan kalor antara sistem dan lingkungan.',
+    isPinned: false
+  }
+];
+
 

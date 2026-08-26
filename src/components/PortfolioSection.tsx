@@ -313,7 +313,7 @@ export const PortfolioSection: React.FC<PortfolioSectionProps> = ({
   };
 
   return (
-    <section id="portofolio" className="py-16 sm:py-20 bg-[#F4F8FC] relative border-t border-[#E2E8F0]">
+    <section id="portofolio" className="py-16 sm:py-20 bg-[#F4F8FC] relative border-t border-[#E2E8F0] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

@@ -139,26 +139,28 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
     );
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-      {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 bg-black/65 backdrop-blur-xs"
-      />
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/65 backdrop-blur-xs"
+          />
 
-      {/* Modal Dialog */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-3xl bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-5 sm:p-7 max-h-[92vh] overflow-y-auto z-10 my-auto flex flex-col"
-      >
+          {/* Modal Dialog */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-3xl bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-5 sm:p-7 max-h-[92vh] overflow-y-auto z-10 my-auto flex flex-col"
+          >
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-4">
           <div className="flex items-center gap-3">
@@ -493,5 +495,7 @@ export const PhotoChangerModal: React.FC<PhotoChangerModalProps> = ({
         </div>
       </motion.div>
     </div>
+    )}
+  </AnimatePresence>
   );
 };

@@ -110,6 +110,26 @@
         "description": { "type": "string" }
       },
       "required": ["id", "title", "category", "issuer", "year", "imageUrl"]
+    },
+    "PracticalVideoItem": {
+      "title": "PracticalVideoItem",
+      "description": "Video praktikum kimia dan eksperimen laboratorium berbasis YouTube",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "youtubeUrl": { "type": "string" },
+        "youtubeId": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "badge": { "type": "string" },
+        "duration": { "type": "string" },
+        "date": { "type": "string" },
+        "description": { "type": "string" },
+        "chemistryConcept": { "type": "string" },
+        "isPinned": { "type": "boolean" }
+      },
+      "required": ["id", "title", "youtubeUrl", "youtubeId", "category", "date"]
     }
   },
   "firestore": {
@@ -136,6 +156,10 @@
     "/catatan_portofolio/{portfolioId}": {
       "schema": { "$ref": "#/entities/PortfolioCertificateItem" },
       "description": "Koleksi sertifikat kompetensi dan karya portofolio guru"
+    },
+    "/catatan_video/{videoId}": {
+      "schema": { "$ref": "#/entities/PracticalVideoItem" },
+      "description": "Koleksi video praktikum kimia YouTube yang dikelola guru"
     }
   }
 }

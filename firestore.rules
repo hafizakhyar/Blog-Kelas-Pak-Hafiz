@@ -36,5 +36,15 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    match /catatan_video/{videoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /catatan_biodata_guru/{profileId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

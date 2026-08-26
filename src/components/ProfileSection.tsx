@@ -484,7 +484,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   };
 
   return (
-    <section id="profil" className="py-16 sm:py-20 bg-white relative border-t border-[#E2E8F0]">
+    <section id="profil" className="py-16 sm:py-20 bg-white relative border-t border-[#E2E8F0] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

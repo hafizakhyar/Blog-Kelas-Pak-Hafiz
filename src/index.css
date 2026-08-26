@@ -7,6 +7,10 @@
     color-scheme: light;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   html.dark {
     color-scheme: dark;
   }
@@ -58,7 +62,7 @@ html.dark {
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: #0284C7;
+    background: #38BDF8;
   }
 
   /* Core section & container background adaptations */
@@ -75,11 +79,42 @@ html.dark {
   }
 
   .bg-\[\#E0F2FE\] {
-    background-color: rgba(2, 132, 199, 0.18) !important;
+    background-color: rgba(2, 132, 199, 0.22) !important;
+  }
+
+  .bg-\[\#F0F9FF\],
+  .bg-\[\#F0F7FF\],
+  .bg-\[\#EBF5FF\] {
+    background-color: rgba(2, 132, 199, 0.16) !important;
+  }
+
+  .bg-\[\#F0FDF4\],
+  .bg-\[\#ECFDF5\],
+  .bg-\[\#DCFCE7\] {
+    background-color: rgba(16, 185, 129, 0.16) !important;
+  }
+
+  .bg-\[\#FAF5FF\] {
+    background-color: rgba(147, 51, 234, 0.16) !important;
+  }
+
+  .bg-\[\#FEE2E2\],
+  .bg-\[\#FEF2F2\] {
+    background-color: rgba(239, 68, 68, 0.16) !important;
+  }
+
+  .bg-\[\#FEF3C7\],
+  .bg-\[\#FFFBEB\],
+  .bg-\[\#FEF9C3\] {
+    background-color: rgba(245, 158, 11, 0.16) !important;
   }
 
   .bg-\[\#E2E8F0\] {
     background-color: #334155 !important;
+  }
+
+  .bg-\[\#FAFAFA\] {
+    background-color: #0F172A !important;
   }
 
   .bg-white {
@@ -128,10 +163,28 @@ html.dark {
   }
 
   .border-\[\#BAE6FD\] {
-    border-color: #0369A1 !important;
+    border-color: rgba(56, 189, 248, 0.35) !important;
   }
 
-  /* Text colors adaptation */
+  .border-\[\#93C5FD\] {
+    border-color: rgba(56, 189, 248, 0.45) !important;
+  }
+
+  .border-\[\#86EFAC\],
+  .border-\[\#A7F3D0\] {
+    border-color: rgba(74, 222, 128, 0.35) !important;
+  }
+
+  .border-\[\#FCD34D\],
+  .border-\[\#FDE68A\] {
+    border-color: rgba(253, 224, 71, 0.35) !important;
+  }
+
+  .border-\[\#F1F5F9\] {
+    border-color: #1E293B !important;
+  }
+
+  /* Text colors adaptation for crystal-clear readability */
   .text-\[\#0F172A\] {
     color: #F8FAFC !important;
   }
@@ -150,6 +203,58 @@ html.dark {
 
   .text-\[\#64748B\] {
     color: #94A3B8 !important;
+  }
+
+  .text-\[\#94A3B8\] {
+    color: #CBD5E1 !important;
+  }
+
+  /* Brand and Accent text colors in Dark Mode */
+  .text-\[\#0284C7\],
+  .text-\[\#0369A1\],
+  .text-\[\#0056B3\],
+  .text-\[\#007AFF\] {
+    color: #38BDF8 !important;
+  }
+
+  .text-\[\#166534\],
+  .text-\[\#065F46\],
+  .text-\[\#059669\],
+  .text-\[\#16A34A\],
+  .text-\[\#128C7E\] {
+    color: #4ADE80 !important;
+  }
+
+  .text-\[\#92400E\],
+  .text-\[\#B45309\],
+  .text-\[\#854D0E\],
+  .text-\[\#D97706\] {
+    color: #FDE047 !important;
+  }
+
+  .text-\[\#991B1B\],
+  .text-\[\#B91C1C\] {
+    color: #FCA5A5 !important;
+  }
+
+  /* Prose typography in dark mode */
+  .prose {
+    --tw-prose-body: #E2E8F0 !important;
+    --tw-prose-headings: #F8FAFC !important;
+    --tw-prose-lead: #CBD5E1 !important;
+    --tw-prose-links: #38BDF8 !important;
+    --tw-prose-bold: #F8FAFC !important;
+    --tw-prose-counters: #94A3B8 !important;
+    --tw-prose-bullets: #38BDF8 !important;
+    --tw-prose-hr: #334155 !important;
+    --tw-prose-quotes: #F1F5F9 !important;
+    --tw-prose-quote-borders: #0284C7 !important;
+    --tw-prose-captions: #94A3B8 !important;
+    --tw-prose-code: #F8FAFC !important;
+    --tw-prose-pre-code: #E2E8F0 !important;
+    --tw-prose-pre-bg: #0B1120 !important;
+    --tw-prose-th-borders: #334155 !important;
+    --tw-prose-td-borders: #1E293B !important;
   }
 
   /* Form controls in dark mode */

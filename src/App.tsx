@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { ClassNotesSection } from './components/ClassNotesSection';
@@ -17,14 +18,15 @@ import { ClassNoteDetailPage } from './components/Pages/ClassNoteDetailPage';
 import { PraktikumDetailPage } from './components/Pages/PraktikumDetailPage';
 import { DocumentDetailPage } from './components/Pages/DocumentDetailPage';
 import { ArticleDetailPage } from './components/Pages/ArticleDetailPage';
-import { GalleryItem, BlogPost, DocumentItem, ClassNote } from './types';
-import { INITIAL_CLASS_NOTES, DOCUMENT_ITEMS, BLOG_POSTS, GALLERY_ITEMS } from './data/mockData';
+import { GalleryItem, BlogPost, DocumentItem, ClassNote, PracticalVideoItem } from './types';
+import { INITIAL_CLASS_NOTES, DOCUMENT_ITEMS, BLOG_POSTS, GALLERY_ITEMS, INITIAL_PRACTICAL_VIDEOS } from './data/mockData';
 import { createCircularFavicon } from './utils/favicon';
 import {
   subscribeToClassNotes,
   subscribeToDocuments,
   subscribeToArticles,
   subscribeToGalleryPhotos,
+  subscribeToPracticalVideos,
   saveClassNoteToFirestore,
   deleteClassNoteFromFirestore,
   saveDocumentToFirestore,
@@ -34,7 +36,9 @@ import {
   deleteArticleFromFirestore,
   incrementArticleReactions,
   saveGalleryItemToFirestore,
-  deleteGalleryItemFromFirestore
+  deleteGalleryItemFromFirestore,
+  savePracticalVideoToFirestore,
+  deletePracticalVideoFromFirestore
 } from './lib/firebase';
 
 const NOTES_STORAGE_KEY = 'kelaspakhafiz_class_notes_v2';
@@ -113,6 +117,18 @@ export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>(DOCUMENT_ITEMS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(BLOG_POSTS);
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>(GALLERY_ITEMS);
+  const [practicalVideos, setPracticalVideos] = useState<PracticalVideoItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('kelaspakhafiz_practical_videos_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.warn('Failed to load local practical videos', e);
+    }
+    return INITIAL_PRACTICAL_VIDEOS;
+  });
 
   // Admin Auth State & Modal
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -215,13 +231,30 @@ export default function App() {
       }
     });
 
+    // 5. Video Praktikum YouTube (catatan_video)
+    const unsubVideos = subscribeToPracticalVideos((cloudVideos) => {
+      if (cloudVideos && cloudVideos.length > 0) {
+        setPracticalVideos(cloudVideos);
+      }
+    });
+
     return () => {
       unsubNotes();
       unsubDocs();
       unsubArticles();
       unsubPhotos();
+      unsubVideos();
     };
   }, []);
+
+  // Save practical videos locally for instant loading
+  useEffect(() => {
+    try {
+      localStorage.setItem('kelaspakhafiz_practical_videos_v1', JSON.stringify(practicalVideos));
+    } catch (e) {
+      console.error('Failed to save practical videos locally', e);
+    }
+  }, [practicalVideos]);
 
   // Save notes locally for offline backup
   useEffect(() => {
@@ -706,6 +739,35 @@ https://www.kelaspakhafiz.my.id/
     }
   };
 
+  // --- CRUD Firestore Actions: Video Praktikum YouTube ---
+  const handleAddPracticalVideo = async (newVideo: PracticalVideoItem) => {
+    setPracticalVideos((prev) => [newVideo, ...prev]);
+    try {
+      await savePracticalVideoToFirestore(newVideo);
+    } catch (e) {
+      console.warn('Failed to sync new video to Firestore:', e);
+    }
+  };
+
+  const handleUpdatePracticalVideo = async (updatedVideo: PracticalVideoItem) => {
+    setPracticalVideos((prev) => prev.map((v) => (v.id === updatedVideo.id ? updatedVideo : v)));
+    try {
+      await savePracticalVideoToFirestore(updatedVideo);
+    } catch (e) {
+      console.warn('Failed to sync updated video to Firestore:', e);
+    }
+  };
+
+  const handleDeletePracticalVideo = async (videoId: string) => {
+    setPracticalVideos((prev) => prev.filter((v) => v.id !== videoId));
+    try {
+      await deletePracticalVideoFromFirestore(videoId);
+      addToast('Video Dihapus', 'Video praktikum YouTube telah dihapus.', 'info');
+    } catch (e) {
+      console.warn('Failed to delete video from Firestore:', e);
+    }
+  };
+
   const handleOpenMainPortal = () => {
     setIsMainPortalModalOpen(true);
   };
@@ -765,130 +827,174 @@ https://www.kelaspakhafiz.my.id/
 
       {/* Route-driven Content Rendering */}
       <main className="flex-grow">
-        {currentRoute === 'praktikum-detail' && activeGalleryItem ? (
-          /* Dedicated Full-Page View: Galeri Praktikum */
-          <PraktikumDetailPage
-            item={activeGalleryItem}
-            allItems={galleryItems}
-            onSelectItem={handleSelectGalleryItem}
-            onBack={() => handleBackToSection('galeri')}
-            onAddToast={addToast}
-            onOpenMainPortal={handleOpenMainPortal}
-            isAdmin={isAdmin}
-            onUpdateItem={handleUpdateGalleryItem}
-            onDeleteItem={handleDeleteGalleryItem}
-          />
-        ) : currentRoute === 'catatan-detail' && activeNote ? (
-          /* Dedicated Full-Page View: Catatan Kelas */
-          <ClassNoteDetailPage
-            note={activeNote}
-            allNotes={notes}
-            onSelectNote={handleSelectNote}
-            onBack={() => handleBackToSection('catatan-kelas')}
-            onAddToast={addToast}
-            onOpenMainPortal={handleOpenMainPortal}
-            isAdmin={isAdmin}
-            onUpdateNote={handleUpdateNote}
-            onDeleteNote={handleDeleteNote}
-          />
-        ) : currentRoute === 'document-detail' && activeDocument ? (
-          /* Dedicated Full-Page View: Dokumentasi File */
-          <DocumentDetailPage
-            doc={activeDocument}
-            allDocs={documents}
-            onSelectDoc={handleSelectDocument}
-            onBack={() => handleBackToSection('modul')}
-            onDownload={handleDownloadDocument}
-            onOpenMainPortal={handleOpenMainPortal}
-            onAddToast={addToast}
-          />
-        ) : currentRoute === 'article-detail' && activeBlogPost ? (
-          /* Dedicated Full-Page View: Artikel & Blog */
-          <ArticleDetailPage
-            post={activeBlogPost}
-            allPosts={blogPosts}
-            onSelectPost={handleSelectBlogPost}
-            onBack={() => handleBackToSection('blog')}
-            onOpenMainPortal={handleOpenMainPortal}
-            onAddToast={addToast}
-            onLikePost={handleLikeArticle}
-            isAdmin={isAdmin}
-            onDeletePost={handleDeleteArticle}
-            onUpdatePost={handleUpdateArticle}
-          />
-        ) : (
-          /* Main Landing Page Layout with All Sections */
-          <>
-            <Hero
-              onOpenMainPortal={handleOpenMainPortal}
-              onExploreClick={handleExploreClick}
-              isAdmin={isAdmin}
-              onAddToast={addToast}
-              praktikumCount={galleryItems.length}
-              notesCount={notes.length}
-              documentsCount={documents.length}
-              articlesCount={blogPosts.length}
-            />
+        <AnimatePresence mode="wait">
+          {currentRoute === 'praktikum-detail' && activeGalleryItem ? (
+            /* Dedicated Full-Page View: Galeri Praktikum */
+            <motion.div
+              key={`praktikum-${activeGalleryItem.id}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <PraktikumDetailPage
+                item={activeGalleryItem}
+                allItems={galleryItems}
+                onSelectItem={handleSelectGalleryItem}
+                onBack={() => handleBackToSection('galeri')}
+                onAddToast={addToast}
+                onOpenMainPortal={handleOpenMainPortal}
+                isAdmin={isAdmin}
+                onUpdateItem={handleUpdateGalleryItem}
+                onDeleteItem={handleDeleteGalleryItem}
+              />
+            </motion.div>
+          ) : currentRoute === 'catatan-detail' && activeNote ? (
+            /* Dedicated Full-Page View: Catatan Kelas */
+            <motion.div
+              key={`note-${activeNote.id}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <ClassNoteDetailPage
+                note={activeNote}
+                allNotes={notes}
+                onSelectNote={handleSelectNote}
+                onBack={() => handleBackToSection('catatan-kelas')}
+                onAddToast={addToast}
+                onOpenMainPortal={handleOpenMainPortal}
+                isAdmin={isAdmin}
+                onUpdateNote={handleUpdateNote}
+                onDeleteNote={handleDeleteNote}
+              />
+            </motion.div>
+          ) : currentRoute === 'document-detail' && activeDocument ? (
+            /* Dedicated Full-Page View: Dokumentasi File */
+            <motion.div
+              key={`doc-${activeDocument.id}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <DocumentDetailPage
+                doc={activeDocument}
+                allDocs={documents}
+                onSelectDoc={handleSelectDocument}
+                onBack={() => handleBackToSection('modul')}
+                onDownload={handleDownloadDocument}
+                onOpenMainPortal={handleOpenMainPortal}
+                onAddToast={addToast}
+              />
+            </motion.div>
+          ) : currentRoute === 'article-detail' && activeBlogPost ? (
+            /* Dedicated Full-Page View: Artikel & Blog */
+            <motion.div
+              key={`article-${activeBlogPost.id}`}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <ArticleDetailPage
+                post={activeBlogPost}
+                allPosts={blogPosts}
+                onSelectPost={handleSelectBlogPost}
+                onBack={() => handleBackToSection('blog')}
+                onOpenMainPortal={handleOpenMainPortal}
+                onAddToast={addToast}
+                onLikePost={handleLikeArticle}
+                isAdmin={isAdmin}
+                onDeletePost={handleDeleteArticle}
+                onUpdatePost={handleUpdateArticle}
+              />
+            </motion.div>
+          ) : (
+            /* Main Landing Page Layout with All Sections */
+            <motion.div
+              key="main-landing"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+            >
+              <Hero
+                onOpenMainPortal={handleOpenMainPortal}
+                onExploreClick={handleExploreClick}
+                isAdmin={isAdmin}
+                onAddToast={addToast}
+                praktikumCount={galleryItems.length}
+                notesCount={notes.length}
+                documentsCount={documents.length}
+                articlesCount={blogPosts.length}
+              />
 
-            <GallerySection
-              onSelectItem={handleSelectGalleryItem}
-              items={galleryItems}
-              isAdmin={isAdmin}
-              setIsAdmin={setIsAdmin}
-              onAddItem={handleAddGalleryItem}
-              onDeleteItem={handleDeleteGalleryItem}
-              onUpdateItem={handleUpdateGalleryItem}
-              onAddToast={addToast}
-            />
+              <GallerySection
+                onSelectItem={handleSelectGalleryItem}
+                items={galleryItems}
+                videos={practicalVideos}
+                isAdmin={isAdmin}
+                setIsAdmin={setIsAdmin}
+                onAddItem={handleAddGalleryItem}
+                onDeleteItem={handleDeleteGalleryItem}
+                onUpdateItem={handleUpdateGalleryItem}
+                onAddVideo={handleAddPracticalVideo}
+                onUpdateVideo={handleUpdatePracticalVideo}
+                onDeleteVideo={handleDeletePracticalVideo}
+                onAddToast={addToast}
+              />
 
-            <ClassNotesSection
-              onAddToast={addToast}
-              onSelectNote={handleSelectNote}
-              notes={notes}
-              setNotes={setNotes}
-              isAdmin={isAdmin}
-              setIsAdmin={setIsAdmin}
-            />
+              <ClassNotesSection
+                onAddToast={addToast}
+                onSelectNote={handleSelectNote}
+                notes={notes}
+                setNotes={setNotes}
+                isAdmin={isAdmin}
+                setIsAdmin={setIsAdmin}
+              />
 
-            <DocumentsSection
-              onPreviewDoc={handleSelectDocument}
-              onDownloadDoc={handleDownloadDocument}
-              docs={documents}
-              isAdmin={isAdmin}
-              setIsAdmin={setIsAdmin}
-              onAddDoc={handleAddDocument}
-              onUpdateDoc={handleUpdateDocument}
-              onDeleteDoc={handleDeleteDocument}
-              onAddToast={addToast}
-            />
+              <DocumentsSection
+                onPreviewDoc={handleSelectDocument}
+                onDownloadDoc={handleDownloadDocument}
+                docs={documents}
+                isAdmin={isAdmin}
+                setIsAdmin={setIsAdmin}
+                onAddDoc={handleAddDocument}
+                onUpdateDoc={handleUpdateDocument}
+                onDeleteDoc={handleDeleteDocument}
+                onAddToast={addToast}
+              />
 
-            <BlogSection
-              onSelectPost={handleSelectBlogPost}
-              onOpenMainPortal={handleOpenMainPortal}
-              posts={blogPosts}
-              isAdmin={isAdmin}
-              setIsAdmin={setIsAdmin}
-              onAddPost={handleAddArticle}
-              onDeletePost={handleDeleteArticle}
-              onUpdatePost={handleUpdateArticle}
-              onAddToast={addToast}
-            />
+              <BlogSection
+                onSelectPost={handleSelectBlogPost}
+                onOpenMainPortal={handleOpenMainPortal}
+                posts={blogPosts}
+                isAdmin={isAdmin}
+                setIsAdmin={setIsAdmin}
+                onAddPost={handleAddArticle}
+                onDeletePost={handleDeleteArticle}
+                onUpdatePost={handleUpdateArticle}
+                onAddToast={addToast}
+              />
 
-            <LearningPlatformCTA
-              onOpenMainPortal={handleOpenMainPortal}
-            />
+              <LearningPlatformCTA
+                onOpenMainPortal={handleOpenMainPortal}
+              />
 
-            <PortfolioSection
-              isAdmin={isAdmin}
-              onAddToast={addToast}
-            />
+              <PortfolioSection
+                isAdmin={isAdmin}
+                onAddToast={addToast}
+              />
 
-            <ProfileSection
-              isAdmin={isAdmin}
-              onAddToast={addToast}
-            />
-          </>
-        )}
+              <ProfileSection
+                isAdmin={isAdmin}
+                onAddToast={addToast}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* Footer */}

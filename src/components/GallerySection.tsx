@@ -33,12 +33,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Pin,
-  PinOff
+  PinOff,
+  Video,
+  PlayCircle,
+  ExternalLink,
+  Edit3
 } from 'lucide-react';
-import { GALLERY_ITEMS } from '../data/mockData';
-import { GalleryItem } from '../types';
+import { GALLERY_ITEMS, INITIAL_PRACTICAL_VIDEOS } from '../data/mockData';
+import { GalleryItem, PracticalVideoItem } from '../types';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../lib/firebase';
 import { PhotoChangerModal } from './Modals/PhotoChangerModal';
+import { YouTubePlayerModal } from './Modals/YouTubePlayerModal';
+import { AddYouTubeVideoModal } from './Modals/AddYouTubeVideoModal';
+import { getYouTubeWatchUrl, getYouTubeThumbnail } from '../utils/youtube';
 import { WhatsAppShareButton } from './Common/WhatsAppShareButton';
 import { sharePraktikumToWhatsApp } from '../utils/share';
 import {
@@ -63,31 +70,50 @@ const PRESET_LAB_IMAGES = [
 interface GallerySectionProps {
   onSelectItem: (item: GalleryItem) => void;
   items?: GalleryItem[];
+  videos?: PracticalVideoItem[];
   isAdmin?: boolean;
   setIsAdmin?: (val: boolean) => void;
   onAddItem?: (item: GalleryItem) => void;
   onDeleteItem?: (itemId: string) => void;
   onUpdateItem?: (updatedItem: GalleryItem) => void;
+  onAddVideo?: (video: PracticalVideoItem) => void;
+  onDeleteVideo?: (videoId: string) => void;
+  onUpdateVideo?: (updatedVideo: PracticalVideoItem) => void;
   onAddToast?: (title: string, description?: string, type?: 'success' | 'info') => void;
 }
 
 export const GallerySection: React.FC<GallerySectionProps> = ({
   onSelectItem,
   items = GALLERY_ITEMS,
+  videos = INITIAL_PRACTICAL_VIDEOS,
   isAdmin = false,
   setIsAdmin,
   onAddItem,
   onDeleteItem,
   onUpdateItem,
+  onAddVideo,
+  onDeleteVideo,
+  onUpdateVideo,
   onAddToast = (_t: string, _d?: string, _ty?: 'success' | 'info') => {}
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Horizontal carousel ref & scroll state
+  // Horizontal carousel ref & scroll state for Photos
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+
+  // Horizontal carousel ref & scroll state for Videos
+  const videoCarouselRef = useRef<HTMLDivElement | null>(null);
+  const [canScrollVideoLeft, setCanScrollVideoLeft] = useState(false);
+  const [canScrollVideoRight, setCanScrollVideoRight] = useState(true);
+
+  // Video playback & modal states
+  const [selectedVideoForPlay, setSelectedVideoForPlay] = useState<PracticalVideoItem | null>(null);
+  const [isAddVideoModalOpen, setIsAddVideoModalOpen] = useState(false);
+  const [videoToEdit, setVideoToEdit] = useState<PracticalVideoItem | null>(null);
+  const [videoToDelete, setVideoToDelete] = useState<PracticalVideoItem | null>(null);
 
   // Quick photo changer state
   const [itemForPhotoChange, setItemForPhotoChange] = useState<GalleryItem | null>(null);
@@ -136,6 +162,14 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     }
   };
 
+  const checkVideoScrollState = () => {
+    if (videoCarouselRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = videoCarouselRef.current;
+      setCanScrollVideoLeft(scrollLeft > 10);
+      setCanScrollVideoRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
   useEffect(() => {
     checkScrollState();
     const el = carouselRef.current;
@@ -149,6 +183,19 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     }
   }, [items, selectedCategory, searchQuery]);
 
+  useEffect(() => {
+    checkVideoScrollState();
+    const vel = videoCarouselRef.current;
+    if (vel) {
+      vel.addEventListener('scroll', checkVideoScrollState);
+      window.addEventListener('resize', checkVideoScrollState);
+      return () => {
+        vel.removeEventListener('scroll', checkVideoScrollState);
+        window.removeEventListener('resize', checkVideoScrollState);
+      };
+    }
+  }, [videos]);
+
   const handleScrollCarousel = (direction: 'left' | 'right') => {
     if (carouselRef.current) {
       const scrollOffset = 380;
@@ -157,6 +204,60 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
         behavior: 'smooth'
       });
       setTimeout(checkScrollState, 350);
+    }
+  };
+
+  const handleScrollVideoCarousel = (direction: 'left' | 'right') => {
+    if (videoCarouselRef.current) {
+      const scrollOffset = 380;
+      videoCarouselRef.current.scrollBy({
+        left: direction === 'left' ? -scrollOffset : scrollOffset,
+        behavior: 'smooth'
+      });
+      setTimeout(checkVideoScrollState, 350);
+    }
+  };
+
+  // Video Handlers
+  const handleSaveVideo = (videoItem: PracticalVideoItem) => {
+    if (videoToEdit) {
+      if (onUpdateVideo) {
+        onUpdateVideo(videoItem);
+      }
+      onAddToast('Video Diperbarui', `Video "${videoItem.title}" berhasil diperbarui.`, 'success');
+    } else {
+      if (onAddVideo) {
+        onAddVideo(videoItem);
+      }
+      onAddToast('Video Ditambahkan', `Video YouTube "${videoItem.title}" berhasil ditambahkan ke Galeri.`, 'success');
+    }
+    setVideoToEdit(null);
+  };
+
+  const handleTogglePinVideo = (video: PracticalVideoItem) => {
+    if (!isAdmin) {
+      setIsAdminModalOpen(true);
+      return;
+    }
+    const updated = {
+      ...video,
+      isPinned: !video.isPinned
+    };
+    if (onUpdateVideo) {
+      onUpdateVideo(updated);
+    }
+    onAddToast(
+      updated.isPinned ? 'Video Disematkan' : 'Sematkan Video Dilepas',
+      `Video "${video.title}" ${updated.isPinned ? 'kini berada di urutan paling depan baris video' : 'kembali ke urutan reguler'}.`,
+      'success'
+    );
+  };
+
+  const handleConfirmDeleteVideo = () => {
+    if (videoToDelete && onDeleteVideo) {
+      onDeleteVideo(videoToDelete.id);
+      onAddToast('Video Dihapus', `Video "${videoToDelete.title}" telah dihapus dari koleksi praktikum.`, 'info');
+      setVideoToDelete(null);
     }
   };
 
@@ -429,7 +530,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   };
 
   return (
-    <section id="galeri" className="py-20 bg-[#F4F8FC]">
+    <section id="galeri" className="py-20 bg-[#F4F8FC] scroll-mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
@@ -460,17 +561,44 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               />
             </div>
 
-            {/* Upload Photo Button (Mode Guru Only) */}
-            {isAdmin && (
+            {/* Upload Photo & Add Video Buttons (Mode Guru Only) */}
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUploadModalOpen(true);
+                    setAutoGeneratedNotice(null);
+                  }}
+                  className="px-3.5 sm:px-4 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
+                  title="Unggah Foto Dokumentasi Praktikum"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Unggah Foto Lab</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoToEdit(null);
+                    setIsAddVideoModalOpen(true);
+                  }}
+                  className="px-3.5 sm:px-4 py-2.5 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
+                  title="Tambah / Masukkan Link Video YouTube"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>+ Video YouTube</span>
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => {
-                  setIsUploadModalOpen(true);
-                  setAutoGeneratedNotice(null);
-                }}
-                className="px-4 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
+                type="button"
+                onClick={() => setIsAdminModalOpen(true)}
+                className="px-3.5 py-2.5 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0284C7] border border-[#CBD5E1] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer shadow-2xs"
+                title="Masuk mode pengajar untuk mengelola galeri dan video praktikum"
               >
-                <Plus className="w-4 h-4" />
-                <span className="hidden sm:inline">Unggah Foto Lab</span>
+                <Lock className="w-3.5 h-3.5 text-[#0284C7]" />
+                <span className="hidden sm:inline">Akses Guru</span>
               </button>
             )}
           </div>
@@ -792,6 +920,300 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
             </button>
           </div>
         )}
+
+        {/* ========================================================================= */}
+        {/* BARIS 2: VIDEO PRAKTIKUM YOUTUBE (1 Baris Seragam & Pilihan Interaktif) */}
+        {/* ========================================================================= */}
+        <div className="mt-16 pt-12 border-t border-[#CBD5E1]/60">
+          
+          {/* Video Row Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-5">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#FEF2F2] border border-[#FECACA] text-[#DC2626] text-xs font-semibold mb-2.5 shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-[#DC2626] animate-ping" />
+                <Play className="w-3.5 h-3.5 fill-[#DC2626]" />
+                <span className="uppercase tracking-widest text-[10px] font-bold">Video Praktikum & Demonstrasi Lab</span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-light font-heading text-[#0F172A] tracking-tight">
+                Video <span className="font-semibold text-[#DC2626]">Praktikum YouTube</span>
+              </h3>
+              <p className="text-[#64748B] text-xs sm:text-sm mt-1.5 max-w-2xl leading-relaxed">
+                Tonton rekaman dan simulasi praktikum laboratorium kimia SMA secara langsung. Pilih dan putar video eksperimen di bawah ini, atau masukkan tautan baru melalui akun guru.
+              </p>
+            </div>
+
+            {/* Video Controls Right */}
+            <div className="flex items-center gap-3 shrink-0">
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoToEdit(null);
+                    setIsAddVideoModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>+ Tambah Video YouTube</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAdminModalOpen(true)}
+                  className="px-3.5 py-2 rounded-full bg-white hover:bg-[#FEE2E2] text-[#DC2626] border border-[#FECACA] text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                  title="Akses akun guru untuk menambah / mengganti link video YouTube"
+                >
+                  <Lock className="w-3.5 h-3.5 text-[#DC2626]" />
+                  <span>Kelola Video (Guru)</span>
+                </button>
+              )}
+
+              {/* Scroll buttons */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleScrollVideoCarousel('left')}
+                  disabled={!canScrollVideoLeft}
+                  className="p-2 rounded-full bg-white hover:bg-[#FEE2E2] text-[#0F172A] border border-[#CBD5E1] disabled:opacity-40 cursor-pointer transition-colors shadow-2xs"
+                  title="Geser Video ke Kiri"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScrollVideoCarousel('right')}
+                  disabled={!canScrollVideoRight}
+                  className="p-2 rounded-full bg-white hover:bg-[#FEE2E2] text-[#0F172A] border border-[#CBD5E1] disabled:opacity-40 cursor-pointer transition-colors shadow-2xs"
+                  title="Geser Video ke Kanan"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Horizontal Carousel (1 Baris Seragam) */}
+          <div className="relative group/vid-container">
+            <div
+              ref={videoCarouselRef}
+              className="flex gap-6 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-[#CBD5E1] scrollbar-track-transparent scroll-smooth"
+              style={{ scrollbarWidth: 'thin' }}
+            >
+              <AnimatePresence mode="popLayout">
+                {videos.map((vid) => {
+                  const thumb = vid.thumbnailUrl || getYouTubeThumbnail(vid.youtubeId);
+                  const isVidPinned = !!vid.isPinned;
+
+                  return (
+                    <motion.article
+                      key={vid.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.25 }}
+                      className={`group shrink-0 w-[290px] sm:w-[340px] md:w-[370px] bg-white rounded-[24px] overflow-hidden border transition-all duration-300 hover:shadow-xl flex flex-col justify-between snap-start relative ${
+                        isVidPinned
+                          ? 'border-[#FCA5A5] ring-2 ring-[#EF4444]/20 shadow-md bg-linear-to-b from-[#FFF5F5] to-white'
+                          : 'border-[#E2E8F0] hover:border-[#FCA5A5]'
+                      }`}
+                    >
+                      {/* Video Thumbnail Header */}
+                      <div
+                        className="relative aspect-video overflow-hidden bg-[#0F172A] cursor-pointer"
+                        onClick={() => setSelectedVideoForPlay(vid)}
+                      >
+                        <img
+                          src={thumb}
+                          alt={vid.title}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30 pointer-events-none" />
+
+                        {/* Centered YouTube Red Play Button */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#DC2626] group-hover:bg-[#EF4444] text-white flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform duration-300">
+                            <Play className="w-6 h-6 fill-white ml-0.5" />
+                          </div>
+                        </div>
+
+                        {/* Top Badges */}
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#DC2626] text-white shadow-md flex items-center gap-1">
+                            <Play className="w-2.5 h-2.5 fill-white" />
+                            <span>YouTube</span>
+                          </span>
+
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-black/60 backdrop-blur-xs text-white border border-white/20">
+                            {vid.category}
+                          </span>
+                        </div>
+
+                        {/* Bottom Duration Badge & Teacher Actions */}
+                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+                          {vid.duration ? (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/75 text-white flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-[#F87171]" />
+                              <span>{vid.duration}</span>
+                            </span>
+                          ) : <span />}
+
+                          {/* Teacher Edit / Pin controls on video card */}
+                          {isAdmin && (
+                            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => handleTogglePinVideo(vid)}
+                                className={`p-1.5 rounded-full backdrop-blur-xs transition-colors cursor-pointer shadow-xs ${
+                                  isVidPinned
+                                    ? 'bg-[#EF4444] text-white'
+                                    : 'bg-black/60 text-white/80 hover:bg-black/80 hover:text-white'
+                                }`}
+                                title={isVidPinned ? 'Lepas Sematan Video' : 'Sematkan Video ke Depan'}
+                              >
+                                <Pin className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setVideoToEdit(vid);
+                                  setIsAddVideoModalOpen(true);
+                                }}
+                                className="p-1.5 rounded-full bg-black/60 hover:bg-[#0284C7] text-white backdrop-blur-xs transition-colors cursor-pointer shadow-xs"
+                                title="Edit Link YouTube & Judul"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Video Information Body */}
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-[11px] font-medium text-[#64748B] flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[#0284C7]" />
+                              <span>{vid.date}</span>
+                            </span>
+                            {isVidPinned && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">
+                                <Pin className="w-2.5 h-2.5 fill-[#DC2626]" />
+                                <span>Disematkan</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <h4
+                            onClick={() => setSelectedVideoForPlay(vid)}
+                            className="text-sm sm:text-base font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#DC2626] transition-colors mb-2 line-clamp-2 cursor-pointer"
+                          >
+                            {vid.title}
+                          </h4>
+
+                          <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2 mb-3">
+                            {vid.description}
+                          </p>
+
+                          {vid.chemistryConcept && (
+                            <div className="mb-3 px-2.5 py-1.5 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-start gap-1.5 text-[11px] text-[#166534]">
+                              <Atom className="w-3.5 h-3.5 text-[#16A34A] shrink-0 mt-0.5" />
+                              <span className="line-clamp-1"><strong>Konsep:</strong> {vid.chemistryConcept}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Video Card Footer Actions */}
+                        <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedVideoForPlay(vid)}
+                            className="text-xs font-bold text-[#DC2626] hover:text-[#B91C1C] flex items-center gap-1.5 cursor-pointer group-hover:underline"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-[#DC2626]" />
+                            <span>Putar Video</span>
+                          </button>
+
+                          <div className="flex items-center gap-1.5">
+                            {/* WhatsApp share */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const text = `Tonton Video Praktikum Kimia: *${vid.title}*\nKategori: ${vid.category}\nLink: ${vid.youtubeUrl || getYouTubeWatchUrl(vid.youtubeId)}\n\nPortal Pembelajaran Kelas Pak Hafiz: https://www.kelaspakhafiz.my.id/`;
+                                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+                                onAddToast('Membuka WhatsApp', `Membagikan video "${vid.title}" ke WhatsApp.`, 'info');
+                              }}
+                              className="p-1.5 rounded-full bg-[#DCFCE7] text-[#16A34A] hover:bg-[#16A34A] hover:text-white transition-colors cursor-pointer"
+                              title="Bagikan Video ke WhatsApp"
+                            >
+                              <PlayCircle className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Direct YouTube link */}
+                            <a
+                              href={vid.youtubeUrl || getYouTubeWatchUrl(vid.youtubeId)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="p-1.5 rounded-full bg-[#F1F5F9] text-[#64748B] hover:bg-[#DC2626] hover:text-white transition-colors cursor-pointer"
+                              title="Buka langsung di YouTube"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+
+                            {/* Admin Delete Video */}
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setVideoToDelete(vid);
+                                }}
+                                className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                                title="Hapus Video YouTube"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.article>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Video bottom scroll helper */}
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#64748B]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#DC2626] animate-pulse" />
+              <span>
+                Menampilkan <strong>{videos.length}</strong> video praktikum YouTube interaktif. Pilih dan putar langsung atau kelola melalui akun guru.
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoToEdit(null);
+                    setIsAddVideoModalOpen(true);
+                  }}
+                  className="text-xs font-bold text-[#DC2626] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Play className="w-3 h-3 fill-[#DC2626]" />
+                  <span>+ Masukkan Link YouTube Guru</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
       </div>
 
@@ -1410,6 +1832,71 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
           onAddToast={onAddToast}
         />
       )}
+
+      {/* YouTube Video Player Modal */}
+      <YouTubePlayerModal
+        isOpen={!!selectedVideoForPlay}
+        video={selectedVideoForPlay}
+        onClose={() => setSelectedVideoForPlay(null)}
+        onAddToast={onAddToast}
+      />
+
+      {/* Add / Edit YouTube Video Modal (Akun Guru) */}
+      <AddYouTubeVideoModal
+        isOpen={isAddVideoModalOpen}
+        initialVideo={videoToEdit}
+        onClose={() => {
+          setIsAddVideoModalOpen(false);
+          setVideoToEdit(null);
+        }}
+        onSave={handleSaveVideo}
+        onAddToast={onAddToast}
+      />
+
+      {/* Confirm Delete Video Modal */}
+      <AnimatePresence>
+        {videoToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setVideoToDelete(null)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-6 z-10 text-center"
+            >
+              <div className="w-12 h-12 rounded-full bg-[#FEE2E2] text-[#EF4444] flex items-center justify-center mx-auto mb-3">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-[#0F172A]">Hapus Video Praktikum?</h3>
+              <p className="text-xs text-[#64748B] mt-1.5 leading-relaxed">
+                Apakah Anda yakin ingin menghapus video <strong className="text-[#0F172A]">"{videoToDelete.title}"</strong> dari daftar praktikum YouTube?
+              </p>
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setVideoToDelete(null)}
+                  className="w-1/2 py-2.5 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B] hover:bg-[#F1F5F9] transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDeleteVideo}
+                  className="w-1/2 py-2.5 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                >
+                  Ya, Hapus
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };

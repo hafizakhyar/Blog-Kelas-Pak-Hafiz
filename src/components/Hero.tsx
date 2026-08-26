@@ -87,7 +87,24 @@ export const Hero: React.FC<HeroProps> = ({
   const scrollToSection = (id: string) => {
     const el = document.getElementById(id);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
+      const navOffset = 80;
+      const elementPosition = el.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    } else {
+      try {
+        window.location.hash = `#${id}`;
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    try {
+      window.history.pushState(null, '', `#${id}`);
+    } catch {
+      window.location.hash = `#${id}`;
     }
   };
 
@@ -155,16 +172,16 @@ export const Hero: React.FC<HeroProps> = ({
                   <ArrowRight className="w-4 h-4 text-[#38BDF8]" />
                 </button>
 
-                <a
-                  href="https://www.kelaspakhafiz.my.id/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto border border-[#0284C7]/50 text-[#0284C7] hover:text-[#0369A1] hover:bg-[#E0F2FE]/50 bg-white px-8 py-3.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5 shadow-2xs"
+                <button
+                  type="button"
+                  onClick={onOpenMainPortal}
+                  className="w-full sm:w-auto border border-[#0284C7]/50 text-[#0284C7] hover:text-[#0369A1] hover:bg-[#E0F2FE]/50 bg-white px-8 py-3.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 transform hover:-translate-y-0.5 shadow-2xs cursor-pointer"
+                  title="Buka Info & Akses Portal Pembelajaran"
                 >
                   <BookOpen className="w-4 h-4 text-[#0284C7]" />
                   <span>Portal Pembelajaran</span>
                   <ExternalLink className="w-3.5 h-3.5 text-[#0284C7]" />
-                </a>
+                </button>
               </div>
 
               {/* Feature Highlights Pills */}
@@ -216,6 +233,7 @@ export const Hero: React.FC<HeroProps> = ({
                     type="button"
                     onClick={() => scrollToSection('galeri')}
                     className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                    title="Buka Galeri Praktikum"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="w-8 h-8 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -237,8 +255,9 @@ export const Hero: React.FC<HeroProps> = ({
                   {/* Card 2: Catatan Kelas */}
                   <button
                     type="button"
-                    onClick={() => scrollToSection('catatan')}
+                    onClick={() => scrollToSection('catatan-kelas')}
                     className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                    title="Buka Catatan Kelas & Rumus"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="w-8 h-8 rounded-xl bg-[#E0F2FE] text-[#0369A1] flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -260,8 +279,9 @@ export const Hero: React.FC<HeroProps> = ({
                   {/* Card 3: Modul & LKPD */}
                   <button
                     type="button"
-                    onClick={() => scrollToSection('dokumen')}
+                    onClick={() => scrollToSection('modul')}
                     className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                    title="Buka Perangkat Ajar, Modul & LKPD"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="w-8 h-8 rounded-xl bg-[#F0FDF4] text-[#16A34A] flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -285,6 +305,7 @@ export const Hero: React.FC<HeroProps> = ({
                     type="button"
                     onClick={() => scrollToSection('blog')}
                     className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                    title="Buka Artikel Sains & Literasi"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="w-8 h-8 rounded-xl bg-[#FAF5FF] text-[#9333EA] flex items-center justify-center group-hover:scale-105 transition-transform">

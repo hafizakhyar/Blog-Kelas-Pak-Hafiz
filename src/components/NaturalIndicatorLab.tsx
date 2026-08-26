@@ -244,7 +244,7 @@ export const NaturalIndicatorLab: React.FC = () => {
                       onClick={() => handleTestSolution(sol)}
                       className={`w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between group ${
                         isSelected
-                          ? 'bg-[#0F172A] text-white border-[#0F172A] shadow-xs'
+                          ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-xs'
                           : 'bg-white border-[#E2E8F0] hover:border-[#0284C7] hover:bg-[#F4F8FC] text-[#334155]'
                       }`}
                     >
@@ -286,7 +286,22 @@ export const NaturalIndicatorLab: React.FC = () => {
             {/* Quick Summary Tip */}
             <div className="mt-5 pt-3 border-t border-[#E2E8F0] text-[11px] text-[#64748B] flex items-center justify-between">
               <span>Ingin LKPD praktikum lengkap?</span>
-              <a href="#modul" className="font-bold text-[#0284C7] hover:text-[#0369A1] hover:underline flex items-center gap-1">
+              <a
+                href="#modul"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const el = document.getElementById('modul');
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth' });
+                  }
+                  try {
+                    window.history.pushState(null, '', '#modul');
+                  } catch {
+                    window.location.hash = '#modul';
+                  }
+                }}
+                className="font-bold text-[#0284C7] hover:text-[#0369A1] hover:underline flex items-center gap-1 cursor-pointer"
+              >
                 <span>Unduh LKPD</span>
                 <ArrowRight className="w-3 h-3" />
               </a>

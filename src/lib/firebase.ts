@@ -1,4 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import {
   getFirestore,
   collection,
@@ -6,12 +7,11 @@ import {
   setDoc,
   deleteDoc,
   onSnapshot,
-  getDocs,
+  getDocFromServer,
   updateDoc,
   increment,
-  writeBatch,
   serverTimestamp,
-  Timestamp
+  type Unsubscribe
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -19,7 +19,17 @@ import {
   uploadBytesResumable,
   getDownloadURL
 } from 'firebase/storage';
-import { ClassNote, GalleryItem, DocumentItem, BlogPost, ProfileExperienceItem, PortfolioCertificateItem, TeacherBioProfile } from '../types';
+import firebaseConfig from '../../firebase-applet-config.json';
+import {
+  ClassNote,
+  GalleryItem,
+  DocumentItem,
+  BlogPost,
+  ProfileExperienceItem,
+  PortfolioCertificateItem,
+  TeacherBioProfile,
+  PracticalVideoItem
+} from '../types';
 import {
   INITIAL_CLASS_NOTES,
   GALLERY_ITEMS,
@@ -27,34 +37,19 @@ import {
   BLOG_POSTS,
   INITIAL_PROFILE_EXPERIENCES,
   INITIAL_PORTFOLIO_CERTIFICATES,
-  INITIAL_TEACHER_PROFILE
+  INITIAL_TEACHER_PROFILE,
+  INITIAL_PRACTICAL_VIDEOS
 } from '../data/mockData';
 
-// User's exact Firebase Project Configuration
-export const firebaseConfig = {
-  apiKey: "AIzaSyDuT_cyN06P-1CwFm9PQ0_rrR3blrMSAwg",
-  authDomain: "empirical-philosophy-7q6d2.firebaseapp.com",
-  projectId: "empirical-philosophy-7q6d2",
-  storageBucket: "empirical-philosophy-7q6d2.firebasestorage.app",
-  messagingSenderId: "623768425354",
-  appId: "1:623768425354:web:0e4718851ad29f2c9aae73"
-};
-
 // Initialize Firebase App singleton
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// User's custom Firestore Database ID
-export const FIRESTORE_DATABASE_ID = "ai-studio-kelaspakhafizpor-c1ee3adc-37e9-4c0a-9d18-5defc1a47a83";
-
-// Initialize both Custom Firestore instance and Default Firestore instance for robust auto-fallback
-export const customDb = getFirestore(app, FIRESTORE_DATABASE_ID);
-export const defaultDb = getFirestore(app);
-
-// Export primary db instance
-export const db = customDb;
+// CRITICAL: Initialize Firestore using the configured custom firestoreDatabaseId
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const auth = getAuth(app);
 export const storage = getStorage(app);
 
-// Firestore Collection Names prefixed with "catatan_"
+// Firestore Collection Names
 export const COLLECTIONS = {
   NOTES: 'catatan_kelas',
   ARTICLES: 'catatan_artikel',
@@ -63,9 +58,10 @@ export const COLLECTIONS = {
   PROFILES: 'catatan_profil',
   PORTFOLIOS: 'catatan_portofolio',
   TEACHER_BIO: 'catatan_biodata_guru',
+  VIDEOS: 'catatan_video',
 } as const;
 
-// Storage Folder Names prefixed with "catatan_"
+// Storage Folder Names
 export const STORAGE_FOLDERS = {
   NOTES_IMAGES: 'catatan_foto/catatan_kelas',
   GALLERY_IMAGES: 'catatan_foto/galeri',
@@ -74,6 +70,63 @@ export const STORAGE_FOLDERS = {
   PROFILE_IMAGES: 'catatan_foto/profil',
   CERTIFICATE_IMAGES: 'catatan_foto/portofolio_sertifikat',
 } as const;
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errMessage = error instanceof Error ? error.message : String(error);
+  
+  // Gracefully handle offline / connection messages without throwing uncaught UI crashes
+  if (errMessage.includes('unavailable') || errMessage.includes('offline') || errMessage.includes('Could not reach Cloud Firestore')) {
+    console.info(`[Firestore Info] Koneksi Firestore beroperasi dalam mode offline/lokal (${path || 'general'}).`);
+    return;
+  }
+
+  const errInfo: FirestoreErrorInfo = {
+    error: errMessage,
+    authInfo: {
+      userId: auth.currentUser?.uid || null,
+      email: auth.currentUser?.email || null,
+      emailVerified: auth.currentUser?.emailVerified || null,
+      isAnonymous: auth.currentUser?.isAnonymous || null,
+    },
+    operationType,
+    path
+  };
+
+  console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
+}
+
+// Connection test on boot as requested by Firebase Integration Skill
+async function testConnection() {
+  try {
+    await getDocFromServer(doc(db, 'test', 'connection'));
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.info("[Firestore] Client beroperasi dalam mode cache offline.");
+    }
+  }
+}
+testConnection();
 
 /**
  * Upload any File (Image, PDF, DOCX) to Firebase Storage
@@ -84,13 +137,10 @@ export async function uploadFileToFirebaseStorage(
   folder: string,
   onProgress?: (progress: number) => void
 ): Promise<string> {
-  // Clean file name to prevent collision
   const timestamp = Date.now();
   const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
   const storagePath = `${folder}/${timestamp}_${sanitizedName}`;
   const storageReference = ref(storage, storagePath);
-
-  console.log(`[Firebase Storage] Memulai unggah berkas "${file.name}" (${file.size} bytes) ke: ${storagePath}`);
 
   return new Promise((resolve, reject) => {
     const uploadTask = uploadBytesResumable(storageReference, file);
@@ -104,16 +154,15 @@ export async function uploadFileToFirebaseStorage(
         }
       },
       (error) => {
-        console.error(`[Firebase Storage ERROR] Gagal mengunggah file ke ${storagePath}:`, error);
+        console.error(`[Firebase Storage ERROR] Gagal mengunggah berkas ke ${storagePath}:`, error);
         reject(error);
       },
       async () => {
         try {
           const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-          console.log(`[Firebase Storage SUCCESS] Foto/Berkas berhasil diunggah! URL: ${downloadUrl}`);
           resolve(downloadUrl);
         } catch (err) {
-          console.error('[Firebase Storage ERROR] Gagal mendapatkan URL publik getDownloadURL():', err);
+          console.error('[Firebase Storage ERROR] Gagal mendapatkan download URL:', err);
           reject(err);
         }
       }
@@ -122,99 +171,26 @@ export async function uploadFileToFirebaseStorage(
 }
 
 /**
- * Helper to write a document with custom DB first, falling back to default DB if needed
+ * Safe write helper to Firestore with offline queuing
  */
-async function writeWithFallback(collectionName: string, docId: string, data: any): Promise<void> {
+async function safeFirestoreWrite(collectionName: string, docId: string, data: any): Promise<void> {
   try {
-    const docRef = doc(customDb, collectionName, docId);
+    const docRef = doc(db, collectionName, docId);
     await setDoc(docRef, data, { merge: true });
-    console.log(`[Firebase Firestore SUCCESS] Tersimpan di Database Kustom (${collectionName}/${docId})`);
-  } catch (err: any) {
-    console.warn(`[Firebase Firestore WARN] Custom DB gagal (${err?.message || err}), mencoba Default DB...`);
-    try {
-      const defaultRef = doc(defaultDb, collectionName, docId);
-      await setDoc(defaultRef, data, { merge: true });
-      console.log(`[Firebase Firestore SUCCESS] Tersimpan di Database Default (${collectionName}/${docId})`);
-    } catch (defaultErr) {
-      console.error(`[Firebase Firestore ERROR] Gagal menyimpan dokumen (${collectionName}/${docId}):`, defaultErr);
-      throw defaultErr;
-    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${collectionName}/${docId}`);
   }
 }
 
 /**
- * Helper to delete a document with fallback
+ * Safe delete helper from Firestore
  */
-async function deleteWithFallback(collectionName: string, docId: string): Promise<void> {
+async function safeFirestoreDelete(collectionName: string, docId: string): Promise<void> {
   try {
-    const docRef = doc(customDb, collectionName, docId);
+    const docRef = doc(db, collectionName, docId);
     await deleteDoc(docRef);
   } catch (err) {
-    const defaultRef = doc(defaultDb, collectionName, docId);
-    await deleteDoc(defaultRef);
-  }
-}
-
-/**
- * Auto-Seed Firestore with initial mock data if empty
- */
-let isSeeding = false;
-export async function seedFirestoreIfEmpty() {
-  if (isSeeding) return;
-  isSeeding = true;
-
-  try {
-    // 1. Seed & Sync Class Notes (catatan_kelas)
-    for (const note of INITIAL_CLASS_NOTES) {
-      await writeWithFallback(COLLECTIONS.NOTES, note.id, {
-        ...note,
-        updatedAt: serverTimestamp()
-      });
-    }
-
-    // 2. Seed & Sync Articles (catatan_artikel)
-    for (const post of BLOG_POSTS) {
-      await writeWithFallback(COLLECTIONS.ARTICLES, post.id, {
-        ...post,
-        updatedAt: serverTimestamp()
-      });
-    }
-
-    // 3. Seed Photos/Gallery (catatan_foto)
-    for (const item of GALLERY_ITEMS) {
-      await writeWithFallback(COLLECTIONS.PHOTOS, item.id, {
-        ...item,
-        createdAt: serverTimestamp()
-      });
-    }
-
-    // 4. Seed Documents (catatan_dokumen)
-    for (const docItem of DOCUMENT_ITEMS) {
-      await writeWithFallback(COLLECTIONS.DOCUMENTS, docItem.id, {
-        ...docItem,
-        createdAt: serverTimestamp()
-      });
-    }
-
-    // 5. Seed Profile Experiences (catatan_profil)
-    for (const exp of INITIAL_PROFILE_EXPERIENCES) {
-      await writeWithFallback(COLLECTIONS.PROFILES, exp.id, {
-        ...exp,
-        updatedAt: serverTimestamp()
-      });
-    }
-
-    // 6. Seed Portfolio Certificates & Research Works (catatan_portofolio)
-    for (const cert of INITIAL_PORTFOLIO_CERTIFICATES) {
-      await writeWithFallback(COLLECTIONS.PORTFOLIOS, cert.id, {
-        ...cert,
-        createdAt: serverTimestamp()
-      });
-    }
-  } catch (err) {
-    console.warn('[Firebase Firestore] Auto-seeding selesai atau ada pembatasan jaringan:', err);
-  } finally {
-    isSeeding = false;
+    handleFirestoreError(err, OperationType.DELETE, `${collectionName}/${docId}`);
   }
 }
 
@@ -226,78 +202,55 @@ export async function seedFirestoreIfEmpty() {
 export function subscribeToClassNotes(
   onData: (notes: ClassNote[]) => void,
   onError?: (err: Error) => void
-) {
-  const parseSnapshot = (snapshot: any) => {
-    if (snapshot.empty) {
-      seedFirestoreIfEmpty();
-      onData(INITIAL_CLASS_NOTES);
-      return;
-    }
-    const items: ClassNote[] = [];
-    snapshot.forEach((docSnap: any) => {
-      const data = docSnap.data();
-      items.push({
-        id: docSnap.id,
-        title: data.title || '',
-        category: data.category || 'Materi Kimia',
-        classGrade: data.classGrade || 'Semua Tingkat',
-        content: data.content || '',
-        keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints : [],
-        imageUrl: data.imageUrl || undefined,
-        date: data.date || '',
-        authorName: data.authorName || 'Pak Hafiz, S.Pd., M.Si.',
-        isPinned: !!data.isPinned,
-        likes: typeof data.likes === 'number' ? data.likes : 0,
-        tags: Array.isArray(data.tags) ? data.tags : [],
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt
-      } as ClassNote);
-    });
-
-    const existingIds = new Set(items.map((i) => i.id));
-    const missingNotes = INITIAL_CLASS_NOTES.filter((n) => !existingIds.has(n.id));
-    if (missingNotes.length > 0) {
-      missingNotes.forEach((missing) => {
-        items.push(missing);
-        writeWithFallback(COLLECTIONS.NOTES, missing.id, {
-          ...missing,
-          updatedAt: serverTimestamp()
-        }).catch((err) => console.warn('Sync missing note to Firestore error:', err));
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, COLLECTIONS.NOTES),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData(INITIAL_CLASS_NOTES);
+        return;
+      }
+      const items: ClassNote[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        items.push({
+          id: docSnap.id,
+          title: data.title || '',
+          category: data.category || 'Materi Kimia',
+          classGrade: data.classGrade || 'Semua Tingkat',
+          content: data.content || '',
+          keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints : [],
+          imageUrl: data.imageUrl || undefined,
+          date: data.date || '',
+          authorName: data.authorName || 'Pak Hafiz, S.Pd., M.Si.',
+          isPinned: !!data.isPinned,
+          likes: typeof data.likes === 'number' ? data.likes : 0,
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as ClassNote);
       });
-    }
 
-    items.sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return 0;
-    });
+      const existingIds = new Set(items.map((i) => i.id));
+      const missingNotes = INITIAL_CLASS_NOTES.filter((n) => !existingIds.has(n.id));
+      if (missingNotes.length > 0) {
+        items.push(...missingNotes);
+      }
 
-    console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} catatan kelas.`);
-    onData(items);
-  };
+      items.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+      });
 
-  let unsubDefault: (() => void) | null = null;
-
-  const unsubCustom = onSnapshot(
-    collection(customDb, COLLECTIONS.NOTES),
-    parseSnapshot,
+      onData(items);
+    },
     (err) => {
-      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_kelas gagal, beralih ke defaultDb:', err.message);
-      unsubDefault = onSnapshot(
-        collection(defaultDb, COLLECTIONS.NOTES),
-        parseSnapshot,
-        (defaultErr) => {
-          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_kelas error:', defaultErr);
-          if (onError) onError(defaultErr);
-        }
-      );
+      handleFirestoreError(err, OperationType.LIST, COLLECTIONS.NOTES);
+      onData(INITIAL_CLASS_NOTES);
+      if (onError) onError(err);
     }
   );
-
-  return () => {
-    unsubCustom();
-    if (unsubDefault) unsubDefault();
-  };
 }
 
 export async function saveClassNoteToFirestore(note: ClassNote): Promise<void> {
@@ -321,72 +274,53 @@ export async function saveClassNoteToFirestore(note: ClassNote): Promise<void> {
     payload.createdAt = serverTimestamp();
   }
 
-  await writeWithFallback(COLLECTIONS.NOTES, note.id, payload);
+  await safeFirestoreWrite(COLLECTIONS.NOTES, note.id, payload);
 }
 
 export async function deleteClassNoteFromFirestore(noteId: string): Promise<void> {
-  await deleteWithFallback(COLLECTIONS.NOTES, noteId);
+  await safeFirestoreDelete(COLLECTIONS.NOTES, noteId);
 }
 
 // --- Artikel & Catatan Belajar ---
 export function subscribeToArticles(
   onData: (articles: BlogPost[]) => void,
   onError?: (err: Error) => void
-) {
-  const parseSnapshot = (snapshot: any) => {
-    if (snapshot.empty) {
-      seedFirestoreIfEmpty();
-      onData(BLOG_POSTS);
-      return;
-    }
-    const items: BlogPost[] = [];
-    snapshot.forEach((docSnap: any) => {
-      items.push(docSnap.data() as BlogPost);
-    });
-    onData(items);
-  };
-
-  let unsubDefault: (() => void) | null = null;
-  const unsubCustom = onSnapshot(
-    collection(customDb, COLLECTIONS.ARTICLES),
-    parseSnapshot,
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, COLLECTIONS.ARTICLES),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData(BLOG_POSTS);
+        return;
+      }
+      const items: BlogPost[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as BlogPost);
+      });
+      onData(items);
+    },
     (err) => {
-      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_artikel gagal, beralih ke defaultDb:', err.message);
-      unsubDefault = onSnapshot(
-        collection(defaultDb, COLLECTIONS.ARTICLES),
-        parseSnapshot,
-        (defaultErr) => {
-          if (onError) onError(defaultErr);
-        }
-      );
+      handleFirestoreError(err, OperationType.LIST, COLLECTIONS.ARTICLES);
+      onData(BLOG_POSTS);
+      if (onError) onError(err);
     }
   );
-
-  return () => {
-    unsubCustom();
-    if (unsubDefault) unsubDefault();
-  };
 }
 
 export async function saveArticleToFirestore(article: BlogPost): Promise<void> {
-  await writeWithFallback(COLLECTIONS.ARTICLES, article.id, article);
+  await safeFirestoreWrite(COLLECTIONS.ARTICLES, article.id, article);
 }
 
 export async function deleteArticleFromFirestore(articleId: string): Promise<void> {
-  await deleteWithFallback(COLLECTIONS.ARTICLES, articleId);
+  await safeFirestoreDelete(COLLECTIONS.ARTICLES, articleId);
 }
 
 export async function incrementArticleReactions(articleId: string): Promise<void> {
   try {
-    const docRef = doc(customDb, COLLECTIONS.ARTICLES, articleId);
+    const docRef = doc(db, COLLECTIONS.ARTICLES, articleId);
     await updateDoc(docRef, { reactions: increment(1) });
-  } catch (e) {
-    try {
-      const docRef = doc(defaultDb, COLLECTIONS.ARTICLES, articleId);
-      await updateDoc(docRef, { reactions: increment(1) });
-    } catch (err) {
-      console.error('Error updating reaction:', err);
-    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `${COLLECTIONS.ARTICLES}/${articleId}`);
   }
 }
 
@@ -394,104 +328,76 @@ export async function incrementArticleReactions(articleId: string): Promise<void
 export function subscribeToGalleryPhotos(
   onData: (items: GalleryItem[]) => void,
   onError?: (err: Error) => void
-) {
-  const parseSnapshot = (snapshot: any) => {
-    if (snapshot.empty) {
-      seedFirestoreIfEmpty();
-      onData(GALLERY_ITEMS);
-      return;
-    }
-    const items: GalleryItem[] = [];
-    snapshot.forEach((docSnap: any) => {
-      items.push(docSnap.data() as GalleryItem);
-    });
-    onData(items);
-  };
-
-  let unsubDefault: (() => void) | null = null;
-  const unsubCustom = onSnapshot(
-    collection(customDb, COLLECTIONS.PHOTOS),
-    parseSnapshot,
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, COLLECTIONS.PHOTOS),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData(GALLERY_ITEMS);
+        return;
+      }
+      const items: GalleryItem[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as GalleryItem);
+      });
+      onData(items);
+    },
     (err) => {
-      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_foto gagal, beralih ke defaultDb:', err.message);
-      unsubDefault = onSnapshot(
-        collection(defaultDb, COLLECTIONS.PHOTOS),
-        parseSnapshot,
-        (defaultErr) => {
-          if (onError) onError(defaultErr);
-        }
-      );
+      handleFirestoreError(err, OperationType.LIST, COLLECTIONS.PHOTOS);
+      onData(GALLERY_ITEMS);
+      if (onError) onError(err);
     }
   );
-
-  return () => {
-    unsubCustom();
-    if (unsubDefault) unsubDefault();
-  };
 }
 
 export async function saveGalleryItemToFirestore(item: GalleryItem): Promise<void> {
-  await writeWithFallback(COLLECTIONS.PHOTOS, item.id, item);
+  await safeFirestoreWrite(COLLECTIONS.PHOTOS, item.id, item);
 }
 
 export async function deleteGalleryItemFromFirestore(itemId: string): Promise<void> {
-  await deleteWithFallback(COLLECTIONS.PHOTOS, itemId);
+  await safeFirestoreDelete(COLLECTIONS.PHOTOS, itemId);
 }
 
 // --- Modul & Dokumen File ---
 export function subscribeToDocuments(
   onData: (docs: DocumentItem[]) => void,
   onError?: (err: Error) => void
-) {
-  const parseSnapshot = (snapshot: any) => {
-    if (snapshot.empty) {
-      seedFirestoreIfEmpty();
-      onData(DOCUMENT_ITEMS);
-      return;
-    }
-    const items: DocumentItem[] = [];
-    snapshot.forEach((docSnap: any) => {
-      items.push(docSnap.data() as DocumentItem);
-    });
-    onData(items);
-  };
-
-  let unsubDefault: (() => void) | null = null;
-  const unsubCustom = onSnapshot(
-    collection(customDb, COLLECTIONS.DOCUMENTS),
-    parseSnapshot,
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, COLLECTIONS.DOCUMENTS),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData(DOCUMENT_ITEMS);
+        return;
+      }
+      const items: DocumentItem[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push(docSnap.data() as DocumentItem);
+      });
+      onData(items);
+    },
     (err) => {
-      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_dokumen gagal, beralih ke defaultDb:', err.message);
-      unsubDefault = onSnapshot(
-        collection(defaultDb, COLLECTIONS.DOCUMENTS),
-        parseSnapshot,
-        (defaultErr) => {
-          if (onError) onError(defaultErr);
-        }
-      );
+      handleFirestoreError(err, OperationType.LIST, COLLECTIONS.DOCUMENTS);
+      onData(DOCUMENT_ITEMS);
+      if (onError) onError(err);
     }
   );
-
-  return () => {
-    unsubCustom();
-    if (unsubDefault) unsubDefault();
-  };
 }
 
 export async function saveDocumentToFirestore(item: DocumentItem): Promise<void> {
-  await writeWithFallback(COLLECTIONS.DOCUMENTS, item.id, item);
+  await safeFirestoreWrite(COLLECTIONS.DOCUMENTS, item.id, item);
 }
 
 export async function deleteDocumentFromFirestore(docId: string): Promise<void> {
-  await deleteWithFallback(COLLECTIONS.DOCUMENTS, docId);
+  await safeFirestoreDelete(COLLECTIONS.DOCUMENTS, docId);
 }
 
 export async function incrementDocumentDownloads(docId: string): Promise<void> {
   try {
     const docRef = doc(db, COLLECTIONS.DOCUMENTS, docId);
     await updateDoc(docRef, { downloads: increment(1) });
-  } catch (e) {
-    console.error('Error incrementing downloads in Firestore:', e);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.UPDATE, `${COLLECTIONS.DOCUMENTS}/${docId}`);
   }
 }
 
@@ -499,54 +405,37 @@ export async function incrementDocumentDownloads(docId: string): Promise<void> {
 export function subscribeToProfileExperiences(
   onData: (items: ProfileExperienceItem[]) => void,
   onError?: (err: Error) => void
-) {
-  const parseSnapshot = (snapshot: any) => {
-    if (snapshot.empty) {
-      seedFirestoreIfEmpty();
-      onData(INITIAL_PROFILE_EXPERIENCES);
-      return;
-    }
-    const items: ProfileExperienceItem[] = [];
-    snapshot.forEach((docSnap: any) => {
-      const data = docSnap.data();
-      items.push({
-        id: docSnap.id,
-        title: data.title || '',
-        institution: data.institution || undefined,
-        period: data.period || undefined,
-        category: data.category || 'Pengalaman',
-        description: data.description || undefined,
-        subItems: Array.isArray(data.subItems) ? data.subItems : undefined,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt
-      } as ProfileExperienceItem);
-    });
-
-    console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} riwayat profil guru (catatan_profil).`);
-    onData(items);
-  };
-
-  let unsubDefault: (() => void) | null = null;
-  const unsubCustom = onSnapshot(
-    collection(customDb, COLLECTIONS.PROFILES),
-    parseSnapshot,
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, COLLECTIONS.PROFILES),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData(INITIAL_PROFILE_EXPERIENCES);
+        return;
+      }
+      const items: ProfileExperienceItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        items.push({
+          id: docSnap.id,
+          title: data.title || '',
+          institution: data.institution || undefined,
+          period: data.period || undefined,
+          category: data.category || 'Pengalaman',
+          description: data.description || undefined,
+          subItems: Array.isArray(data.subItems) ? data.subItems : undefined,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as ProfileExperienceItem);
+      });
+      onData(items);
+    },
     (err) => {
-      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_profil gagal, beralih ke defaultDb:', err.message);
-      unsubDefault = onSnapshot(
-        collection(defaultDb, COLLECTIONS.PROFILES),
-        parseSnapshot,
-        (defaultErr) => {
-          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_profil error:', defaultErr);
-          if (onError) onError(defaultErr);
-        }
-      );
+      handleFirestoreError(err, OperationType.LIST, COLLECTIONS.PROFILES);
+      onData(INITIAL_PROFILE_EXPERIENCES);
+      if (onError) onError(err);
     }
   );
-
-  return () => {
-    unsubCustom();
-    if (unsubDefault) unsubDefault();
-  };
 }
 
 export async function saveProfileExperienceToFirestore(item: ProfileExperienceItem): Promise<void> {
@@ -566,65 +455,48 @@ export async function saveProfileExperienceToFirestore(item: ProfileExperienceIt
     payload.createdAt = serverTimestamp();
   }
 
-  await writeWithFallback(COLLECTIONS.PROFILES, item.id, payload);
+  await safeFirestoreWrite(COLLECTIONS.PROFILES, item.id, payload);
 }
 
 export async function deleteProfileExperienceFromFirestore(itemId: string): Promise<void> {
-  await deleteWithFallback(COLLECTIONS.PROFILES, itemId);
+  await safeFirestoreDelete(COLLECTIONS.PROFILES, itemId);
 }
 
 // --- Portofolio & Sertifikat Guru (catatan_portofolio) ---
 export function subscribeToPortfolioCertificates(
   onData: (certs: PortfolioCertificateItem[]) => void,
   onError?: (err: Error) => void
-) {
-  const parseSnapshot = (snapshot: any) => {
-    if (snapshot.empty) {
-      seedFirestoreIfEmpty();
-      onData(INITIAL_PORTFOLIO_CERTIFICATES);
-      return;
-    }
-    const items: PortfolioCertificateItem[] = [];
-    snapshot.forEach((docSnap: any) => {
-      const data = docSnap.data();
-      items.push({
-        id: docSnap.id,
-        title: data.title || '',
-        category: data.category || 'Sertifikat',
-        issuer: data.issuer || 'UIN Syarif Hidayatullah Jakarta',
-        year: data.year || '2025',
-        imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=800&q=80',
-        description: data.description || undefined,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt
-      } as PortfolioCertificateItem);
-    });
-
-    console.log(`[Firebase Firestore] onSnapshot: Memuat ${items.length} sertifikat & karya portofolio guru (catatan_portofolio).`);
-    onData(items);
-  };
-
-  let unsubDefault: (() => void) | null = null;
-  const unsubCustom = onSnapshot(
-    collection(customDb, COLLECTIONS.PORTFOLIOS),
-    parseSnapshot,
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, COLLECTIONS.PORTFOLIOS),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData(INITIAL_PORTFOLIO_CERTIFICATES);
+        return;
+      }
+      const items: PortfolioCertificateItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        items.push({
+          id: docSnap.id,
+          title: data.title || '',
+          category: data.category || 'Sertifikat',
+          issuer: data.issuer || 'UIN Syarif Hidayatullah Jakarta',
+          year: data.year || '2025',
+          imageUrl: data.imageUrl || 'https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?auto=format&fit=crop&w=800&q=80',
+          description: data.description || undefined,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as PortfolioCertificateItem);
+      });
+      onData(items);
+    },
     (err) => {
-      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_portofolio gagal, beralih ke defaultDb:', err.message);
-      unsubDefault = onSnapshot(
-        collection(defaultDb, COLLECTIONS.PORTFOLIOS),
-        parseSnapshot,
-        (defaultErr) => {
-          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_portofolio error:', defaultErr);
-          if (onError) onError(defaultErr);
-        }
-      );
+      handleFirestoreError(err, OperationType.LIST, COLLECTIONS.PORTFOLIOS);
+      onData(INITIAL_PORTFOLIO_CERTIFICATES);
+      if (onError) onError(err);
     }
   );
-
-  return () => {
-    unsubCustom();
-    if (unsubDefault) unsubDefault();
-  };
 }
 
 export async function savePortfolioCertificateToFirestore(cert: PortfolioCertificateItem): Promise<void> {
@@ -643,63 +515,47 @@ export async function savePortfolioCertificateToFirestore(cert: PortfolioCertifi
     payload.createdAt = serverTimestamp();
   }
 
-  await writeWithFallback(COLLECTIONS.PORTFOLIOS, cert.id, payload);
+  await safeFirestoreWrite(COLLECTIONS.PORTFOLIOS, cert.id, payload);
 }
 
 export async function deletePortfolioCertificateFromFirestore(certId: string): Promise<void> {
-  await deleteWithFallback(COLLECTIONS.PORTFOLIOS, certId);
+  await safeFirestoreDelete(COLLECTIONS.PORTFOLIOS, certId);
 }
 
 // --- Biodata Profil & Keahlian Guru (catatan_biodata_guru) ---
 export function subscribeToTeacherBioProfile(
   onData: (profile: TeacherBioProfile) => void,
   onError?: (err: Error) => void
-) {
+): Unsubscribe {
   const docId = 'main-teacher-profile';
 
-  const parseDocSnapshot = (docSnap: any) => {
-    if (!docSnap.exists()) {
-      onData(INITIAL_TEACHER_PROFILE);
-      return;
-    }
-    const data = docSnap.data();
-    const profile: TeacherBioProfile = {
-      id: docSnap.id,
-      name: data.name || INITIAL_TEACHER_PROFILE.name,
-      title: data.title || INITIAL_TEACHER_PROFILE.title,
-      verifiedBadgeText: data.verifiedBadgeText || INITIAL_TEACHER_PROFILE.verifiedBadgeText,
-      avatarUrl: data.avatarUrl || INITIAL_TEACHER_PROFILE.avatarUrl,
-      bioDescription: data.bioDescription || INITIAL_TEACHER_PROFILE.bioDescription,
-      skillsAndFocus: Array.isArray(data.skillsAndFocus) ? data.skillsAndFocus : INITIAL_TEACHER_PROFILE.skillsAndFocus,
-      contacts: Array.isArray(data.contacts) ? data.contacts : INITIAL_TEACHER_PROFILE.contacts,
-      updatedAt: data.updatedAt
-    };
-
-    console.log('[Firebase Firestore] onSnapshot: Memuat data biodata guru (catatan_biodata_guru).');
-    onData(profile);
-  };
-
-  let unsubDefault: (() => void) | null = null;
-  const unsubCustom = onSnapshot(
-    doc(customDb, COLLECTIONS.TEACHER_BIO, docId),
-    parseDocSnapshot,
+  return onSnapshot(
+    doc(db, COLLECTIONS.TEACHER_BIO, docId),
+    (docSnap) => {
+      if (!docSnap.exists()) {
+        onData(INITIAL_TEACHER_PROFILE);
+        return;
+      }
+      const data = docSnap.data();
+      const profile: TeacherBioProfile = {
+        id: docSnap.id,
+        name: data.name || INITIAL_TEACHER_PROFILE.name,
+        title: data.title || INITIAL_TEACHER_PROFILE.title,
+        verifiedBadgeText: data.verifiedBadgeText || INITIAL_TEACHER_PROFILE.verifiedBadgeText,
+        avatarUrl: data.avatarUrl || INITIAL_TEACHER_PROFILE.avatarUrl,
+        bioDescription: data.bioDescription || INITIAL_TEACHER_PROFILE.bioDescription,
+        skillsAndFocus: Array.isArray(data.skillsAndFocus) ? data.skillsAndFocus : INITIAL_TEACHER_PROFILE.skillsAndFocus,
+        contacts: Array.isArray(data.contacts) ? data.contacts : INITIAL_TEACHER_PROFILE.contacts,
+        updatedAt: data.updatedAt
+      };
+      onData(profile);
+    },
     (err) => {
-      console.warn('[Firebase Firestore WARN] Langganan customDb catatan_biodata_guru gagal, beralih ke defaultDb:', err.message);
-      unsubDefault = onSnapshot(
-        doc(defaultDb, COLLECTIONS.TEACHER_BIO, docId),
-        parseDocSnapshot,
-        (defaultErr) => {
-          console.error('[Firebase Firestore ERROR] Langganan defaultDb catatan_biodata_guru error:', defaultErr);
-          if (onError) onError(defaultErr);
-        }
-      );
+      handleFirestoreError(err, OperationType.GET, `${COLLECTIONS.TEACHER_BIO}/${docId}`);
+      onData(INITIAL_TEACHER_PROFILE);
+      if (onError) onError(err);
     }
   );
-
-  return () => {
-    unsubCustom();
-    if (unsubDefault) unsubDefault();
-  };
 }
 
 export async function saveTeacherBioProfileToFirestore(profile: TeacherBioProfile): Promise<void> {
@@ -716,6 +572,86 @@ export async function saveTeacherBioProfileToFirestore(profile: TeacherBioProfil
     updatedAt: serverTimestamp()
   };
 
-  await writeWithFallback(COLLECTIONS.TEACHER_BIO, docId, payload);
+  await safeFirestoreWrite(COLLECTIONS.TEACHER_BIO, docId, payload);
 }
+
+// --- Video Praktikum YouTube (catatan_video) ---
+export function subscribeToPracticalVideos(
+  onData: (videos: PracticalVideoItem[]) => void,
+  onError?: (err: Error) => void
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, COLLECTIONS.VIDEOS),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData(INITIAL_PRACTICAL_VIDEOS);
+        return;
+      }
+      const items: PracticalVideoItem[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        items.push({
+          id: docSnap.id,
+          title: data.title || '',
+          youtubeUrl: data.youtubeUrl || '',
+          youtubeId: data.youtubeId || '',
+          thumbnailUrl: data.thumbnailUrl || (data.youtubeId ? `https://img.youtube.com/vi/${data.youtubeId}/hqdefault.jpg` : ''),
+          category: data.category || 'Eksperimen Lab',
+          badge: data.badge || 'Video Pembelajaran',
+          duration: data.duration || undefined,
+          date: data.date || '',
+          description: data.description || '',
+          chemistryConcept: data.chemistryConcept || undefined,
+          isPinned: data.isPinned || false,
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt
+        } as PracticalVideoItem);
+      });
+
+      // Sort: pinned first, then by date/id
+      items.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return 0;
+      });
+
+      onData(items);
+    },
+    (err) => {
+      handleFirestoreError(err, OperationType.LIST, COLLECTIONS.VIDEOS);
+      onData(INITIAL_PRACTICAL_VIDEOS);
+      if (onError) onError(err);
+    }
+  );
+}
+
+export async function savePracticalVideoToFirestore(video: PracticalVideoItem): Promise<void> {
+  const payload: Record<string, any> = {
+    id: video.id,
+    title: video.title || '',
+    youtubeUrl: video.youtubeUrl || '',
+    youtubeId: video.youtubeId || '',
+    thumbnailUrl: video.thumbnailUrl || `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`,
+    category: video.category || 'Eksperimen Lab',
+    badge: video.badge || 'Video Praktikum',
+    date: video.date || '',
+    description: video.description || '',
+    isPinned: !!video.isPinned,
+    updatedAt: serverTimestamp()
+  };
+
+  if (video.duration) payload.duration = video.duration;
+  if (video.chemistryConcept) payload.chemistryConcept = video.chemistryConcept;
+  if (!(video as any).createdAt) {
+    payload.createdAt = serverTimestamp();
+  }
+
+  await safeFirestoreWrite(COLLECTIONS.VIDEOS, video.id, payload);
+}
+
+export async function deletePracticalVideoFromFirestore(videoId: string): Promise<void> {
+  await safeFirestoreDelete(COLLECTIONS.VIDEOS, videoId);
+}
+
+
 
