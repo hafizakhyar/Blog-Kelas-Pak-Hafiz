@@ -191,7 +191,7 @@ export const YouTubePlayerModal: React.FC<YouTubePlayerModalProps> = ({
               <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#E2E8F0]">
                 <h4 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1 flex items-center gap-1.5">
                   <FlaskConical className="w-3.5 h-3.5 text-[#0284C7]" />
-                  <span>Deskripsi & Panduan Praktikum</span>
+                  <span>Deskripsi Video</span>
                 </h4>
                 <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
                   {video.description}

@@ -1094,10 +1094,17 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       <div className="p-5 flex-1 flex flex-col justify-between">
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="text-[11px] font-medium text-[#64748B] flex items-center gap-1">
-                              <Calendar className="w-3 h-3 text-[#0284C7]" />
-                              <span>{vid.date}</span>
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[11px] font-medium text-[#64748B] flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-[#0284C7]" />
+                                <span>{vid.date}</span>
+                              </span>
+                              {vid.badge && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD]">
+                                  {vid.badge}
+                                </span>
+                              )}
+                            </div>
                             {isVidPinned && (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">
                                 <Pin className="w-2.5 h-2.5 fill-[#DC2626]" />

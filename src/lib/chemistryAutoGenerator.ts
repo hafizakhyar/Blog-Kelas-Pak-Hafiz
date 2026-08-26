@@ -973,9 +973,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['kunyit', 'telang', 'kol ungu', 'manggis', 'indikator alami', 'bunga sepatu', 'daun pandan', 'kulit manggis', 'asam basa alami'],
     category: 'Indikator Alami',
-    badge: 'Praktikum Siswa Kelas XI',
+    badge: 'Kelas 11',
     suggestedDuration: '06:45',
-    gradeLevel: 'Kelas XI',
+    gradeLevel: 'Kelas 11',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube') 
         ? `Praktikum Indikator Alami Asam Basa: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -989,9 +989,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['titrasi', 'buret', 'erlenmeyer', 'titik ekivalen', 'standarisasi', 'hcl', 'naoh', 'fenolftalein', 'indikator pp', 'volumetri'],
     category: 'Titrasi Asam Basa',
-    badge: 'Keterampilan Lab Volumetri',
+    badge: 'Kelas 11',
     suggestedDuration: '08:30',
-    gradeLevel: 'Kelas XI',
+    gradeLevel: 'Kelas 11',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Titrasi Asam Basa: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1005,9 +1005,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['elektrolit', 'daya hantar', 'lampu', 'gelembung', 'alat uji', 'ionisasi', 'hantaran listrik', 'garam', 'gula', 'cuka'],
     category: 'Larutan Elektrolit',
-    badge: 'Praktikum Kelas X',
+    badge: 'Kelas 10',
     suggestedDuration: '05:40',
-    gradeLevel: 'Kelas X',
+    gradeLevel: 'Kelas 10',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Uji Daya Hantar Listrik: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1021,9 +1021,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['redoks', 'sel volta', 'galvani', 'baterai buah', 'jeruk', 'lemon', 'seng', 'tembaga', 'zn', 'cu', 'potensial sel', 'korosi'],
     category: 'Reaksi Redoks & Elektrokimia',
-    badge: 'Praktikum Kelas XII',
+    badge: 'Kelas 12',
     suggestedDuration: '07:15',
-    gradeLevel: 'Kelas XII',
+    gradeLevel: 'Kelas 12',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Sel Volta & Redoks: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1037,9 +1037,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['elektrolisis', 'pipa u', 'katoda anoda', 'iodida', 'ki', 'penyepuhan', 'grafit', 'karbon', 'faraday', 'gas hidrogen'],
     category: 'Reaksi Redoks & Elektrokimia',
-    badge: 'Praktikum Kelas XII',
+    badge: 'Kelas 12',
     suggestedDuration: '06:50',
-    gradeLevel: 'Kelas XII',
+    gradeLevel: 'Kelas 12',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Elektrolisis: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1053,9 +1053,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['laju reaksi', 'na2s2o3', 'natrium tiosulfat', 'suhu', 'katalis', 'konsentrasi', 'luas permukaan', 'tumbukan', 'stopwatch', 'tanda silang'],
     category: 'Laju Reaksi',
-    badge: 'Praktikum Kelas XI',
+    badge: 'Kelas 11',
     suggestedDuration: '07:45',
-    gradeLevel: 'Kelas XI',
+    gradeLevel: 'Kelas 11',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Kinetika Kimia: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1069,9 +1069,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['koloid', 'efek tyndall', 'laser', 'susu', 'santan', 'hamburan cahaya', 'koagulasi', 'dispersi', 'emulsi', 'sol'],
     category: 'Sistem Koloid',
-    badge: 'Praktikum Kelas XI',
+    badge: 'Kelas 11',
     suggestedDuration: '05:30',
-    gradeLevel: 'Kelas XI',
+    gradeLevel: 'Kelas 11',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Sistem Koloid: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1085,9 +1085,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['termokimia', 'kalorimeter', 'eksoterm', 'endoterm', 'entalpi', 'suhu naik', 'suhu turun', 'pelarutan naoh', 'urea'],
     category: 'Termokimia',
-    badge: 'Praktikum Kelas XI',
+    badge: 'Kelas 11',
     suggestedDuration: '06:15',
-    gradeLevel: 'Kelas XI',
+    gradeLevel: 'Kelas 11',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Termokimia: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1101,9 +1101,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['uji nyala', 'warna nyala', 'kation', 'kawat nikrom', 'bunsen', 'natrium', 'kalium', 'kalsium', 'barium', 'tembaga', 'stronsium'],
     category: 'Eksperimen Lab',
-    badge: 'Praktikum Spektroskopi',
+    badge: 'Kelas 12',
     suggestedDuration: '05:10',
-    gradeLevel: 'Kelas XII',
+    gradeLevel: 'Kelas 12',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Uji Nyala Api: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1117,9 +1117,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['ester', 'esterifikasi', 'aroma buah', 'organik', 'alkohol', 'asam asetat', 'etanol', 'minyak', 'gugus fungsi'],
     category: 'Karya Siswa',
-    badge: 'Praktikum Sintesis Organik',
+    badge: 'Kelas 12',
     suggestedDuration: '07:30',
-    gradeLevel: 'Kelas XII',
+    gradeLevel: 'Kelas 12',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Kimia Organik: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1133,9 +1133,9 @@ const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
   {
     keywords: ['kesetimbangan', 'le chatelier', 'pergeseran', 'fe(scn)', 'besi tiosianat', 'kromat dikromat', 'reversibel', 'warna larutan'],
     category: 'Eksperimen Lab',
-    badge: 'Praktikum Kelas XI',
+    badge: 'Kelas 11',
     suggestedDuration: '06:20',
-    gradeLevel: 'Kelas XI',
+    gradeLevel: 'Kelas 11',
     generate: (ctx) => ({
       title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
         ? `Praktikum Kesetimbangan Kimia: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
@@ -1216,7 +1216,7 @@ export function generatePracticalVideoFromLinkOrTitle(
   return {
     title: formattedTitle,
     category: currentCategory && currentCategory !== 'Lainnya' ? currentCategory : 'Eksperimen Lab',
-    badge: currentBadge && currentBadge.trim() ? currentBadge : 'Video Praktikum Siswa',
+    badge: currentBadge && currentBadge.trim() ? currentBadge : 'Kelas 11',
     duration: '06:30',
     description: `Video panduan dan dokumentasi eksperimen praktikum kimia laboratorium. Membahas tujuan kegiatan, pengenalan alat & bahan, langkah-langkah prosedur kerja ilmiah, serta pengamatan fenomena reaksi kimia secara empiris.`,
     chemistryConcept: `Eksperimen ini menerapkan prinsip dasar stoikiometri, kinetika reaksi, dan interaksi partikel kimia dalam larutan berair sesuai dengan capaian pembelajaran kurikulum kimia SMA.`,

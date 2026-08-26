@@ -52,7 +52,7 @@ const PRESET_VIDEOS = [
     title: 'Praktikum Indikator Alami Asam Basa: Kunyit & Telang',
     url: 'https://www.youtube.com/watch?v=kYdK8N-2b_U',
     category: 'Indikator Alami',
-    badge: 'Video Utama Kelas XI',
+    badge: 'Kelas 11',
     duration: '06:45',
     desc: 'Demonstrasi uji sifat asam basa larutan rumah tangga menggunakan ekstrak kunyit dan bunga telang.'
   },
@@ -60,7 +60,7 @@ const PRESET_VIDEOS = [
     title: 'Teknik Titrasi Asam Basa & Penentuan Titik Akhir PP',
     url: 'https://www.youtube.com/watch?v=sFpFCPTDv2w',
     category: 'Titrasi Asam Basa',
-    badge: 'Keterampilan Lab',
+    badge: 'Kelas 11',
     duration: '08:20',
     desc: 'Panduan membaca meniskus buret, tetesan titran NaOH, dan deteksi warna merah muda seulas.'
   },
@@ -68,7 +68,7 @@ const PRESET_VIDEOS = [
     title: 'Uji Daya Hantar Listrik Larutan Elektrolit & Non-Elektrolit',
     url: 'https://www.youtube.com/watch?v=t_98g0B4yFw',
     category: 'Larutan Elektrolit',
-    badge: 'Eksperimen Kelas X',
+    badge: 'Kelas 10',
     duration: '05:15',
     desc: 'Uji nyala lampu dan gelembung gas pada elektroda larutan garam, gula, dan cuka.'
   },
@@ -76,10 +76,17 @@ const PRESET_VIDEOS = [
     title: 'Praktikum Reaksi Redoks & Sel Volta Jeruk Nipis',
     url: 'https://www.youtube.com/watch?v=b4dK9P-3c_V',
     category: 'Reaksi Redoks & Elektrokimia',
-    badge: 'Praktikum Kelas XII',
+    badge: 'Kelas 12',
     duration: '07:10',
     desc: 'Eksperimen pembuktian reaksi redoks spontan menjadi energi listrik DC pada baterai buah.'
   }
+];
+
+const GRADE_OPTIONS = [
+  'Kelas 10',
+  'Kelas 11',
+  'Kelas 12',
+  'Semua Kelas'
 ];
 
 export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
@@ -96,7 +103,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Indikator Alami');
   const [customCategory, setCustomCategory] = useState('');
-  const [badge, setBadge] = useState('Video Praktikum Siswa');
+  const [badge, setBadge] = useState('Kelas 11');
   const [duration, setDuration] = useState('06:00');
   const [description, setDescription] = useState('');
   const [chemistryConcept, setChemistryConcept] = useState('');
@@ -115,7 +122,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
         setExtractedId(initialVideo.youtubeId);
         setTitle(initialVideo.title);
         setCategory(initialVideo.category);
-        setBadge(initialVideo.badge || 'Video Praktikum');
+        setBadge(initialVideo.badge || 'Kelas 11');
         setDuration(initialVideo.duration || '06:00');
         setDescription(initialVideo.description);
         setChemistryConcept(initialVideo.chemistryConcept || '');
@@ -127,7 +134,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
         setTitle('');
         setCategory('Indikator Alami');
         setCustomCategory('');
-        setBadge('Video Praktikum Siswa');
+        setBadge('Kelas 11');
         setDuration('06:00');
         setDescription('');
         setChemistryConcept('');
@@ -528,7 +535,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
               />
             </div>
 
-            {/* Row: Category, Badge, Duration */}
+            {/* Row: Category, Pilihan Kelas, Duration */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -561,15 +568,37 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
               <div>
                 <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-                  <span>Label / Tingkat Kelas</span>
+                  <span>Pilihan Kelas</span>
                 </label>
-                <input
-                  type="text"
-                  value={badge}
-                  onChange={(e) => setBadge(e.target.value)}
-                  placeholder="Praktikum Siswa Kelas XI"
-                  className="w-full px-3 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs text-[#0F172A] transition-all bg-white"
-                />
+                <div className="space-y-1.5">
+                  {/* Suggestion pills for Kelas 10, 11, 12 */}
+                  <div className="flex items-center gap-1">
+                    {GRADE_OPTIONS.map((grade) => {
+                      const isSelected = badge.trim().toLowerCase() === grade.toLowerCase();
+                      return (
+                        <button
+                          key={grade}
+                          type="button"
+                          onClick={() => setBadge(grade)}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                            isSelected
+                              ? 'bg-[#0284C7] text-white border-[#0284C7] shadow-xs'
+                              : 'bg-[#F1F5F9] text-[#475569] border-[#E2E8F0] hover:bg-[#E0F2FE] hover:text-[#0284C7] hover:border-[#BAE6FD]'
+                          }`}
+                        >
+                          {grade}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    value={badge}
+                    onChange={(e) => setBadge(e.target.value)}
+                    placeholder="Contoh: Kelas 10, Kelas 11, Kelas 12"
+                    className="w-full px-3 py-2 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs text-[#0F172A] transition-all bg-white"
+                  />
+                </div>
               </div>
 
               <div>
@@ -592,7 +621,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
                   <FlaskConical className="w-3.5 h-3.5 text-[#0284C7]" />
-                  <span>Deskripsi & Panduan Prosedur Lab</span>
+                  <span>Deskripsi Video</span>
                 </label>
                 <button
                   type="button"
@@ -607,7 +636,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Jelaskan ringkasan prosedur, langkah pengamatan, atau tujuan praktikum..."
+                placeholder="Tuliskan deskripsi video praktikum, ringkasan prosedur, atau langkah pengamatan..."
                 className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white resize-none leading-relaxed"
               />
             </div>
