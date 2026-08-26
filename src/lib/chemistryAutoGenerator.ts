@@ -941,3 +941,286 @@ export const QUICK_LAB_EXPERIMENT_PRESETS = [
   }
 ];
 
+// =========================================================================
+// AI AUTO-GENERATOR FOR PRACTICAL CHEMISTRY VIDEOS (YOUTUBE LINK TO DATA)
+// =========================================================================
+
+export interface GeneratedPracticalVideo {
+  title: string;
+  category: string;
+  badge: string;
+  duration: string;
+  description: string;
+  chemistryConcept: string;
+  gradeLevel?: string;
+}
+
+interface VideoTopicRule {
+  keywords: string[];
+  category: string;
+  badge: string;
+  suggestedDuration: string;
+  gradeLevel: string;
+  generate: (titleContext: string) => {
+    title: string;
+    description: string;
+    chemistryConcept: string;
+  };
+}
+
+const VIDEO_TOPIC_RULES: VideoTopicRule[] = [
+  // 1. Indikator Alami Asam Basa
+  {
+    keywords: ['kunyit', 'telang', 'kol ungu', 'manggis', 'indikator alami', 'bunga sepatu', 'daun pandan', 'kulit manggis', 'asam basa alami'],
+    category: 'Indikator Alami',
+    badge: 'Praktikum Siswa Kelas XI',
+    suggestedDuration: '06:45',
+    gradeLevel: 'Kelas XI',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube') 
+        ? `Praktikum Indikator Alami Asam Basa: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Praktikum Uji Asam Basa dengan Indikator Alami Tumbuhan',
+      description: 'Demonstrasi dan prosedur pembuatan ekstrak indikator alami (kunyit, bunga telang, atau kol ungu) serta pengujian trayek perubahan warna pada berbagai larutan sampel rumah tangga (cuka dapur, air sabun, dan kapur sirih).',
+      chemistryConcept: 'Pigmen organik tumbuhan (seperti antosianin dan kurkumin) mengalami perubahan struktur molekul dan ionisasi saat bereaksi dengan ion H⁺ (suasana asam) atau OH⁻ (suasana basa), menghasilkan pergeseran spektrum absorbansi warna tampak yang khas.'
+    })
+  },
+
+  // 2. Titrasi Asam Basa & Netralisasi
+  {
+    keywords: ['titrasi', 'buret', 'erlenmeyer', 'titik ekivalen', 'standarisasi', 'hcl', 'naoh', 'fenolftalein', 'indikator pp', 'volumetri'],
+    category: 'Titrasi Asam Basa',
+    badge: 'Keterampilan Lab Volumetri',
+    suggestedDuration: '08:30',
+    gradeLevel: 'Kelas XI',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Titrasi Asam Basa: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Praktikum Titrasi Asam Basa & Penentuan Titik Akhir Indikator PP',
+      description: 'Panduan lengkap teknik penggunaan buret presisi, pembacaan meniskus, penambahan titran secara bertahap, dan pengamatan perubahan warna seulas merah muda pada titik akhir titrasi.',
+      chemistryConcept: 'Reaksi netralisasi stoikiometris H⁺(aq) + OH⁻(aq) → H₂O(l). Titik ekivalen tercapai saat mol asam ekuivalen tepat bereaksi dengan mol basa: V_asam × M_asam × a = V_basa × M_basa × b.'
+    })
+  },
+
+  // 3. Daya Hantar Listrik & Larutan Elektrolit
+  {
+    keywords: ['elektrolit', 'daya hantar', 'lampu', 'gelembung', 'alat uji', 'ionisasi', 'hantaran listrik', 'garam', 'gula', 'cuka'],
+    category: 'Larutan Elektrolit',
+    badge: 'Praktikum Kelas X',
+    suggestedDuration: '05:40',
+    gradeLevel: 'Kelas X',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Uji Daya Hantar Listrik: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Uji Daya Hantar Listrik Larutan Elektrolit & Non-Elektrolit',
+      description: 'Eksperimen perbandingan intensitas nyala lampu bohlam dan pembentukan gelembung gas di elektroda pada larutan elektrolit kuat (NaCl, HCl), elektrolit lemah (CH₃COOH), dan non-elektrolit (gula, alkohol).',
+      chemistryConcept: 'Kemampuan larutan menghantarkan arus listrik bergantung pada keberadaan dan mobilitas ion-ion bebas hasil ionisasi sempurna (α = 1) atau terurai sebagian (0 < α < 1) dalam air menurut teori Svante Arrhenius.'
+    })
+  },
+
+  // 4. Reaksi Redoks & Sel Volta (Baterai Buah / Seng-Tembaga)
+  {
+    keywords: ['redoks', 'sel volta', 'galvani', 'baterai buah', 'jeruk', 'lemon', 'seng', 'tembaga', 'zn', 'cu', 'potensial sel', 'korosi'],
+    category: 'Reaksi Redoks & Elektrokimia',
+    badge: 'Praktikum Kelas XII',
+    suggestedDuration: '07:15',
+    gradeLevel: 'Kelas XII',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Sel Volta & Redoks: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Praktikum Pembuatan Sel Volta Mandiri & Pengukuran Beda Potensial',
+      description: 'Eksperimen membuktikan reaksi transfer elektron spontan menjadi energi listrik DC. Mengamati aliran arus listrik, perubahan massa elektroda, serta pembacaan tegangan pada multimeter.',
+      chemistryConcept: 'Reaksi redoks spontan: Seng (Zn) mengalami oksidasi di anoda (Zn → Zn²⁺ + 2e⁻, E° = -0,76 V) dan ion Tembaga (Cu²⁺) mengalami reduksi di katoda (Cu²⁺ + 2e⁻ → Cu, E° = +0,34 V) menghasilkan potensial standar sel E°sel = +1,10 Volt.'
+    })
+  },
+
+  // 5. Elektrolisis Larutan (Elektrolisis KI / Air / Logam)
+  {
+    keywords: ['elektrolisis', 'pipa u', 'katoda anoda', 'iodida', 'ki', 'penyepuhan', 'grafit', 'karbon', 'faraday', 'gas hidrogen'],
+    category: 'Reaksi Redoks & Elektrokimia',
+    badge: 'Praktikum Kelas XII',
+    suggestedDuration: '06:50',
+    gradeLevel: 'Kelas XII',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Elektrolisis: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Praktikum Elektrolisis Larutan KI dengan Elektroda Karbon',
+      description: 'Demonstrasi pemanfaatan arus listrik searah untuk menggerakkan reaksi redoks non-spontan pada pipa U kaca, disertai pembuktian produk katoda (gas H₂ & ion OH⁻ via indikator PP) dan produk anoda (iodin I₂ via amilum).',
+      chemistryConcept: 'Di katoda terjadi reduksi air menghasilkan gas H₂ dan basa (2H₂O + 2e⁻ → H₂ + 2OH⁻), sedangkan di anoda ion iodida dioksidasi menghasilkan larutan iodin berwarna cokelat (2I⁻ → I₂ + 2e⁻).'
+    })
+  },
+
+  // 6. Laju Reaksi & Faktor-Faktor yang Mempengaruhinya
+  {
+    keywords: ['laju reaksi', 'na2s2o3', 'natrium tiosulfat', 'suhu', 'katalis', 'konsentrasi', 'luas permukaan', 'tumbukan', 'stopwatch', 'tanda silang'],
+    category: 'Laju Reaksi',
+    badge: 'Praktikum Kelas XI',
+    suggestedDuration: '07:45',
+    gradeLevel: 'Kelas XI',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Kinetika Kimia: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Pengaruh Konsentrasi & Suhu terhadap Laju Reaksi Na₂S₂O₃ + HCl',
+      description: 'Eksperimen investigasi faktor-faktor yang mempengaruhi laju reaksi kimia dengan mengukur waktu yang diperlukan endapan belerang untuk menutupi tanda silang hitam di bawah labu Erlenmeyer.',
+      chemistryConcept: 'Teori tumbukan menyatakan bahwa laju reaksi sebanding dengan frekuensi tumbukan efektif partikel yang memiliki orientasi tepat dan energi kinetik melampaui Energi Aktivasi (Ea). Kenaikan konsentrasi dan suhu mempercepat laju reaksi secara eksponensial.'
+    })
+  },
+
+  // 7. Sistem Koloid & Efek Tyndall
+  {
+    keywords: ['koloid', 'efek tyndall', 'laser', 'susu', 'santan', 'hamburan cahaya', 'koagulasi', 'dispersi', 'emulsi', 'sol'],
+    category: 'Sistem Koloid',
+    badge: 'Praktikum Kelas XI',
+    suggestedDuration: '05:30',
+    gradeLevel: 'Kelas XI',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Sistem Koloid: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Praktikum Uji Efek Tyndall & Karakteristik Sistem Koloid',
+      description: 'Pengujian sifat optik Efek Tyndall menggunakan sinar laser horizontal pada larutan sejati (gula), koloid (susu/santan), dan suspensi kasar (kopi/tepung) serta pembuatan koloid sederhana.',
+      chemistryConcept: 'Efek Tyndall terjadi karena partikel koloid (diameter 1 - 100 nm) cukup besar untuk menghamburkan berkas sinar tampak ke segala arah, sedangkan partikel larutan sejati (< 1 nm) meneruskan cahaya tanpa hamburan.'
+    })
+  },
+
+  // 8. Termokimia & Kalorimetri (Eksoterm / Endoterm)
+  {
+    keywords: ['termokimia', 'kalorimeter', 'eksoterm', 'endoterm', 'entalpi', 'suhu naik', 'suhu turun', 'pelarutan naoh', 'urea'],
+    category: 'Termokimia',
+    badge: 'Praktikum Kelas XI',
+    suggestedDuration: '06:15',
+    gradeLevel: 'Kelas XI',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Termokimia: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Praktikum Penentuan Perubahan Entalpi Reaksi Eksoterm & Endoterm',
+      description: 'Pengukuran perpindahan kalor antara sistem dan lingkungan menggunakan kalorimeter sederhana, mencatat perubahan suhu (ΔT) pada pelarutan NaOH padat dan pupuk Urea dalam air.',
+      chemistryConcept: 'Pada reaksi eksoterm sistem melepaskan kalor ke lingkungan (ΔH < 0, suhu naik), sedangkan pada reaksi endoterm sistem menyerap kalor dari lingkungan (ΔH > 0, suhu turun). Kalor dihitung dengan rumus q = m × c × ΔT.'
+    })
+  },
+
+  // 9. Uji Nyala Api Spektroskopi Kation Logam
+  {
+    keywords: ['uji nyala', 'warna nyala', 'kation', 'kawat nikrom', 'bunsen', 'natrium', 'kalium', 'kalsium', 'barium', 'tembaga', 'stronsium'],
+    category: 'Eksperimen Lab',
+    badge: 'Praktikum Spektroskopi',
+    suggestedDuration: '05:10',
+    gradeLevel: 'Kelas XII',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Uji Nyala Api: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Identifikasi Kation Logam Melalui Uji Spektroskopi Nyala Api',
+      description: 'Prosedur pembersihan kawat nikrom dengan HCl pekat dan pembakaran garam kation (Na⁺, K⁺, Ca²⁺, Ba²⁺, Cu²⁺) pada zona oksidasi api biru Bunsen untuk mengamati pancaran warna nyala khas.',
+      chemistryConcept: 'Energi termal mengeksitasi elektron kation ke orbital berenergi lebih tinggi. Ketika elektron kembali mengalami de-eksitasi (relaksasi) ke tingkat dasar, energi dipancarkan sebagai foton cahaya tampak dengan panjang gelombang spesifik (ΔE = h × c / λ).'
+    })
+  },
+
+  // 10. Kimia Organik & Sintesis Ester (Esterifikasi)
+  {
+    keywords: ['ester', 'esterifikasi', 'aroma buah', 'organik', 'alkohol', 'asam asetat', 'etanol', 'minyak', 'gugus fungsi'],
+    category: 'Karya Siswa',
+    badge: 'Praktikum Sintesis Organik',
+    suggestedDuration: '07:30',
+    gradeLevel: 'Kelas XII',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Kimia Organik: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Sintesis Senyawa Ester Beraroma Buah (Reaksi Esterifikasi Fischer)',
+      description: 'Eksperimen pembentukan senyawa ester dengan mereaksikan asam karboksilat dan alkohol menggunakan katalis asam sulfat pekat (H₂SO₄) dalam penangas air panas, serta uji identifikasi aroma buah yang dihasilkan.',
+      chemistryConcept: 'Reaksi substitusi nukleofilik asil reversibel antara asam karboksilat (R-COOH) dan alkohol (R\'-OH) menghasilkan senyawa ester (R-COO-R\') dan air, di mana asam sulfat pekat bertindak sebagai katalisator dan pendehidrasi.'
+    })
+  },
+
+  // 11. Kesetimbangan Kimia & Pergeseran Le Chatelier
+  {
+    keywords: ['kesetimbangan', 'le chatelier', 'pergeseran', 'fe(scn)', 'besi tiosianat', 'kromat dikromat', 'reversibel', 'warna larutan'],
+    category: 'Eksperimen Lab',
+    badge: 'Praktikum Kelas XI',
+    suggestedDuration: '06:20',
+    gradeLevel: 'Kelas XI',
+    generate: (ctx) => ({
+      title: ctx.length > 8 && !ctx.toLowerCase().includes('youtube')
+        ? `Praktikum Kesetimbangan Kimia: ${ctx.replace(/^(video|praktikum|uji|eksperimen|demonstrasi)\s*[:\-]?\s*/i, '')}`
+        : 'Uji Pergeseran Kesetimbangan Kimia (Asas Le Chatelier)',
+      description: 'Investigasi pengaruh perubahan konsentrasi dan suhu terhadap arah pergeseran kesetimbangan dinamis pada sistem ion besi(III) tiosianat [Fe(SCN)]²⁺ dan kesetimbangan kromat-dikromat.',
+      chemistryConcept: 'Asas Le Chatelier: Jika pada sistem kesetimbangan dinamis diberikan aksi berupa perubahan konsentrasi, tekanan, atau suhu, maka sistem akan bergeser sedemikian rupa untuk meniadakan pengaruh aksi tersebut.'
+    })
+  }
+];
+
+/**
+ * Fetch video metadata from YouTube public oEmbed endpoint without needing an API key
+ */
+export async function fetchYouTubeOEmbedMetadata(youtubeUrlOrId: string): Promise<{ title?: string; author_name?: string } | null> {
+  try {
+    const cleanUrl = youtubeUrlOrId.includes('http') 
+      ? youtubeUrlOrId 
+      : `https://www.youtube.com/watch?v=${youtubeUrlOrId}`;
+    
+    // Use YouTube's public oEmbed API
+    const oembedUrl = `https://noembed.com/embed?url=${encodeURIComponent(cleanUrl)}`;
+    const response = await fetch(oembedUrl);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.title) {
+        return {
+          title: data.title,
+          author_name: data.author_name || 'YouTube Channel'
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Could not fetch YouTube oEmbed data, falling back to intelligent parser:', err);
+  }
+  return null;
+}
+
+/**
+ * AI generator that automatically produces clean chemistry Title, Description, Category, Badge,
+ * Duration, and Chemistry Concept based on the YouTube link or raw video title.
+ */
+export function generatePracticalVideoFromLinkOrTitle(
+  rawInput: string,
+  currentCategory?: string,
+  currentBadge?: string
+): GeneratedPracticalVideo {
+  const cleanInput = rawInput.trim();
+  const lower = cleanInput.toLowerCase();
+
+  // 1. Search for matching rule based on keywords in URL or title
+  for (const rule of VIDEO_TOPIC_RULES) {
+    if (rule.keywords.some((kw) => lower.includes(kw))) {
+      const generated = rule.generate(cleanInput);
+      return {
+        title: generated.title,
+        category: currentCategory && currentCategory !== 'Lainnya' ? currentCategory : rule.category,
+        badge: currentBadge && currentBadge.trim() ? currentBadge : rule.badge,
+        duration: rule.suggestedDuration,
+        description: generated.description,
+        chemistryConcept: generated.chemistryConcept,
+        gradeLevel: rule.gradeLevel
+      };
+    }
+  }
+
+  // 2. Intelligent fallback if no exact topic keyword matched
+  // Extract meaningful words from URL/title to format a nice chemistry title
+  const cleanTitleCandidate = cleanInput
+    .replace(/https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/[^\s]+/gi, '')
+    .replace(/[_\-+]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const formattedTitle = cleanTitleCandidate.length > 5
+    ? `Praktikum Kimia Laboratorium: ${cleanTitleCandidate}`
+    : 'Praktikum & Demonstrasi Eksperimen Kimia Laboratorium SMA';
+
+  return {
+    title: formattedTitle,
+    category: currentCategory && currentCategory !== 'Lainnya' ? currentCategory : 'Eksperimen Lab',
+    badge: currentBadge && currentBadge.trim() ? currentBadge : 'Video Praktikum Siswa',
+    duration: '06:30',
+    description: `Video panduan dan dokumentasi eksperimen praktikum kimia laboratorium. Membahas tujuan kegiatan, pengenalan alat & bahan, langkah-langkah prosedur kerja ilmiah, serta pengamatan fenomena reaksi kimia secara empiris.`,
+    chemistryConcept: `Eksperimen ini menerapkan prinsip dasar stoikiometri, kinetika reaksi, dan interaksi partikel kimia dalam larutan berair sesuai dengan capaian pembelajaran kurikulum kimia SMA.`,
+    gradeLevel: 'Semua Tingkat'
+  };
+}
+

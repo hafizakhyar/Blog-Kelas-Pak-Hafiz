@@ -484,7 +484,7 @@ export default function App() {
   useEffect(() => {
     if (currentRoute !== 'main') return;
 
-    const sections = ['beranda', 'galeri', 'catatan-kelas', 'modul', 'blog', 'profil', 'kontak'];
+    const sections = ['beranda', 'catatan-kelas', 'galeri', 'modul', 'blog', 'portofolio', 'profil', 'kontak'];
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 180;
       for (const sectionId of sections) {
@@ -803,9 +803,12 @@ https://www.kelaspakhafiz.my.id/
   };
 
   const handleExploreClick = () => {
-    const galeriEl = document.getElementById('galeri');
-    if (galeriEl) {
-      galeriEl.scrollIntoView({ behavior: 'smooth' });
+    const nextEl = document.getElementById('catatan-kelas') || document.getElementById('galeri');
+    if (nextEl) {
+      const navOffset = 80;
+      const elementPosition = nextEl.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
 
@@ -931,6 +934,15 @@ https://www.kelaspakhafiz.my.id/
                 articlesCount={blogPosts.length}
               />
 
+              <ClassNotesSection
+                onAddToast={addToast}
+                onSelectNote={handleSelectNote}
+                notes={notes}
+                setNotes={setNotes}
+                isAdmin={isAdmin}
+                setIsAdmin={setIsAdmin}
+              />
+
               <GallerySection
                 onSelectItem={handleSelectGalleryItem}
                 items={galleryItems}
@@ -944,15 +956,6 @@ https://www.kelaspakhafiz.my.id/
                 onUpdateVideo={handleUpdatePracticalVideo}
                 onDeleteVideo={handleDeletePracticalVideo}
                 onAddToast={addToast}
-              />
-
-              <ClassNotesSection
-                onAddToast={addToast}
-                onSelectNote={handleSelectNote}
-                notes={notes}
-                setNotes={setNotes}
-                isAdmin={isAdmin}
-                setIsAdmin={setIsAdmin}
               />
 
               <DocumentsSection

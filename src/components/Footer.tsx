@@ -88,13 +88,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenMainPortal, isDarkMode, on
                 </a>
               </li>
               <li>
-                <a href="#galeri" className="hover:text-white transition-colors">
-                  Galeri Praktikum & Eksperimen
+                <a href="#catatan-kelas" className="hover:text-white transition-colors">
+                  Papan Catatan & Rumus Kelas
                 </a>
               </li>
               <li>
-                <a href="#catatan-kelas" className="hover:text-white transition-colors">
-                  Papan Catatan & Rumus Kelas
+                <a href="#galeri" className="hover:text-white transition-colors">
+                  Galeri Praktikum & Eksperimen
                 </a>
               </li>
               <li>

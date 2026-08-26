@@ -14,10 +14,18 @@ import {
   Layers,
   Wand2,
   Atom,
-  Eye
+  Eye,
+  Loader2,
+  RefreshCw,
+  Zap,
+  HelpCircle
 } from 'lucide-react';
 import { PracticalVideoItem } from '../../types';
 import { extractYouTubeId, getYouTubeThumbnail, getYouTubeWatchUrl } from '../../utils/youtube';
+import {
+  fetchYouTubeOEmbedMetadata,
+  generatePracticalVideoFromLinkOrTitle
+} from '../../lib/chemistryAutoGenerator';
 
 interface AddYouTubeVideoModalProps {
   isOpen: boolean;
@@ -51,7 +59,7 @@ const PRESET_VIDEOS = [
   {
     title: 'Teknik Titrasi Asam Basa & Penentuan Titik Akhir PP',
     url: 'https://www.youtube.com/watch?v=sFpFCPTDv2w',
-    category: 'Eksperimen Lab',
+    category: 'Titrasi Asam Basa',
     badge: 'Keterampilan Lab',
     duration: '08:20',
     desc: 'Panduan membaca meniskus buret, tetesan titran NaOH, dan deteksi warna merah muda seulas.'
@@ -63,6 +71,14 @@ const PRESET_VIDEOS = [
     badge: 'Eksperimen Kelas X',
     duration: '05:15',
     desc: 'Uji nyala lampu dan gelembung gas pada elektroda larutan garam, gula, dan cuka.'
+  },
+  {
+    title: 'Praktikum Reaksi Redoks & Sel Volta Jeruk Nipis',
+    url: 'https://www.youtube.com/watch?v=b4dK9P-3c_V',
+    category: 'Reaksi Redoks & Elektrokimia',
+    badge: 'Praktikum Kelas XII',
+    duration: '07:10',
+    desc: 'Eksperimen pembuktian reaksi redoks spontan menjadi energi listrik DC pada baterai buah.'
   }
 ];
 
@@ -80,12 +96,17 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Indikator Alami');
   const [customCategory, setCustomCategory] = useState('');
-  const [badge, setBadge] = useState('Video Praktikum');
+  const [badge, setBadge] = useState('Video Praktikum Siswa');
   const [duration, setDuration] = useState('06:00');
   const [description, setDescription] = useState('');
   const [chemistryConcept, setChemistryConcept] = useState('');
   const [isPinned, setIsPinned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // AI Generation States
+  const [isAIGenerating, setIsAIGenerating] = useState(false);
+  const [aiGeneratedSuccess, setAiGeneratedSuccess] = useState(false);
+  const [aiStatusMessage, setAiStatusMessage] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -99,6 +120,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
         setDescription(initialVideo.description);
         setChemistryConcept(initialVideo.chemistryConcept || '');
         setIsPinned(!!initialVideo.isPinned);
+        setAiGeneratedSuccess(false);
       } else {
         setYoutubeUrl('');
         setExtractedId(null);
@@ -110,22 +132,84 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
         setDescription('');
         setChemistryConcept('');
         setIsPinned(false);
+        setAiGeneratedSuccess(false);
       }
     }
   }, [isOpen, initialVideo]);
 
-  // Handle URL change with auto-detection of ID & auto title suggestion
+  // Execute AI auto-generator based on URL/ID and video metadata
+  const handleAutoGenerateWithAI = async (urlOverride?: string, quiet = false) => {
+    const targetUrl = (urlOverride || youtubeUrl).trim();
+    const id = extractYouTubeId(targetUrl);
+
+    if (!targetUrl) {
+      onAddToast('Tautan Diperlukan', 'Harap masukkan link video YouTube terlebih dahulu untuk dibuatkan otomatis oleh AI.', 'info');
+      return;
+    }
+
+    if (!id) {
+      onAddToast('Link YouTube Belum Valid', 'Format link YouTube belum dikenali. Pastikan memasukkan tautan YouTube yang benar.', 'info');
+      return;
+    }
+
+    setIsAIGenerating(true);
+    setAiStatusMessage('Menganalisis tautan YouTube & mengambil data video...');
+
+    try {
+      // 1. Try to fetch real YouTube metadata via public oEmbed endpoint
+      let oembedTitle = '';
+      try {
+        const metadata = await fetchYouTubeOEmbedMetadata(targetUrl);
+        if (metadata?.title) {
+          oembedTitle = metadata.title;
+        }
+      } catch (err) {
+        console.warn('oEmbed fetch skipped, continuing with intelligent keyword AI analysis', err);
+      }
+
+      setAiStatusMessage('Mengekstrak konsep reaksi kimia & menyusun panduan lab...');
+      // Small delay for smooth AI effect
+      await new Promise((r) => setTimeout(r, 450));
+
+      // 2. Generate chemistry video data using our AI engine
+      const queryContext = oembedTitle || title || targetUrl;
+      const aiData = generatePracticalVideoFromLinkOrTitle(queryContext, category, badge);
+
+      // 3. Apply generated fields
+      setTitle(aiData.title);
+      setCategory(aiData.category);
+      setBadge(aiData.badge);
+      setDuration(aiData.duration);
+      setDescription(aiData.description);
+      setChemistryConcept(aiData.chemistryConcept);
+
+      setAiGeneratedSuccess(true);
+
+      if (!quiet) {
+        onAddToast(
+          '✨ Berhasil Dibuat Otomatis dengan AI!',
+          `Judul, kategori (${aiData.category}), deskripsi praktikum, dan konsep reaksi kimia telah disesuaikan otomatis.`,
+          'success'
+        );
+      }
+    } catch (error) {
+      console.error('Error during AI auto generation:', error);
+      onAddToast('Gagal Menganalisis dengan AI', 'Terjadi kendala saat menganalisis video. Anda dapat mengisi form secara manual.', 'info');
+    } finally {
+      setIsAIGenerating(false);
+      setAiStatusMessage('');
+    }
+  };
+
+  // Handle URL change with auto-detection of ID & optional AI trigger
   const handleUrlChange = (value: string) => {
     setYoutubeUrl(value);
     const id = extractYouTubeId(value);
     setExtractedId(id);
 
-    if (id && !title && !isEditing) {
-      // Auto suggest default title if empty
-      setTitle('Praktikum Kimia Laboratorium (YouTube)');
-      if (!description) {
-        setDescription('Video panduan dan dokumentasi eksperimen kimia praktikum siswa di laboratorium SMA.');
-      }
+    // If a complete new valid YouTube link is pasted on empty form, automatically trigger AI!
+    if (id && !title && !description && !isEditing && value.length > 15) {
+      handleAutoGenerateWithAI(value, false);
     }
   };
 
@@ -133,12 +217,22 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
     setYoutubeUrl(preset.url);
     const id = extractYouTubeId(preset.url);
     setExtractedId(id);
-    setTitle(preset.title);
-    setCategory(preset.category);
-    setBadge(preset.badge);
-    setDuration(preset.duration);
-    setDescription(preset.desc);
-    onAddToast('Contoh Video Dimuat', `Tautan dan judul ${preset.title} diterapkan.`, 'info');
+    handleAutoGenerateWithAI(preset.url, false);
+  };
+
+  // Quick single-field AI regenerators
+  const handleRegenerateDescriptionAI = () => {
+    const context = title || youtubeUrl || 'Praktikum Kimia';
+    const aiData = generatePracticalVideoFromLinkOrTitle(context, category, badge);
+    setDescription(aiData.description);
+    onAddToast('Deskripsi Diperbarui AI', 'Deskripsi dan tahapan praktikum telah digenerate ulang.', 'success');
+  };
+
+  const handleRegenerateConceptAI = () => {
+    const context = title || youtubeUrl || 'Praktikum Kimia';
+    const aiData = generatePracticalVideoFromLinkOrTitle(context, category, badge);
+    setChemistryConcept(aiData.chemistryConcept);
+    onAddToast('Konsep Kimia Diperbarui AI', 'Prinsip reaksi kimia telah diekstrak dan diperbarui.', 'success');
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -171,7 +265,7 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
       youtubeId: id,
       thumbnailUrl: getYouTubeThumbnail(id),
       category: finalCategory,
-      badge: badge.trim() || 'Video Praktikum',
+      badge: badge.trim() || 'Video Praktikum Siswa',
       duration: duration.trim() || undefined,
       date: initialVideo?.date || dateFormatted,
       description: description.trim() || 'Dokumentasi video praktikum kimia siswa.',
@@ -211,15 +305,21 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
           {/* Header */}
           <div className="bg-linear-to-r from-[#0F172A] via-[#1E293B] to-[#0284C7] text-white p-5 sm:p-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#EF4444] text-white flex items-center justify-center shadow-md">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-tr from-[#EF4444] to-[#F97316] text-white flex items-center justify-center shadow-md">
                 <Play className="w-5 h-5 fill-white" />
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[#38BDF8] block">
-                  {isEditing ? 'Perbarui Video' : 'Akun Guru · Input Link'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#38BDF8] block">
+                    {isEditing ? 'Perbarui Video' : 'Akun Guru · Otomatisasi AI'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#0284C7]/30 border border-[#38BDF8]/40 text-[#BAE6FD] text-[10px] font-bold flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5 text-[#38BDF8]" />
+                    <span>AI Enabled</span>
+                  </span>
+                </div>
                 <h3 className="text-base sm:text-lg font-bold text-white">
-                  {isEditing ? 'Edit Video Praktikum YouTube' : 'Tambah Video Praktikum YouTube'}
+                  {isEditing ? 'Edit Video Praktikum YouTube' : 'Tambah Video Praktikum Otomatis (AI)'}
                 </h3>
               </div>
             </div>
@@ -236,13 +336,69 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
           {/* Form Content */}
           <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4 max-h-[78vh] overflow-y-auto custom-scrollbar">
             
-            {/* Quick Helper Notice */}
-            <div className="p-3.5 rounded-xl bg-[#F0F9FF] border border-[#BAE6FD] text-xs text-[#0369A1] flex items-start gap-2.5">
-              <Sparkles className="w-4 h-4 text-[#0284C7] shrink-0 mt-0.5" />
-              <div>
-                <strong className="font-semibold block text-[#0284C7]">Cukup Tempelkan Link Video YouTube</strong>
-                Sistem akan otomatis mendeteksi ID video dan thumbnail. Anda juga dapat menyesuaikan judul, kategori, durasi, dan penjelasan reaksi kimianya.
+            {/* AI Banner: Auto Generate Feature */}
+            <div className="p-4 rounded-2xl bg-linear-to-r from-[#F0F9FF] via-[#E0F2FE] to-[#EFF6FF] border border-[#BAE6FD] shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-[#0284C7] to-[#0EA5E9] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <strong className="font-bold text-xs sm:text-sm text-[#0369A1] flex items-center gap-1.5">
+                      <span>Buat Otomatis dengan AI dari Link Video</span>
+                      <span className="px-1.5 py-0.2 rounded text-[10px] bg-[#0284C7] text-white font-bold">Smart AI</span>
+                    </strong>
+                    <p className="text-[11px] text-[#0284C7]/80 mt-0.5 leading-relaxed">
+                      Tempelkan tautan YouTube di bawah, lalu klik tombol AI untuk otomatis membuat <strong>Judul Standar, Deskripsi Langkah Lab, Kategori,</strong> dan <strong>Konsep Reaksi Kimia</strong>!
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleAutoGenerateWithAI()}
+                  disabled={isAIGenerating || !youtubeUrl}
+                  className="px-3.5 py-2 rounded-xl bg-linear-to-r from-[#0284C7] to-[#2563EB] hover:from-[#0369A1] hover:to-[#1D4ED8] text-white text-xs font-bold shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                >
+                  {isAIGenerating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Menganalisis...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-3.5 h-3.5" />
+                      <span>✨ Buat Otomatis AI</span>
+                    </>
+                  )}
+                </button>
               </div>
+
+              {/* Status Message when generating */}
+              {isAIGenerating && (
+                <div className="mt-3 pt-2.5 border-t border-[#BAE6FD]/70 flex items-center gap-2 text-xs font-medium text-[#0284C7] animate-pulse">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0284C7]" />
+                  <span>{aiStatusMessage || 'Sedang memproses video...'}</span>
+                </div>
+              )}
+
+              {/* AI Success notice */}
+              {aiGeneratedSuccess && !isAIGenerating && (
+                <div className="mt-3 pt-2.5 border-t border-[#BAE6FD]/70 flex items-center justify-between text-xs text-[#059669]">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
+                    <span>Data video, deskripsi & konsep kimia berhasil digenerate otomatis!</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleAutoGenerateWithAI(undefined, false)}
+                    className="text-[11px] text-[#0284C7] hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Regenerate</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Input 1: YouTube Link */}
@@ -259,14 +415,25 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
                   </span>
                 )}
               </label>
-              <input
-                type="text"
-                required
-                value={youtubeUrl}
-                onChange={(e) => handleUrlChange(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=... atau https://youtu.be/..."
-                className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  value={youtubeUrl}
+                  onChange={(e) => handleUrlChange(e.target.value)}
+                  placeholder="Tempel link: https://www.youtube.com/watch?v=... atau https://youtu.be/..."
+                  className="w-full px-4 py-2.5 pr-28 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleAutoGenerateWithAI()}
+                  disabled={!youtubeUrl || isAIGenerating}
+                  className="absolute right-1.5 top-1.5 bottom-1.5 px-2.5 rounded-lg bg-[#0284C7] hover:bg-[#0369A1] text-white text-[11px] font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3" />
+                  <span>AI Isi</span>
+                </button>
+              </div>
             </div>
 
             {/* Live Video / Thumbnail Preview if detected */}
@@ -286,14 +453,21 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#16A34A] block">
-                    ✓ Video YouTube Siap Ditampilkan
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#16A34A] block">
+                      ✓ Thumbnail & Video Terhubung
+                    </span>
+                    {aiGeneratedSuccess && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-[#ECFDF5] text-[#059669] text-[9px] font-bold border border-[#A7F3D0]">
+                        AI Synced
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs font-semibold text-[#0F172A] truncate mt-0.5">
-                    {title || 'Judul Video'}
+                    {title || 'Menunggu Analisis AI / Judul Video'}
                   </p>
                   <p className="text-[11px] text-[#64748B] mt-0.5">
-                    Thumbnail otomatis diambil dari server resmi YouTube.
+                    Thumbnail resolusi tinggi otomatis tersambung dari server YouTube.
                   </p>
                 </div>
               </div>
@@ -302,8 +476,9 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
             {/* Quick Presets for Teacher convenience */}
             {!isEditing && (
               <div>
-                <span className="text-[11px] font-semibold text-[#64748B] block mb-1.5">
-                  Atau gunakan contoh video praktikum kimia cepat:
+                <span className="text-[11px] font-semibold text-[#64748B] flex items-center gap-1 mb-1.5">
+                  <Zap className="w-3 h-3 text-[#F59E0B]" />
+                  <span>Contoh link video praktikum kimia (1-Klik Uji Coba AI):</span>
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {PRESET_VIDEOS.map((preset, idx) => (
@@ -311,9 +486,10 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
                       key={idx}
                       type="button"
                       onClick={() => handleApplyPreset(preset)}
-                      className="px-2.5 py-1 rounded-lg bg-[#F1F5F9] hover:bg-[#E0F2FE] hover:text-[#0284C7] text-[#475569] text-[11px] font-medium border border-[#E2E8F0] transition-colors cursor-pointer text-left"
+                      className="px-2.5 py-1 rounded-lg bg-[#F1F5F9] hover:bg-[#E0F2FE] hover:text-[#0284C7] hover:border-[#BAE6FD] text-[#475569] text-[11px] font-medium border border-[#E2E8F0] transition-all cursor-pointer text-left flex items-center gap-1"
                     >
-                      {preset.category}: {preset.title.slice(0, 24)}...
+                      <Sparkles className="w-2.5 h-2.5 text-[#0284C7]" />
+                      <span>{preset.category}: {preset.title.slice(0, 22)}...</span>
                     </button>
                   ))}
                 </div>
@@ -322,16 +498,32 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
 
             {/* Input 2: Title */}
             <div>
-              <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-[#0284C7]" />
-                <span>Judul Video Praktikum <span className="text-[#EF4444]">*</span></span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-[#0284C7]" />
+                  <span>Judul Video Praktikum <span className="text-[#EF4444]">*</span></span>
+                </label>
+                {title && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const aiData = generatePracticalVideoFromLinkOrTitle(title || youtubeUrl, category, badge);
+                      setTitle(aiData.title);
+                      onAddToast('Judul Disempurnakan AI', 'Judul praktikum telah distandarisasi.', 'info');
+                    }}
+                    className="text-[10px] text-[#0284C7] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Wand2 className="w-2.5 h-2.5" />
+                    <span>Rapikan Judul dengan AI</span>
+                  </button>
+                )}
+              </div>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Contoh: Praktikum Titrasi Asam Basa & Penentuan Titik Akhir..."
+                placeholder="Contoh: Praktikum Titrasi Asam Basa: Standarisasi Larutan HCl dengan Indikator PP"
                 className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white"
               />
             </div>
@@ -369,13 +561,13 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
               <div>
                 <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-                  <span>Label / Badge</span>
+                  <span>Label / Tingkat Kelas</span>
                 </label>
                 <input
                   type="text"
                   value={badge}
                   onChange={(e) => setBadge(e.target.value)}
-                  placeholder="Video Utama Kelas XI"
+                  placeholder="Praktikum Siswa Kelas XI"
                   className="w-full px-3 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs text-[#0F172A] transition-all bg-white"
                 />
               </div>
@@ -389,39 +581,59 @@ export const AddYouTubeVideoModal: React.FC<AddYouTubeVideoModalProps> = ({
                   type="text"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
-                  placeholder="06:30"
-                  className="w-full px-3 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs text-[#0F172A] transition-all bg-white"
+                  placeholder="06:45"
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs text-[#0F172A] transition-all bg-white font-mono"
                 />
               </div>
             </div>
 
-            {/* Input 3: Description */}
+            {/* Input 3: Description with AI button */}
             <div>
-              <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <FlaskConical className="w-3.5 h-3.5 text-[#0284C7]" />
-                <span>Deskripsi & Panduan Praktikum</span>
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
+                  <FlaskConical className="w-3.5 h-3.5 text-[#0284C7]" />
+                  <span>Deskripsi & Panduan Prosedur Lab</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRegenerateDescriptionAI}
+                  className="text-[10px] text-[#0284C7] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Wand2 className="w-2.5 h-2.5" />
+                  <span>Generate Deskripsi AI</span>
+                </button>
+              </div>
               <textarea
-                rows={2}
+                rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Jelaskan ringkasan prosedur, langkah pengamatan, atau tujuan praktikum..."
-                className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white resize-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#0284C7] focus:ring-2 focus:ring-[#0284C7]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white resize-none leading-relaxed"
               />
             </div>
 
-            {/* Input 4: Chemistry Concept (Optional) */}
+            {/* Input 4: Chemistry Concept with AI button */}
             <div>
-              <label className="block text-xs font-bold text-[#0F172A] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Atom className="w-3.5 h-3.5 text-[#16A34A]" />
-                <span>Konsep / Reaksi Kimia (Opsional)</span>
-              </label>
-              <input
-                type="text"
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
+                  <Atom className="w-3.5 h-3.5 text-[#16A34A]" />
+                  <span>Konsep & Persamaan Reaksi Kimia (AI Generated)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRegenerateConceptAI}
+                  className="text-[10px] text-[#16A34A] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-2.5 h-2.5" />
+                  <span>Generate Konsep AI</span>
+                </button>
+              </div>
+              <textarea
+                rows={2}
                 value={chemistryConcept}
                 onChange={(e) => setChemistryConcept(e.target.value)}
-                placeholder="Contoh: Kurva titrasi asam lemah - basa kuat dan reaksi netralisasi..."
-                className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white"
+                placeholder="Penjelasan reaksi ilmiah: misal Reaksi netralisasi stoikiometris H⁺ + OH⁻ → H₂O..."
+                className="w-full px-4 py-2.5 rounded-xl border border-[#CBD5E1] focus:border-[#16A34A] focus:ring-2 focus:ring-[#16A34A]/20 text-xs sm:text-sm text-[#0F172A] transition-all bg-white resize-none leading-relaxed"
               />
             </div>
 

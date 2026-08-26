@@ -228,31 +228,7 @@ export const Hero: React.FC<HeroProps> = ({
                 {/* 2x2 Statistics Bento Grid */}
                 <div className="grid grid-cols-2 gap-3.5">
                   
-                  {/* Card 1: Praktikum */}
-                  <button
-                    type="button"
-                    onClick={() => scrollToSection('galeri')}
-                    className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
-                    title="Buka Galeri Praktikum"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="w-8 h-8 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center group-hover:scale-105 transition-transform">
-                        <FlaskConical className="w-4 h-4" />
-                      </div>
-                      <ArrowUpRight className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#0284C7] transition-colors" />
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-bold font-heading text-[#0F172A]">
-                      {praktikumCount}
-                    </div>
-                    <div className="text-xs font-semibold text-[#0F172A] mt-1">
-                      Praktikum Selesai
-                    </div>
-                    <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
-                      Galeri & Laporan Eksperimen
-                    </div>
-                  </button>
-
-                  {/* Card 2: Catatan Kelas */}
+                  {/* Card 1: Catatan Kelas */}
                   <button
                     type="button"
                     onClick={() => scrollToSection('catatan-kelas')}
@@ -273,6 +249,30 @@ export const Hero: React.FC<HeroProps> = ({
                     </div>
                     <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
                       Materi & Rangkuman Kimia
+                    </div>
+                  </button>
+
+                  {/* Card 2: Praktikum */}
+                  <button
+                    type="button"
+                    onClick={() => scrollToSection('galeri')}
+                    className="group text-left bg-white p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#BAE6FD] hover:shadow-sm transition-all duration-200 cursor-pointer"
+                    title="Buka Galeri Praktikum"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="w-8 h-8 rounded-xl bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center group-hover:scale-105 transition-transform">
+                        <FlaskConical className="w-4 h-4" />
+                      </div>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#0284C7] transition-colors" />
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-bold font-heading text-[#0F172A]">
+                      {praktikumCount}
+                    </div>
+                    <div className="text-xs font-semibold text-[#0F172A] mt-1">
+                      Praktikum Selesai
+                    </div>
+                    <div className="text-[10px] text-[#64748B] mt-0.5 leading-tight">
+                      Galeri & Laporan Eksperimen
                     </div>
                   </button>
 
