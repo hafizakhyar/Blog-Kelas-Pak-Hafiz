@@ -4,6 +4,7 @@ export interface GalleryItem {
   category: 'Indikator Alami' | 'Eksperimen Lab' | 'Karya Siswa' | 'Video Tutorial' | string;
   date: string;
   image: string;
+  images?: string[];
   badge: string;
   description: string;
   chemistryConcept: string;

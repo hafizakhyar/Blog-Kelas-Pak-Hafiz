@@ -31,7 +31,8 @@ import {
   Sliders,
   Check,
   ExternalLink,
-  FileText
+  FileText,
+  ArrowUpDown
 } from 'lucide-react';
 import { ProfileExperienceItem, TeacherBioProfile, TeacherBioContact } from '../types';
 import { INITIAL_PROFILE_EXPERIENCES, INITIAL_TEACHER_PROFILE } from '../data/mockData';
@@ -45,8 +46,45 @@ import {
 } from '../lib/firebase';
 import { PhotoChangerModal } from './Modals/PhotoChangerModal';
 
-const LOCAL_STORAGE_EXP_KEY = 'kelaspakhafiz_experiences_v2';
+const LOCAL_STORAGE_EXP_KEY = 'kelaspakhafiz_experiences_v3';
 const LOCAL_STORAGE_BIO_KEY = 'kelaspakhafiz_teacher_bio_v1';
+
+/**
+ * Helper function to calculate chronological weight for profile experiences.
+ * Ensures the journey flows chronologically starting from S-1 Chemistry Graduation
+ * through laboratory assistances & R&D up to the latest role as SMA Chemistry Educator.
+ */
+export const getExperienceChronologicalWeight = (exp: ProfileExperienceItem): number => {
+  const title = (exp.title || '').toLowerCase();
+  const category = (exp.category || '').toLowerCase();
+  const period = (exp.period || '').toLowerCase();
+
+  // Specifically prioritize S-1 / Graduation as the baseline starting point
+  if (title.includes('lulusan') || title.includes('s-1') || category === 'pendidikan') {
+    const years = (exp.period || '').match(/\b(19\d{2}|20\d{2})\b/g);
+    if (years && years.length > 0) {
+      return parseInt(years[0], 10) * 100; // e.g. 2019 -> 201900
+    }
+    return 201900;
+  }
+
+  // Look for 4-digit years in period string (e.g., "2022 - 2023", "2024", "2024 - Sekarang")
+  const yearMatches = period.match(/\b(19\d{2}|20\d{2})\b/g);
+  if (yearMatches && yearMatches.length > 0) {
+    const startYear = parseInt(yearMatches[0], 10);
+    const isPresent = period.includes('sekarang') || period.includes('aktif') || period.includes('present');
+    const endYear = isPresent ? 9999 : (yearMatches.length > 1 ? parseInt(yearMatches[1], 10) : startYear);
+    
+    return startYear * 100 + (isPresent ? 99 : (endYear - startYear + 10));
+  }
+
+  // Fallback based on keywords
+  if (period.includes('sekarang') || period.includes('aktif') || title.includes('pengajar') || title.includes('guru')) {
+    return 999999;
+  }
+
+  return 500000;
+};
 
 interface ProfileSectionProps {
   isAdmin: boolean;
@@ -87,9 +125,10 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     return INITIAL_PROFILE_EXPERIENCES;
   });
 
-  // State: Filter & Search for Experiences
+  // State: Filter, Search & Sort for Experiences
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc'); // 'asc' = Dari Lulusan Kimia hingga Terbaru
 
   // State: Experience Add/Edit Modal
   const [editingExp, setEditingExp] = useState<ProfileExperienceItem | null>(null);
@@ -178,9 +217,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     }
   }, [teacherBio]);
 
-  // Filtered Experiences
+  // Filtered & Chronologically Sorted Experiences (From Lulusan Kimia to Latest)
   const filteredExperiences = useMemo(() => {
-    return experiences.filter((exp) => {
+    const filtered = experiences.filter((exp) => {
       const matchCat =
         selectedCategory === 'Semua' ||
         exp.category?.toLowerCase() === selectedCategory.toLowerCase();
@@ -192,7 +231,13 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
         (exp.period && exp.period.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchCat && matchSearch;
     });
-  }, [experiences, selectedCategory, searchQuery]);
+
+    return [...filtered].sort((a, b) => {
+      const weightA = getExperienceChronologicalWeight(a);
+      const weightB = getExperienceChronologicalWeight(b);
+      return sortDirection === 'asc' ? weightA - weightB : weightB - weightA;
+    });
+  }, [experiences, selectedCategory, searchQuery, sortDirection]);
 
   // --- Handlers: Teacher Bio Edit Modal ---
   const handleOpenBioModal = (tab: BioEditTab = 'bio') => {
@@ -727,11 +772,11 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           {/* ========================================================================= */}
           <div className="lg:col-span-8 space-y-4">
             
-            {/* Filter Bar & Search */}
-            <div className="bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Filter Bar, Search & Sort */}
+            <div className="bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] p-3 sm:p-4 flex flex-col lg:flex-row items-center justify-between gap-3">
               
               {/* Category Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto scrollbar-none">
+              <div className="flex items-center gap-1.5 overflow-x-auto w-full lg:w-auto scrollbar-none">
                 {categories.map((cat) => {
                   const isActive = selectedCategory === cat;
                   return (
@@ -751,25 +796,38 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                 })}
               </div>
 
-              {/* Search Box */}
-              <div className="relative w-full sm:w-60">
-                <Search className="w-3.5 h-3.5 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari riwayat / instansi..."
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-full border border-[#E2E8F0] bg-white focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] focus:outline-none transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
+              {/* Sort Order & Search Controls */}
+              <div className="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className="w-full sm:w-auto px-3.5 py-1.5 text-xs font-bold rounded-full bg-white hover:bg-[#E0F2FE] hover:text-[#007AFF] text-[#334155] border border-[#BAE6FD] flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer shadow-2xs"
+                  title="Klik untuk membalik urutan tahun"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5 text-[#007AFF]" />
+                  <span>{sortDirection === 'asc' ? 'Lulusan Kimia → Terbaru' : 'Terbaru → Lulusan Kimia'}</span>
+                </button>
+
+                {/* Search Box */}
+                <div className="relative w-full sm:w-56">
+                  <Search className="w-3.5 h-3.5 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari riwayat / instansi..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs rounded-full border border-[#E2E8F0] bg-white focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] focus:outline-none transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
               </div>
 
             </div>
@@ -802,12 +860,17 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                         </div>
 
                         <div>
-                          <h4 className="text-sm sm:text-base font-bold text-[#0F172A] leading-snug group-hover:text-[#007AFF] transition-colors">
-                            {exp.title}
-                          </h4>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0]">
+                              #{idx + 1}
+                            </span>
+                            <h4 className="text-sm sm:text-base font-bold text-[#0F172A] leading-snug group-hover:text-[#007AFF] transition-colors">
+                              {exp.title}
+                            </h4>
+                          </div>
                           
                           {exp.institution && (
-                            <p className="text-xs font-semibold text-[#475569] mt-0.5 flex items-center gap-1.5">
+                            <p className="text-xs font-semibold text-[#475569] mt-1 flex items-center gap-1.5">
                               <Building className="w-3.5 h-3.5 text-[#007AFF] shrink-0" />
                               <span>{exp.institution}</span>
                             </p>
@@ -821,8 +884,8 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
                           {exp.category}
                         </span>
                         {exp.period && (
-                          <span className="text-[10px] text-[#64748B] font-mono flex items-center gap-1">
-                            <Calendar className="w-3 h-3 text-[#94A3B8]" />
+                          <span className="text-[11px] text-[#0F172A] font-semibold font-mono flex items-center gap-1 bg-[#F8FAFC] px-2 py-0.5 rounded-md border border-[#E2E8F0]">
+                            <Calendar className="w-3 h-3 text-[#007AFF]" />
                             <span>{exp.period}</span>
                           </span>
                         )}

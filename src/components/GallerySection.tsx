@@ -67,6 +67,285 @@ const PRESET_LAB_IMAGES = [
   { label: 'Eksperimen Siswa', url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80' },
 ];
 
+interface GalleryCardItemProps {
+  item: GalleryItem;
+  index: number;
+  isAdmin: boolean;
+  onSelectItem: (item: GalleryItem) => void;
+  onTogglePin: (item: GalleryItem, e?: React.MouseEvent) => void;
+  onOpenPhotoChanger: (item: GalleryItem) => void;
+  onDeleteItem: (item: GalleryItem) => void;
+  onAddToast: (title: string, description?: string, type?: 'success' | 'info') => void;
+}
+
+const GalleryCardItem: React.FC<GalleryCardItemProps> = ({
+  item,
+  index,
+  isAdmin,
+  onSelectItem,
+  onTogglePin,
+  onOpenPhotoChanger,
+  onDeleteItem,
+  onAddToast
+}) => {
+  const photos = (Array.isArray(item.images) && item.images.length > 0
+    ? item.images.filter(Boolean)
+    : (item.image ? [item.image] : []));
+  const totalPhotos = photos.length;
+  const [photoIndex, setPhotoIndex] = useState<number>(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const isPinnedItem = !!item.isPinned;
+
+  // Swipe support on card
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null || totalPhotos <= 1) return;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 30) {
+      if (diff > 0) {
+        setPhotoIndex((prev) => (prev < totalPhotos - 1 ? prev + 1 : 0));
+      } else {
+        setPhotoIndex((prev) => (prev > 0 ? prev - 1 : totalPhotos - 1));
+      }
+    }
+    setTouchStartX(null);
+  };
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (totalPhotos <= 1) return;
+    setPhotoIndex((prev) => (prev > 0 ? prev - 1 : totalPhotos - 1));
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (totalPhotos <= 1) return;
+    setPhotoIndex((prev) => (prev < totalPhotos - 1 ? prev + 1 : 0));
+  };
+
+  return (
+    <motion.article
+      layout
+      key={item.id}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ duration: 0.25 }}
+      className={`w-[290px] sm:w-[340px] md:w-[370px] shrink-0 snap-start group relative bg-white rounded-[24px] overflow-hidden border ${
+        isAdmin && isPinnedItem
+          ? 'border-[#F59E0B]/70 shadow-[0_6px_28px_rgba(245,158,11,0.12)] ring-1 ring-[#F59E0B]/30'
+          : 'border-[#E2E8F0] shadow-[0_4px_24px_rgba(2,132,199,0.06)]'
+      } hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col justify-between cursor-pointer`}
+    >
+      {/* Top Pinned Ribbon (Teacher Mode Only) */}
+      {isAdmin && isPinnedItem && (
+        <div className="bg-linear-to-r from-[#D97706] to-[#F59E0B] text-white px-3 py-1 text-[10px] font-extrabold flex items-center justify-between tracking-wider uppercase shadow-xs">
+          <div className="flex items-center gap-1">
+            <Pin className="w-3 h-3 fill-white" />
+            <span>Disematkan Guru (Top {index + 1})</span>
+          </div>
+          <span className="text-[9px] bg-white/20 px-1.5 py-0.2 rounded-full">Pilihan</span>
+        </div>
+      )}
+
+      {/* Image Container with Swipe & Hover Navigation */}
+      <div
+        onClick={() => onSelectItem(item)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative aspect-16/10 w-full overflow-hidden bg-[#E2E8F0] select-none"
+      >
+        <AnimatePresence mode="wait">
+          <motion.img
+            key={photoIndex}
+            src={photos[photoIndex] || item.image}
+            alt={`${item.title} - Foto ${photoIndex + 1}`}
+            referrerPolicy="no-referrer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        </AnimatePresence>
+
+        <div className="absolute inset-0 bg-linear-to-t from-[#0F172A]/75 via-transparent to-transparent opacity-75 group-hover:opacity-85 transition-opacity" />
+
+        {/* Carousel Arrow Left (On Card Hover) */}
+        {totalPhotos > 1 && (
+          <button
+            type="button"
+            onClick={handlePrev}
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-xs cursor-pointer"
+            title="Foto Sebelumnya"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Carousel Arrow Right (On Card Hover) */}
+        {totalPhotos > 1 && (
+          <button
+            type="button"
+            onClick={handleNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-xs cursor-pointer"
+            title="Foto Selanjutnya"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* Category Chip & Multi-Photo Pill */}
+        <div className="absolute top-3 left-3 flex flex-wrap items-center gap-1.5 z-10">
+          <span className="px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider rounded-full bg-white/90 text-[#0F172A] backdrop-blur-xs shadow-xs border border-white/60">
+            {item.category}
+          </span>
+
+          {totalPhotos > 1 && (
+            <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-black/60 text-white backdrop-blur-xs border border-white/20 shadow-xs">
+              <ImageIcon className="w-3 h-3 text-[#38BDF8]" />
+              <span>{photoIndex + 1}/{totalPhotos}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Top Action Tools / Badge / Teacher Pin Toggle */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+          {/* Pin Button for Teachers */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={(e) => onTogglePin(item, e)}
+              className={`p-1.5 rounded-full backdrop-blur-xs shadow-md transition-all flex items-center justify-center cursor-pointer transform hover:scale-110 ${
+                isPinnedItem
+                  ? 'bg-[#F59E0B] text-white hover:bg-[#D97706]'
+                  : 'bg-white/90 text-[#64748B] hover:bg-[#F59E0B] hover:text-white'
+              }`}
+              title={isPinnedItem ? 'Lepas Sematan (Unpin)' : 'Sematkan ke 3 Teratas (Pin)'}
+            >
+              {isPinnedItem ? (
+                <Pin className="w-3.5 h-3.5 fill-white" />
+              ) : (
+                <Pin className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenPhotoChanger(item);
+              }}
+              className="p-1.5 rounded-full bg-white/90 hover:bg-[#0284C7] text-[#0284C7] hover:text-white backdrop-blur-xs shadow-md transition-all cursor-pointer transform hover:scale-110"
+              title="Ganti / Cari Foto via Google atau Unggah"
+            >
+              <Camera className="w-3.5 h-3.5" />
+            </button>
+          )}
+
+          <span className="px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-[#0F172A]/80 text-white backdrop-blur-xs">
+            {item.badge}
+          </span>
+        </div>
+
+        {/* Indicator dots at the bottom of card image */}
+        {totalPhotos > 1 && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-xs">
+            {photos.map((_, idx) => (
+              <span
+                key={idx}
+                className={`h-1.5 rounded-full transition-all ${
+                  photoIndex === idx ? 'w-3.5 bg-[#38BDF8]' : 'w-1.5 bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Video Duration if available */}
+        {item.videoDuration && (
+          <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] backdrop-blur-xs font-mono">
+            <Play className="w-3 h-3 fill-white" />
+            <span>{item.videoDuration}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Content Details */}
+      <div className="p-5 flex-1 flex flex-col justify-between">
+        <div onClick={() => onSelectItem(item)}>
+          <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
+              <span>{item.date}</span>
+            </div>
+            {isAdmin && isPinnedItem && (
+              <span className="text-[10px] font-bold text-[#D97706] flex items-center gap-0.5">
+                <Pin className="w-2.5 h-2.5 fill-[#D97706]" />
+                <span>Pinned</span>
+              </span>
+            )}
+          </div>
+
+          <h3 className="text-sm sm:text-base font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#0284C7] transition-colors mb-1.5 line-clamp-2">
+            {item.title}
+          </h3>
+
+          <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2 mb-3">
+            {item.description}
+          </p>
+        </div>
+
+        <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
+          <button
+            onClick={() => onSelectItem(item)}
+            className="text-xs font-semibold text-[#0284C7] group-hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Buka Detail ({totalPhotos} Foto)</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
+          
+          <div className="flex items-center gap-1.5">
+            <WhatsAppShareButton
+              onClick={(e) => {
+                e.stopPropagation();
+                sharePraktikumToWhatsApp(item);
+                onAddToast('Membuka WhatsApp', `Membagikan praktikum "${item.title}" ke WhatsApp.`, 'info');
+              }}
+              size="icon"
+              title="Bagikan Praktikum ke WhatsApp"
+            />
+            {isAdmin && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteItem(item);
+                }}
+                className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
+                title="Hapus Foto Praktikum"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            )}
+            <button
+              onClick={() => onSelectItem(item)}
+              className="p-1.5 rounded-full bg-[#F4F8FC] text-[#64748B] group-hover:bg-[#E0F2FE] group-hover:text-[#0284C7] transition-colors cursor-pointer"
+              title="Buka Detail Praktikum"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+};
+
 interface GallerySectionProps {
   onSelectItem: (item: GalleryItem) => void;
   items?: GalleryItem[];
@@ -98,13 +377,13 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [searchQuery, setSearchQuery] = useState<string>('');
-
-  // Horizontal carousel ref & scroll state for Photos
+  
+  // Horizontal Carousel scroll controls
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Horizontal carousel ref & scroll state for Videos
+  // Video Horizontal Carousel scroll controls
   const videoCarouselRef = useRef<HTMLDivElement | null>(null);
   const [canScrollVideoLeft, setCanScrollVideoLeft] = useState(false);
   const [canScrollVideoRight, setCanScrollVideoRight] = useState(true);
@@ -123,7 +402,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   const [passcodeAttempt, setPasscodeAttempt] = useState('');
   const [passcodeError, setPasscodeError] = useState(false);
 
-  // Upload Photo Modal state
+  // Upload Photo Modal state (Multiple Photos Support)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [formCategory, setFormCategory] = useState<string>('Indikator Alami');
@@ -141,7 +420,10 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     'Sampel zat uji dan pereaksi standar'
   ]);
   const [formResults, setFormResults] = useState('Reaksi kimia teramati dan terdata dengan baik.');
-  const [formImageUrl, setFormImageUrl] = useState('');
+  
+  // Multi-image state for upload form
+  const [formImages, setFormImages] = useState<string[]>([]);
+  const [customPhotoUrlInput, setCustomPhotoUrlInput] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [itemToDelete, setItemToDelete] = useState<GalleryItem | null>(null);
@@ -437,44 +719,75 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     setFormSteps(formSteps.filter((_, i) => i !== index));
   };
 
+  // Multi-file upload handler
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      onAddToast('Format Tidak Didukung', 'Harap pilih file gambar (JPG, PNG, WebP).', 'info');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      onAddToast('Ukuran Terlalu Besar', 'Maksimal ukuran foto adalah 10MB.', 'info');
-      return;
-    }
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
     setUploadProgress(10);
+    const newUrls: string[] = [];
 
-    try {
-      const downloadUrl = await uploadFileToFirebaseStorage(
-        file,
-        STORAGE_FOLDERS.GALLERY_IMAGES,
-        (progress) => setUploadProgress(progress)
-      );
-      setFormImageUrl(downloadUrl);
-      onAddToast('Foto Lab Terunggah', 'Foto berhasil disimpan di Firebase Storage (catatan_foto/galeri).', 'success');
-    } catch (err) {
-      console.warn('Firebase Storage upload error:', err);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormImageUrl(event.target?.result as string);
-        onAddToast('Foto Disimpan Lokal', 'Foto tersimpan untuk pengunggahan.', 'info');
-      };
-      reader.readAsDataURL(file);
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
-      e.target.value = '';
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) continue;
+      if (file.size > 12 * 1024 * 1024) continue;
+
+      try {
+        const downloadUrl = await uploadFileToFirebaseStorage(
+          file,
+          STORAGE_FOLDERS.GALLERY_IMAGES,
+          (progress) => {
+            const overall = Math.round(((i + progress / 100) / files.length) * 100);
+            setUploadProgress(overall);
+          }
+        );
+        newUrls.push(downloadUrl);
+      } catch (err) {
+        console.warn('Firebase Storage upload fallback:', err);
+        const reader = new FileReader();
+        await new Promise<void>((resolve) => {
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              newUrls.push(event.target.result as string);
+            }
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        });
+      }
     }
+
+    if (newUrls.length > 0) {
+      setFormImages((prev) => [...prev, ...newUrls]);
+      onAddToast('Foto Lab Terunggah', `${newUrls.length} foto berhasil dimasukkan ke album postingan.`, 'success');
+    } else {
+      onAddToast('Tidak Ada Foto Terpilih', 'Harap pilih file gambar yang valid (JPG, PNG, WebP).', 'info');
+    }
+
+    setIsUploading(false);
+    setUploadProgress(0);
+    e.target.value = '';
+  };
+
+  const handleAddCustomPhotoUrl = () => {
+    if (!customPhotoUrlInput.trim()) return;
+    setFormImages((prev) => [...prev, customPhotoUrlInput.trim()]);
+    setCustomPhotoUrlInput('');
+    onAddToast('Tautan Foto Ditambahkan', 'Foto berhasil ditambahkan ke daftar postingan.', 'info');
+  };
+
+  const handleRemoveFormPhoto = (idx: number) => {
+    setFormImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSetFormCoverPhoto = (idx: number) => {
+    setFormImages((prev) => {
+      const target = prev[idx];
+      const rest = prev.filter((_, i) => i !== idx);
+      return [target, ...rest];
+    });
+    onAddToast('Sampul Diubah', 'Foto ini sekarang menjadi sampul utama postingan.', 'info');
   };
 
   const handleSavePhoto = (e: React.FormEvent) => {
@@ -483,11 +796,14 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
       onAddToast('Judul Diperlukan', 'Harap isi judul eksperimen.', 'info');
       return;
     }
-    if (!formImageUrl) {
-      onAddToast('Foto Diperlukan', 'Harap unggah foto dokumentasi praktikum atau pilih foto sampel terlebih dahulu.', 'info');
+
+    const cleanImages = formImages.filter(Boolean);
+    if (cleanImages.length === 0) {
+      onAddToast('Foto Diperlukan', 'Harap unggah minimal 1 foto dokumentasi praktikum atau pilih foto sampel terlebih dahulu.', 'info');
       return;
     }
 
+    const primaryImage = cleanImages[0];
     const now = new Date();
     const dateFormatted = `${now.getDate()} ${
       ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][now.getMonth()]
@@ -502,7 +818,8 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
       category: (formCategory.trim() || 'Eksperimen Lab') as any,
       badge: formBadge.trim() || 'Praktikum Kimia',
       isPinned: formIsPinned,
-      image: formImageUrl,
+      image: primaryImage,
+      images: cleanImages,
       chemistryConcept: formConcept.trim() || 'Eksperimen & Reaksi Kimia',
       description: formDescription.trim() || 'Dokumentasi kegiatan praktikum siswa di laboratorium kimia SMA.',
       date: dateFormatted,
@@ -519,12 +836,12 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     setFormTitle('');
     setFormConcept('');
     setFormDescription('');
-    setFormImageUrl('');
+    setFormImages([]);
     setFormIsPinned(false);
     setAutoGeneratedNotice(null);
     onAddToast(
       'Dokumentasi Ditambahkan',
-      `Foto "${newItem.title}" tersimpan di Firebase Firestore & Storage${formIsPinned ? ' dan disematkan di posisi teratas' : ''}.`,
+      `Foto "${newItem.title}" (${cleanImages.length} foto) tersimpan di Firebase Firestore & Storage${formIsPinned ? ' dan disematkan di posisi teratas' : ''}.`,
       'success'
     );
   };
@@ -538,332 +855,129 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
           <div>
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-white border border-[#E2E8F0] text-[#0F172A] text-xs font-semibold mb-3 shadow-2xs">
               <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-              <span className="uppercase tracking-widest text-[10px] text-[#0284C7] font-bold">Dokumentasi Praktik & Media</span>
+              <span className="uppercase tracking-wider text-[11px] font-bold">Laboratorium & Aktivitas</span>
             </div>
             <h2 className="text-3xl sm:text-4xl font-light font-heading text-[#0F172A] tracking-tight">
-              Galeri <span className="font-semibold text-[#0284C7]">Praktikum</span>
+              Galeri <span className="font-semibold text-[#0284C7]">Praktikum Kimia</span>
             </h2>
-            <p className="text-[#64748B] text-sm sm:text-base mt-2 max-w-xl">
-              Dokumentasi nyata kegiatan praktikum kimia siswa. Dari uji indikator alami dapur hingga titrasi presisi laboratorium.
+            <p className="text-[#64748B] text-sm mt-2 max-w-xl leading-relaxed">
+              Dokumentasi autentik pembelajaran berbasis eksperimen, demonstrasi fenomena mikroskopis, dan karya kreatif laboratorium siswa SMA.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Search bar */}
-            <div className="relative w-full md:w-72">
-              <Search className="w-4 h-4 text-[#0284C7] absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari eksperimen (kunyit, titrasi)..."
-                className="w-full pl-9 pr-4 py-2.5 text-xs sm:text-sm rounded-full bg-white border border-[#E2E8F0] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] text-[#0F172A] placeholder:text-[#94A3B8] shadow-2xs transition-all"
-              />
-            </div>
-
-            {/* Upload Photo & Add Video Buttons (Mode Guru Only) */}
+          {/* Action Button for Teacher Upload */}
+          <div className="flex items-center gap-3">
             {isAdmin ? (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsUploadModalOpen(true);
-                    setAutoGeneratedNotice(null);
-                  }}
-                  className="px-3.5 sm:px-4 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
-                  title="Unggah Foto Dokumentasi Praktikum"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Unggah Foto Lab</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setVideoToEdit(null);
-                    setIsAddVideoModalOpen(true);
-                  }}
-                  className="px-3.5 sm:px-4 py-2.5 rounded-full bg-[#DC2626] hover:bg-[#B91C1C] text-white text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition-all shadow-xs shrink-0 cursor-pointer"
-                  title="Tambah / Masukkan Link Video YouTube"
-                >
-                  <Play className="w-3.5 h-3.5 fill-white" />
-                  <span>+ Video YouTube</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormImages([]);
+                  setIsUploadModalOpen(true);
+                }}
+                className="px-5 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold text-xs shadow-xs flex items-center gap-2 transition-all cursor-pointer transform hover:-translate-y-0.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>+ Upload Dokumentasi (Bisa Multi-Foto)</span>
+              </button>
             ) : (
               <button
                 type="button"
                 onClick={() => setIsAdminModalOpen(true)}
-                className="px-3.5 py-2.5 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0284C7] border border-[#CBD5E1] text-xs font-semibold flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer shadow-2xs"
-                title="Masuk mode pengajar untuk mengelola galeri dan video praktikum"
+                className="px-4 py-2 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0284C7] border border-[#CBD5E1] font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                title="Akses akun guru untuk mengunggah dokumentasi lab"
               >
                 <Lock className="w-3.5 h-3.5 text-[#0284C7]" />
-                <span className="hidden sm:inline">Akses Guru</span>
+                <span>Upload Foto (Guru)</span>
               </button>
             )}
+
+            {/* Scroll Navigation Buttons for Desktop */}
+            <div className="hidden sm:flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handleScrollCarousel('left')}
+                disabled={!canScrollLeft}
+                className="p-2 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] border border-[#CBD5E1] disabled:opacity-40 cursor-pointer transition-colors shadow-2xs"
+                title="Geser Galeri ke Kiri"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleScrollCarousel('right')}
+                disabled={!canScrollRight}
+                className="p-2 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] border border-[#CBD5E1] disabled:opacity-40 cursor-pointer transition-colors shadow-2xs"
+                title="Geser Galeri ke Kanan"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none">
-          {dynamicCategories.map((cat) => {
-            const isActive = selectedCategory === cat;
-            return (
+        {/* Filter Bar & Search */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 bg-white p-3 rounded-2xl border border-[#E2E8F0] shadow-2xs">
+          {/* Category Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 scrollbar-none">
+            {dynamicCategories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? 'bg-[#0284C7] text-white shadow-xs'
-                    : 'bg-white text-[#64748B] hover:bg-[#E0F2FE] hover:text-[#0284C7] border border-[#E2E8F0]'
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-[#0284C7] text-white shadow-2xs'
+                    : 'bg-[#F1F5F9] text-[#64748B] hover:bg-[#E0F2FE] hover:text-[#0284C7]'
                 }`}
               >
                 {cat}
               </button>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        {/* Pinned Info & Navigation Sub-Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-2 border-b border-[#E2E8F0]/70">
-          <div className="flex items-center gap-2">
-            {isAdmin ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] text-xs font-bold shadow-2xs">
-                <Pin className="w-3.5 h-3.5 fill-[#D97706] text-[#D97706]" />
-                <span>{pinnedItemsCount > 0 ? `${pinnedItemsCount} Postingan Tersemat (Menu Guru)` : 'Dokumentasi Lab'}</span>
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F0F9FF] text-[#0284C7] border border-[#BAE6FD] text-xs font-semibold shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-[#0284C7]" />
-                <span>Galeri Eksperimen Kimia</span>
-              </span>
+          {/* Search Box */}
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Cari topik praktikum..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 rounded-full bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:border-[#0284C7] focus:bg-white transition-colors"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#0F172A]"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             )}
-            <span className="text-xs text-[#64748B] hidden sm:inline">
-              · Geser horizontal untuk melihat seluruh {filteredAndSortedItems.length} dokumentasi praktikum
-            </span>
-          </div>
-
-          {/* Navigation Scroll Buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleScrollCarousel('left')}
-              disabled={!canScrollLeft}
-              className="p-2 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] hover:text-[#0284C7] border border-[#CBD5E1] shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-              title="Geser ke kiri"
-              aria-label="Geser ke kiri"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleScrollCarousel('right')}
-              disabled={!canScrollRight}
-              className="p-2 rounded-full bg-white hover:bg-[#E0F2FE] text-[#0F172A] hover:text-[#0284C7] border border-[#CBD5E1] shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
-              title="Geser ke kanan"
-              aria-label="Geser ke kanan"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
-        {/* Single Row Horizontal Scrollable Carousel */}
-        <div className="relative group/carousel">
-          {/* Floating Left Scroll Button (Desktop) */}
-          <button
-            type="button"
-            onClick={() => handleScrollCarousel('left')}
-            disabled={!canScrollLeft}
-            className={`hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-20 w-11 h-11 rounded-full bg-white text-[#0F172A] border border-[#CBD5E1] shadow-xl hover:bg-[#0284C7] hover:text-white hover:border-[#0284C7] items-center justify-center transition-all cursor-pointer disabled:opacity-0 disabled:pointer-events-none`}
-            aria-label="Geser ke Kiri"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-
-          {/* Floating Right Scroll Button (Desktop) */}
-          <button
-            type="button"
-            onClick={() => handleScrollCarousel('right')}
-            disabled={!canScrollRight}
-            className={`hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-20 w-11 h-11 rounded-full bg-white text-[#0F172A] border border-[#CBD5E1] shadow-xl hover:bg-[#0284C7] hover:text-white hover:border-[#0284C7] items-center justify-center transition-all cursor-pointer disabled:opacity-0 disabled:pointer-events-none`}
-            aria-label="Geser ke Kanan"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-
-          {/* Horizontal Row Container */}
+        {/* ========================================================================= */}
+        {/* BARIS 1: FOTO DOKUMENTASI PRAKTIKUM (Carousel dengan Swipe & Multi-Foto) */}
+        {/* ========================================================================= */}
+        <div className="relative group/carousel-container">
           <div
             ref={carouselRef}
-            onScroll={checkScrollState}
-            className="flex flex-row overflow-x-auto gap-5 sm:gap-6 pb-6 pt-2 snap-x snap-mandatory scroll-smooth custom-scrollbar focus:outline-none"
+            className="flex gap-6 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-[#CBD5E1] scrollbar-track-transparent scroll-smooth"
             style={{ scrollbarWidth: 'thin' }}
           >
             <AnimatePresence>
-              {filteredAndSortedItems.map((item, index) => {
-                const isPinnedItem = !!item.isPinned;
-                return (
-                  <motion.article
-                    layout
-                    key={item.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.25 }}
-                    className={`w-[290px] sm:w-[340px] md:w-[370px] shrink-0 snap-start group relative bg-white rounded-[24px] overflow-hidden border ${
-                      isAdmin && isPinnedItem
-                        ? 'border-[#F59E0B]/70 shadow-[0_6px_28px_rgba(245,158,11,0.12)] ring-1 ring-[#F59E0B]/30'
-                        : 'border-[#E2E8F0] shadow-[0_4px_24px_rgba(2,132,199,0.06)]'
-                    } hover:shadow-lg hover:border-[#0284C7]/40 transition-all duration-300 flex flex-col justify-between cursor-pointer`}
-                  >
-                    {/* Top Pinned Ribbon (Teacher Mode Only) */}
-                    {isAdmin && isPinnedItem && (
-                      <div className="bg-linear-to-r from-[#D97706] to-[#F59E0B] text-white px-3 py-1 text-[10px] font-extrabold flex items-center justify-between tracking-wider uppercase shadow-xs">
-                        <div className="flex items-center gap-1">
-                          <Pin className="w-3 h-3 fill-white" />
-                          <span>Disematkan Guru (Top {index + 1})</span>
-                        </div>
-                        <span className="text-[9px] bg-white/20 px-1.5 py-0.2 rounded-full">Pilihan</span>
-                      </div>
-                    )}
-
-                    {/* Image Container */}
-                    <div
-                      onClick={() => onSelectItem(item)}
-                      className="relative aspect-16/10 w-full overflow-hidden bg-[#E2E8F0]"
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-linear-to-t from-[#0F172A]/75 via-transparent to-transparent opacity-75 group-hover:opacity-85 transition-opacity" />
-                      
-                      {/* Category Chip */}
-                      <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider rounded-full bg-white/90 text-[#0F172A] backdrop-blur-xs shadow-xs border border-white/60">
-                        {item.category}
-                      </span>
-
-                      {/* Top Action Tools / Badge / Teacher Pin Toggle */}
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
-                        {/* Pin Button for Teachers */}
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => handleTogglePin(item, e)}
-                            className={`p-1.5 rounded-full backdrop-blur-xs shadow-md transition-all flex items-center justify-center cursor-pointer transform hover:scale-110 ${
-                              isPinnedItem
-                                ? 'bg-[#F59E0B] text-white hover:bg-[#D97706]'
-                                : 'bg-white/90 text-[#64748B] hover:bg-[#F59E0B] hover:text-white'
-                            }`}
-                            title={isPinnedItem ? 'Lepas Sematan (Unpin)' : 'Sematkan ke 3 Teratas (Pin)'}
-                          >
-                            {isPinnedItem ? (
-                              <Pin className="w-3.5 h-3.5 fill-white" />
-                            ) : (
-                              <Pin className="w-3.5 h-3.5" />
-                            )}
-                          </button>
-                        )}
-
-                        {isAdmin && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setItemForPhotoChange(item);
-                            }}
-                            className="p-1.5 rounded-full bg-white/90 hover:bg-[#0284C7] text-[#0284C7] hover:text-white backdrop-blur-xs shadow-md transition-all cursor-pointer transform hover:scale-110"
-                            title="Ganti / Cari Foto via Google atau Unggah"
-                          >
-                            <Camera className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-
-                        <span className="px-2.5 py-0.5 text-[10px] font-medium rounded-full bg-[#0F172A]/80 text-white backdrop-blur-xs">
-                          {item.badge}
-                        </span>
-                      </div>
-
-                      {/* Video Duration if available */}
-                      {item.videoDuration && (
-                        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/60 text-white text-[10px] backdrop-blur-xs font-mono">
-                          <Play className="w-3 h-3 fill-white" />
-                          <span>{item.videoDuration}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Content Details */}
-                    <div className="p-5 flex-1 flex flex-col justify-between">
-                      <div onClick={() => onSelectItem(item)}>
-                        <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-[#0284C7]" />
-                            <span>{item.date}</span>
-                          </div>
-                          {isAdmin && isPinnedItem && (
-                            <span className="text-[10px] font-bold text-[#D97706] flex items-center gap-0.5">
-                              <Pin className="w-2.5 h-2.5 fill-[#D97706]" />
-                              <span>Pinned</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <h3 className="text-sm sm:text-base font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#0284C7] transition-colors mb-1.5 line-clamp-2">
-                          {item.title}
-                        </h3>
-
-                        <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2 mb-3">
-                          {item.description}
-                        </p>
-                      </div>
-
-                      <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
-                        <button
-                          onClick={() => onSelectItem(item)}
-                          className="text-xs font-semibold text-[#0284C7] group-hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <span>Baca lebih lengkap</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
-                        
-                        <div className="flex items-center gap-1.5">
-                          <WhatsAppShareButton
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              sharePraktikumToWhatsApp(item);
-                              onAddToast('Membuka WhatsApp', `Membagikan praktikum "${item.title}" ke WhatsApp.`, 'info');
-                            }}
-                            size="icon"
-                            title="Bagikan Praktikum ke WhatsApp"
-                          />
-                          {isAdmin && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setItemToDelete(item);
-                              }}
-                              className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
-                              title="Hapus Foto Praktikum"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => onSelectItem(item)}
-                            className="p-1.5 rounded-full bg-[#F4F8FC] text-[#64748B] group-hover:bg-[#E0F2FE] group-hover:text-[#0284C7] transition-colors cursor-pointer"
-                            title="Buka Detail Praktikum"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.article>
-                );
-              })}
+              {filteredAndSortedItems.map((item, index) => (
+                <GalleryCardItem
+                  key={item.id}
+                  item={item}
+                  index={index}
+                  isAdmin={isAdmin}
+                  onSelectItem={onSelectItem}
+                  onTogglePin={handleTogglePin}
+                  onOpenPhotoChanger={(it) => setItemForPhotoChange(it)}
+                  onDeleteItem={(it) => setItemToDelete(it)}
+                  onAddToast={onAddToast}
+                />
+              ))}
             </AnimatePresence>
           </div>
         </div>
@@ -914,7 +1028,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                 setSearchQuery('');
                 setSelectedCategory('Semua');
               }}
-              className="mt-3 px-5 py-2 text-xs font-bold text-white bg-[#0284C7] rounded-full"
+              className="mt-3 px-5 py-2 text-xs font-bold text-white bg-[#0284C7] rounded-full cursor-pointer"
             >
               Reset Pencarian
             </button>
@@ -1050,72 +1164,71 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                           </span>
                         </div>
 
-                        {/* Bottom Duration Badge & Teacher Actions */}
-                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                          {vid.duration ? (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-black/75 text-white flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-[#F87171]" />
-                              <span>{vid.duration}</span>
-                            </span>
-                          ) : <span />}
+                        {/* Teacher Pin & Edit Controls Overlay */}
+                        {isAdmin && (
+                          <div
+                            className="absolute top-3 right-3 flex items-center gap-1.5 z-20"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleTogglePinVideo(vid)}
+                              className={`p-1.5 rounded-full backdrop-blur-xs shadow-md transition-all flex items-center justify-center cursor-pointer ${
+                                isVidPinned
+                                  ? 'bg-[#EF4444] text-white hover:bg-[#DC2626]'
+                                  : 'bg-white/90 text-[#64748B] hover:bg-[#EF4444] hover:text-white'
+                              }`}
+                              title={isVidPinned ? 'Lepas Sematan Video' : 'Sematkan Video ke Posisi Depan'}
+                            >
+                              <Pin className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVideoToEdit(vid);
+                                setIsAddVideoModalOpen(true);
+                              }}
+                              className="p-1.5 rounded-full bg-white/90 hover:bg-[#DC2626] text-[#DC2626] hover:text-white backdrop-blur-xs shadow-md transition-all cursor-pointer"
+                              title="Edit Detail & URL Video YouTube"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setVideoToDelete(vid)}
+                              className="p-1.5 rounded-full bg-white/90 hover:bg-[#EF4444] text-[#64748B] hover:text-white backdrop-blur-xs shadow-md transition-all cursor-pointer"
+                              title="Hapus Video dari Koleksi"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
 
-                          {/* Teacher Edit / Pin controls on video card */}
-                          {isAdmin && (
-                            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                              <button
-                                type="button"
-                                onClick={() => handleTogglePinVideo(vid)}
-                                className={`p-1.5 rounded-full backdrop-blur-xs transition-colors cursor-pointer shadow-xs ${
-                                  isVidPinned
-                                    ? 'bg-[#EF4444] text-white'
-                                    : 'bg-black/60 text-white/80 hover:bg-black/80 hover:text-white'
-                                }`}
-                                title={isVidPinned ? 'Lepas Sematan Video' : 'Sematkan Video ke Depan'}
-                              >
-                                <Pin className="w-3 h-3" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setVideoToEdit(vid);
-                                  setIsAddVideoModalOpen(true);
-                                }}
-                                className="p-1.5 rounded-full bg-black/60 hover:bg-[#0284C7] text-white backdrop-blur-xs transition-colors cursor-pointer shadow-xs"
-                                title="Edit Link YouTube & Judul"
-                              >
-                                <Edit3 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )}
+                        {/* Bottom Metadata inside thumbnail */}
+                        <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white text-[11px] font-medium pointer-events-none">
+                          <span className="px-2 py-0.5 rounded bg-black/60 backdrop-blur-xs text-[10px] font-mono">
+                            {vid.duration}
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-[#DC2626]/80 text-white text-[10px] font-semibold">
+                            {vid.badge || 'Semua Kelas'}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Video Information Body */}
+                      {/* Video Card Content */}
                       <div className="p-5 flex-1 flex flex-col justify-between">
                         <div>
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[11px] font-medium text-[#64748B] flex items-center gap-1">
-                                <Calendar className="w-3 h-3 text-[#0284C7]" />
-                                <span>{vid.date}</span>
-                              </span>
-                              {vid.badge && (
-                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#E0F2FE] text-[#0284C7] border border-[#BAE6FD]">
-                                  {vid.badge}
-                                </span>
-                              )}
-                            </div>
-                            {isVidPinned && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF2F2] text-[#DC2626] border border-[#FECACA]">
-                                <Pin className="w-2.5 h-2.5 fill-[#DC2626]" />
-                                <span>Disematkan</span>
-                              </span>
-                            )}
+                          <div className="flex items-center gap-2 text-xs text-[#64748B] mb-1.5">
+                            <span className="px-2 py-0.5 rounded-md bg-[#FEF2F2] text-[#DC2626] text-[10px] font-bold">
+                              {vid.category}
+                            </span>
+                            <span>•</span>
+                            <span>{vid.badge || 'Kimia SMA'}</span>
                           </div>
 
                           <h4
                             onClick={() => setSelectedVideoForPlay(vid)}
-                            className="text-sm sm:text-base font-bold font-heading text-[#0F172A] leading-snug group-hover:text-[#DC2626] transition-colors mb-2 line-clamp-2 cursor-pointer"
+                            className="text-sm sm:text-base font-bold text-[#0F172A] group-hover:text-[#DC2626] transition-colors leading-snug line-clamp-2 mb-2 cursor-pointer"
                           >
                             {vid.title}
                           </h4>
@@ -1123,69 +1236,29 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                           <p className="text-xs text-[#64748B] leading-relaxed line-clamp-2 mb-3">
                             {vid.description}
                           </p>
-
-                          {vid.chemistryConcept && (
-                            <div className="mb-3 px-2.5 py-1.5 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] flex items-start gap-1.5 text-[11px] text-[#166534]">
-                              <Atom className="w-3.5 h-3.5 text-[#16A34A] shrink-0 mt-0.5" />
-                              <span className="line-clamp-1"><strong>Konsep:</strong> {vid.chemistryConcept}</span>
-                            </div>
-                          )}
                         </div>
 
-                        {/* Video Card Footer Actions */}
+                        {/* Bottom Actions */}
                         <div className="pt-3 border-t border-[#E2E8F0] flex items-center justify-between">
                           <button
                             type="button"
                             onClick={() => setSelectedVideoForPlay(vid)}
-                            className="text-xs font-bold text-[#DC2626] hover:text-[#B91C1C] flex items-center gap-1.5 cursor-pointer group-hover:underline"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#DC2626] hover:underline cursor-pointer"
                           >
                             <Play className="w-3.5 h-3.5 fill-[#DC2626]" />
                             <span>Putar Video</span>
                           </button>
 
-                          <div className="flex items-center gap-1.5">
-                            {/* WhatsApp share */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const text = `Tonton Video Praktikum Kimia: *${vid.title}*\nKategori: ${vid.category}\nLink: ${vid.youtubeUrl || getYouTubeWatchUrl(vid.youtubeId)}\n\nPortal Pembelajaran Kelas Pak Hafiz: https://www.kelaspakhafiz.my.id/`;
-                                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
-                                onAddToast('Membuka WhatsApp', `Membagikan video "${vid.title}" ke WhatsApp.`, 'info');
-                              }}
-                              className="p-1.5 rounded-full bg-[#DCFCE7] text-[#16A34A] hover:bg-[#16A34A] hover:text-white transition-colors cursor-pointer"
-                              title="Bagikan Video ke WhatsApp"
-                            >
-                              <PlayCircle className="w-3.5 h-3.5" />
-                            </button>
-
-                            {/* Direct YouTube link */}
-                            <a
-                              href={vid.youtubeUrl || getYouTubeWatchUrl(vid.youtubeId)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="p-1.5 rounded-full bg-[#F1F5F9] text-[#64748B] hover:bg-[#DC2626] hover:text-white transition-colors cursor-pointer"
-                              title="Buka langsung di YouTube"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </a>
-
-                            {/* Admin Delete Video */}
-                            {isAdmin && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setVideoToDelete(vid);
-                                }}
-                                className="p-1.5 rounded-full bg-[#FEE2E2] text-[#EF4444] hover:bg-[#EF4444] hover:text-white transition-colors cursor-pointer"
-                                title="Hapus Video YouTube"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
-                          </div>
+                          <a
+                            href={getYouTubeWatchUrl(vid.youtubeId)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-full bg-[#F8FAFC] text-[#64748B] hover:bg-[#FEF2F2] hover:text-[#DC2626] transition-colors cursor-pointer"
+                            title="Buka langsung di YouTube"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
                         </div>
                       </div>
                     </motion.article>
@@ -1194,40 +1267,16 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               </AnimatePresence>
             </div>
           </div>
-
-          {/* Video bottom scroll helper */}
-          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#64748B]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#DC2626] animate-pulse" />
-              <span>
-                Menampilkan <strong>{videos.length}</strong> video praktikum YouTube interaktif. Pilih dan putar langsung atau kelola melalui akun guru.
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setVideoToEdit(null);
-                    setIsAddVideoModalOpen(true);
-                  }}
-                  className="text-xs font-bold text-[#DC2626] hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Play className="w-3 h-3 fill-[#DC2626]" />
-                  <span>+ Masukkan Link YouTube Guru</span>
-                </button>
-              )}
-            </div>
-          </div>
         </div>
 
       </div>
 
-      {/* Upload New Lab Photo Modal */}
+      {/* ========================================================================= */}
+      {/* MODAL UPLOAD DOKUMENTASI (MULTI-FOTO SUPPORT & FIREBASE STORAGE) */}
+      {/* ========================================================================= */}
       <AnimatePresence>
         {isUploadModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1236,107 +1285,85 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               className="fixed inset-0 bg-black/60 backdrop-blur-xs"
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="relative w-full max-w-2xl bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-5 sm:p-7 max-h-[92vh] overflow-y-auto z-10 my-auto"
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl bg-white rounded-[28px] shadow-2xl border border-[#CBD5E1] p-6 sm:p-8 z-10 my-auto max-h-[90vh] overflow-y-auto"
             >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-[#E2E8F0] mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-full bg-[#E0F2FE] flex items-center justify-center text-[#0284C7] shadow-xs">
-                    <FlaskConical className="w-5 h-5" />
+              <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#E0F2FE] text-[#0284C7] flex items-center justify-center">
+                    <CloudUpload className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-[#0F172A] font-heading flex items-center gap-2">
-                      <span>Unggah Foto Eksperimen Lab</span>
-                      <span className="px-2 py-0.5 rounded-full bg-[#E0F2FE] text-[#0369A1] text-[10px] font-bold">
-                        Mode Pengajar
-                      </span>
+                    <h3 className="text-base sm:text-lg font-bold text-[#0F172A] font-heading">
+                      Tambah Dokumentasi Praktikum
                     </h3>
-                    <p className="text-xs text-[#64748B]">Dokumentasi praktikum dengan pembuatan deskripsi & reaksi otomatis</p>
+                    <p className="text-xs text-[#64748B]">Bisa memuat beberapa foto sekaligus dalam satu postingan</p>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setIsUploadModalOpen(false)}
-                  className="p-2 rounded-full hover:bg-[#F1F5F9] text-[#64748B] transition-colors cursor-pointer"
+                  className="p-1.5 rounded-full text-[#64748B] hover:bg-[#F1F5F9] cursor-pointer"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Smart Auto-Generate Feature Banner */}
-              <div className="p-3.5 rounded-2xl bg-linear-to-r from-[#F0F9FF] to-[#E0F2FE] border border-[#BAE6FD] mb-4 shadow-2xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-xl bg-[#0284C7] text-white flex items-center justify-center shadow-xs shrink-0">
-                      <Wand2 className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-bold text-[#0369A1] flex items-center gap-1.5">
-                        <span>Fitur Cerdas Otomatis Dokumentasi Lab</span>
-                        <span className="px-1.5 py-0.2 rounded bg-white text-[#0284C7] text-[10px] font-extrabold">AI Lab</span>
-                      </h4>
-                      <p className="text-[11px] text-[#0F172A]/70">
-                        Ketik judul praktikum atau pilih topik di bawah untuk mengisi deskripsi, prosedur singkat, & reaksi kimia otomatis!
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setIsAutoFillEnabled(!isAutoFillEnabled)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-1.5 transition-all self-start sm:self-auto cursor-pointer ${
-                      isAutoFillEnabled
-                        ? 'bg-[#0284C7] text-white shadow-xs'
-                        : 'bg-white text-[#64748B] border border-[#CBD5E1]'
-                    }`}
-                  >
-                    <Zap className={`w-3.5 h-3.5 ${isAutoFillEnabled ? 'fill-white text-white' : 'text-[#64748B]'}`} />
-                    <span>{isAutoFillEnabled ? 'Auto-Generate Aktif' : 'Manual'}</span>
-                  </button>
-                </div>
-
-                {/* Quick 1-Click Lab Presets */}
-                <div className="pt-2 border-t border-[#BAE6FD]/70">
-                  <span className="text-[10px] font-bold text-[#0369A1] uppercase tracking-wider block mb-1.5">
-                    ⚡ Pilihan Cepat Eksperimen Kimia Populer:
+              {/* 1-Click Preset Experiments */}
+              <div className="mb-4 p-3 rounded-2xl bg-[#F0F9FF] border border-[#BAE6FD]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-[#0369A1] flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-[#0284C7]" />
+                    <span>Pilihan Cepat Eksperimen Lab Kimia (1-Klik):</span>
                   </span>
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                    {QUICK_LAB_EXPERIMENT_PRESETS.map((preset, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleApplyLabPreset(preset)}
-                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-[11px] font-semibold transition-all border border-[#BAE6FD] whitespace-nowrap shadow-2xs cursor-pointer flex items-center gap-1 shrink-0"
-                        title={preset.title}
-                      >
-                        <span>{preset.iconLabel}</span>
-                      </button>
-                    ))}
-                  </div>
+                  <label className="text-[11px] font-semibold text-[#0369A1] flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isAutoFillEnabled}
+                      onChange={(e) => setIsAutoFillEnabled(e.target.checked)}
+                      className="rounded text-[#0284C7]"
+                    />
+                    <span>Sinkronisasi Otomatis</span>
+                  </label>
                 </div>
-
-                {autoGeneratedNotice && (
-                  <div className="mt-2 text-[11px] font-bold text-[#0369A1] bg-white/80 px-2.5 py-1 rounded-md border border-[#BAE6FD] flex items-center gap-1.5 animate-fadeIn">
-                    <CheckCheck className="w-3.5 h-3.5 text-[#0284C7]" />
-                    <span>{autoGeneratedNotice}</span>
-                  </div>
-                )}
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {QUICK_LAB_EXPERIMENT_PRESETS.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleApplyLabPreset(preset)}
+                      className="p-2 rounded-xl bg-white hover:bg-[#E0F2FE] border border-[#BAE6FD] text-left transition-all group cursor-pointer"
+                    >
+                      <div className="font-bold text-[11px] text-[#0F172A] group-hover:text-[#0284C7] truncate">
+                        {preset.iconLabel}
+                      </div>
+                      <div className="text-[9px] text-[#64748B] truncate">{preset.category}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <form onSubmit={handleSavePhoto} className="space-y-4 text-xs">
-                {/* Judul Praktikum */}
+              {autoGeneratedNotice && (
+                <div className="mb-4 p-2.5 rounded-xl bg-[#DCFCE7] border border-[#86EFAC] text-xs font-semibold text-[#166534] flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#16A34A] shrink-0" />
+                  <span>{autoGeneratedNotice}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSavePhoto} className="space-y-4">
+                
+                {/* Judul Eksperimen */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-[#0F172A]">
-                      Judul Praktikum / Eksperimen <span className="text-[#EF4444]">*</span>
+                      Judul Eksperimen / Topik Praktikum <span className="text-[#EF4444]">*</span>
                     </label>
                     <button
                       type="button"
                       onClick={() => handleAutoGenerateLabContent()}
-                      className="px-2.5 py-1 rounded-md bg-[#E0F2FE] hover:bg-[#0284C7] text-[#0369A1] hover:text-white text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer border border-[#BAE6FD]"
-                      title="Isi otomatis deskripsi, prosedur, dan konsep reaksi kimia dari judul"
+                      className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <Wand2 className="w-3.5 h-3.5" />
                       <span>✨ Buat Otomatis dari Judul</span>
@@ -1354,7 +1381,6 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
 
                 {/* Kategori Manual dengan Suggestion & Badge */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {/* Category with Manual Input + Interactive Suggestions */}
                   <div className="relative">
                     <div className="flex items-center justify-between mb-1">
                       <label className="block text-xs font-bold text-[#0F172A] flex items-center gap-1">
@@ -1377,7 +1403,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] focus:outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7]"
                     />
 
-                    {/* Filtered suggestions popup when typing */}
+                    {/* Filtered suggestions popup */}
                     {showCategorySuggestions && matchingCategorySuggestions.length > 0 && (
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-[#CBD5E1] p-1.5 z-30 max-h-48 overflow-y-auto">
                         <span className="text-[10px] font-bold text-[#64748B] px-2 py-0.5 block uppercase tracking-wider">
@@ -1454,7 +1480,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   </div>
                 </div>
 
-                {/* Sematkan di 3 Teratas (Pin Post) Toggle */}
+                {/* Sematkan di 3 Teratas Toggle */}
                 <div className="p-3 rounded-xl bg-[#FEF3C7]/60 border border-[#FDE68A] flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-lg bg-[#F59E0B] text-white flex items-center justify-center shrink-0">
@@ -1478,7 +1504,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   </label>
                 </div>
 
-                {/* Konsep Kimia / Reaksi (Otomatis & Editable) */}
+                {/* Konsep Kimia / Reaksi */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
@@ -1496,7 +1522,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   />
                 </div>
 
-                {/* Deskripsi & Prosedur Singkat */}
+                {/* Deskripsi & Ringkasan */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
@@ -1513,7 +1539,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   />
                 </div>
 
-                {/* Prosedur Singkat & Langkah Kerja Detail (Collapsible / Expandable) */}
+                {/* Prosedur Singkat & Langkah Kerja Detail */}
                 <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
@@ -1546,7 +1572,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                             <button
                               type="button"
                               onClick={() => handleRemoveStep(idx)}
-                              className="p-1 rounded text-[#94A3B8] hover:text-[#EF4444] transition-colors"
+                              className="p-1 rounded text-[#94A3B8] hover:text-[#EF4444] transition-colors cursor-pointer"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -1556,7 +1582,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       <button
                         type="button"
                         onClick={handleAddStep}
-                        className="mt-1 px-3 py-1 rounded-lg bg-[#E0F2FE] text-[#0284C7] hover:bg-[#0284C7] hover:text-white text-[11px] font-bold flex items-center gap-1 transition-all"
+                        className="mt-1 px-3 py-1 rounded-lg bg-[#E0F2FE] text-[#0284C7] hover:bg-[#0284C7] hover:text-white text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer"
                       >
                         <Plus className="w-3 h-3" />
                         <span>Tambah Langkah Kerja</span>
@@ -1576,17 +1602,18 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   )}
                 </div>
 
-                {/* Upload Image Section + Quick Presets */}
-                <div className="space-y-2.5 p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
+                {/* MULTI-PHOTO UPLOAD & MANAGEMENT SECTION */}
+                <div className="space-y-3 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
-                      <ImageIcon className="w-3.5 h-3.5 text-[#0284C7]" />
-                      <span>Foto Dokumentasi Lab <span className="text-[#EF4444]">*</span></span>
+                      <ImageIcon className="w-4 h-4 text-[#0284C7]" />
+                      <span>Foto Dokumentasi Praktikum ({formImages.length} Foto Terpilih) <span className="text-[#EF4444]">*</span></span>
                     </label>
                     <input
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileUpload}
+                      multiple
                       accept="image/*"
                       className="hidden"
                     />
@@ -1597,10 +1624,11 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       className="text-xs font-bold text-[#0284C7] hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       <CloudUpload className="w-3.5 h-3.5" />
-                      <span>{isUploading ? 'Mengunggah...' : 'Pilih Foto dari Perangkat'}</span>
+                      <span>{isUploading ? 'Mengunggah...' : '+ Unggah Foto (Bisa Multi-Pilih)'}</span>
                     </button>
                   </div>
 
+                  {/* Upload Progress Bar */}
                   {isUploading && (
                     <div className="p-3 rounded-xl bg-[#E0F2FE] border border-[#0284C7]/30 flex items-center gap-2">
                       <Loader2 className="w-4 h-4 text-[#0284C7] animate-spin shrink-0" />
@@ -1613,20 +1641,49 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                     </div>
                   )}
 
-                  {formImageUrl ? (
-                    <div className="relative w-full h-40 rounded-xl overflow-hidden border border-[#CBD5E1] bg-black/5 shadow-inner">
-                      <img src={formImageUrl} alt="Pratinjau Foto" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setFormImageUrl('')}
-                        className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white hover:bg-[#EF4444] transition-colors"
-                        title="Hapus foto"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-md bg-black/70 text-white text-[10px] font-bold backdrop-blur-xs">
-                        Foto Terpasang
+                  {/* Selected Photos Thumbnails Grid */}
+                  {formImages.length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                        {formImages.map((imgUrl, idx) => (
+                          <div
+                            key={idx}
+                            className={`relative group rounded-xl overflow-hidden border-2 bg-white ${
+                              idx === 0 ? 'border-[#0284C7] ring-2 ring-[#0284C7]/20' : 'border-[#CBD5E1]'
+                            }`}
+                          >
+                            <img src={imgUrl} alt={`Foto ${idx + 1}`} referrerPolicy="no-referrer" className="w-full h-24 object-cover" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                              {idx !== 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleSetFormCoverPhoto(idx)}
+                                  className="p-1.5 rounded-full bg-white text-[#0284C7] hover:bg-[#0284C7] hover:text-white transition-colors cursor-pointer"
+                                  title="Jadikan Foto Sampul Utama"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFormPhoto(idx)}
+                                className="p-1.5 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors cursor-pointer"
+                                title="Hapus foto dari postingan"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                            <span className={`absolute bottom-1 left-1 px-1.5 py-0.5 text-[9px] font-bold rounded ${
+                              idx === 0 ? 'bg-[#0284C7] text-white' : 'bg-black/70 text-white'
+                            }`}>
+                              {idx === 0 ? '★ Cover' : `#${idx + 1}`}
+                            </span>
+                          </div>
+                        ))}
                       </div>
+                      <p className="text-[11px] text-[#64748B]">
+                        💡 Foto #1 otomatis menjadi cover. Siswa dapat menggeser foto ke kiri dan kanan pada postingan.
+                      </p>
                     </div>
                   ) : (
                     <div
@@ -1634,15 +1691,33 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       className="w-full h-24 rounded-xl border-2 border-dashed border-[#CBD5E1] hover:border-[#0284C7] bg-white flex flex-col items-center justify-center gap-1 cursor-pointer p-3 text-center transition-colors"
                     >
                       <Upload className="w-5 h-5 text-[#0284C7]" />
-                      <span className="font-semibold text-[#0F172A] text-xs">Klik untuk Unggah Foto Praktikum</span>
-                      <span className="text-[10px] text-[#94A3B8]">Disimpan otomatis ke Firebase Storage (catatan_foto/galeri)</span>
+                      <span className="font-semibold text-[#0F172A] text-xs">Klik untuk Unggah 1 atau Beberapa Foto Sekaligus</span>
+                      <span className="text-[10px] text-[#94A3B8]">Disimpan otomatis ke Firebase Storage & Firestore</span>
                     </div>
                   )}
 
-                  {/* Sample Chemistry Lab Images (Quick Pick) */}
-                  <div className="pt-1.5 border-t border-[#E2E8F0]">
+                  {/* Add Photo by URL */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-[#E2E8F0]">
+                    <input
+                      type="url"
+                      placeholder="Atau masukkan tautan/URL foto praktikum..."
+                      value={customPhotoUrlInput}
+                      onChange={(e) => setCustomPhotoUrlInput(e.target.value)}
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-[#CBD5E1] text-xs text-[#0F172A] focus:outline-none focus:border-[#0284C7]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomPhotoUrl}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#0284C7] text-white text-xs font-bold hover:bg-[#0369A1] transition-colors cursor-pointer"
+                    >
+                      + Tambah Foto
+                    </button>
+                  </div>
+
+                  {/* Quick Sample Photos Pick */}
+                  <div className="pt-2 border-t border-[#E2E8F0]">
                     <span className="text-[10px] font-bold text-[#64748B] block mb-1">
-                      Atau Pilih Foto Sampel Laboratorium Instan:
+                      Atau Tambahkan dari Foto Sampel Laboratorium:
                     </span>
                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
                       {PRESET_LAB_IMAGES.map((img, idx) => (
@@ -1650,18 +1725,14 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => {
-                            setFormImageUrl(img.url);
-                            onAddToast('Foto Sampel Dipilih', `Foto sampel "${img.label}" terpasang.`, 'info');
+                            setFormImages((prev) => [...prev, img.url]);
+                            onAddToast('Foto Sampel Ditambahkan', `Foto sampel "${img.label}" ditambahkan ke album.`, 'info');
                           }}
-                          className={`group relative h-12 rounded-lg overflow-hidden border transition-all cursor-pointer ${
-                            formImageUrl === img.url
-                              ? 'border-[#0284C7] ring-2 ring-[#0284C7]'
-                              : 'border-[#CBD5E1] hover:border-[#0284C7]'
-                          }`}
+                          className="group relative h-12 rounded-lg overflow-hidden border border-[#CBD5E1] hover:border-[#0284C7] transition-all cursor-pointer"
                         >
                           <img src={img.url} alt={img.label} referrerPolicy="no-referrer" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                           <span className="absolute inset-x-0 bottom-0 bg-black/70 text-white text-[9px] truncate px-1 py-0.5 text-center">
-                            {img.label}
+                            + {img.label}
                           </span>
                         </button>
                       ))}
@@ -1684,7 +1755,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                     className="px-5 py-2 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white font-bold shadow-xs disabled:opacity-50 flex items-center gap-1.5 transition-all cursor-pointer"
                   >
                     <CloudUpload className="w-4 h-4" />
-                    <span>Simpan ke Cloud Firestore</span>
+                    <span>Simpan Postingan ({formImages.length} Foto)</span>
                   </button>
                 </div>
               </form>
@@ -1720,7 +1791,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
               <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={() => setItemToDelete(null)}
-                  className="px-4 py-2 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B]"
+                  className="px-4 py-2 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B] cursor-pointer"
                 >
                   Batal
                 </button>
@@ -1732,7 +1803,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                     onAddToast('Foto Dihapus', `Foto "${itemToDelete.title}" telah dihapus.`, 'info');
                     setItemToDelete(null);
                   }}
-                  className="px-4 py-2 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold shadow-xs"
+                  className="px-4 py-2 rounded-full bg-[#EF4444] hover:bg-[#DC2626] text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
                   Hapus Permanen
                 </button>
@@ -1802,13 +1873,13 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                       setIsAdminModalOpen(false);
                       setPasscodeError(false);
                     }}
-                    className="w-1/2 py-2.5 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B]"
+                    className="w-1/2 py-2.5 rounded-full border border-[#CBD5E1] text-xs font-semibold text-[#64748B] cursor-pointer"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="w-1/2 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-xs"
+                    className="w-1/2 py-2.5 rounded-full bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-xs cursor-pointer"
                   >
                     Masuk
                   </button>
@@ -1828,9 +1899,14 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
           itemTitle={itemForPhotoChange.title}
           onSavePhoto={(newUrl) => {
             if (onUpdateItem && itemForPhotoChange) {
+              const existingPhotos = (Array.isArray(itemForPhotoChange.images) && itemForPhotoChange.images.length > 0
+                ? itemForPhotoChange.images.filter(Boolean)
+                : [itemForPhotoChange.image]);
+              const updatedPhotos = [newUrl, ...existingPhotos.filter((p) => p !== newUrl)];
               onUpdateItem({
                 ...itemForPhotoChange,
-                image: newUrl
+                image: newUrl,
+                images: updatedPhotos
               });
             }
             onAddToast('Foto Praktikum Diperbarui', 'Foto baru berhasil disimpan & diperbarui di Galeri.', 'success');
@@ -1907,4 +1983,3 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
     </section>
   );
 };
-

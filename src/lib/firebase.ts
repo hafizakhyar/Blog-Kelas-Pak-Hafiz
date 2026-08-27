@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import {
+  initializeFirestore,
   getFirestore,
   collection,
   doc,
@@ -44,8 +45,20 @@ import {
 // Initialize Firebase App singleton
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// CRITICAL: Initialize Firestore using the configured custom firestoreDatabaseId
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// CRITICAL: Initialize Firestore with resilient auto-detect long polling and databaseId
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(
+    app,
+    {
+      experimentalAutoDetectLongPolling: true
+    },
+    firebaseConfig.firestoreDatabaseId
+  );
+} catch (e) {
+  firestoreDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+}
+export const db = firestoreDb;
 export const auth = getAuth(app);
 export const storage = getStorage(app);
 
@@ -96,8 +109,14 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   const errMessage = error instanceof Error ? error.message : String(error);
   
   // Gracefully handle offline / connection messages without throwing uncaught UI crashes
-  if (errMessage.includes('unavailable') || errMessage.includes('offline') || errMessage.includes('Could not reach Cloud Firestore')) {
-    console.info(`[Firestore Info] Koneksi Firestore beroperasi dalam mode offline/lokal (${path || 'general'}).`);
+  if (
+    errMessage.includes('unavailable') ||
+    errMessage.includes('offline') ||
+    errMessage.includes('Could not reach Cloud Firestore') ||
+    errMessage.includes('client is offline') ||
+    errMessage.includes('Failed to get document')
+  ) {
+    console.info(`[Firestore Info] Koneksi Firestore beroperasi dalam mode offline/lokal cache (${path || 'general'}).`);
     return;
   }
 
@@ -116,13 +135,15 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
 }
 
-// Connection test on boot as requested by Firebase Integration Skill
+// Connection test on boot as requested by Firebase Integration Skill (resilient handler)
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.info("[Firestore] Client beroperasi dalam mode cache offline.");
+    if (error instanceof Error) {
+      if (error.message.includes('the client is offline') || error.message.includes('unavailable')) {
+        console.info('[Firestore] Client beroperasi dalam mode cache offline / transisi.');
+      }
     }
   }
 }
@@ -338,7 +359,17 @@ export function subscribeToGalleryPhotos(
       }
       const items: GalleryItem[] = [];
       snapshot.forEach((docSnap) => {
-        items.push(docSnap.data() as GalleryItem);
+        const data = docSnap.data() as GalleryItem;
+        const imagesList = Array.isArray(data.images) && data.images.length > 0
+          ? data.images.filter(Boolean)
+          : (data.image ? [data.image] : []);
+
+        items.push({
+          ...data,
+          id: docSnap.id,
+          image: data.image || imagesList[0] || '',
+          images: imagesList
+        });
       });
       onData(items);
     },
@@ -351,7 +382,17 @@ export function subscribeToGalleryPhotos(
 }
 
 export async function saveGalleryItemToFirestore(item: GalleryItem): Promise<void> {
-  await safeFirestoreWrite(COLLECTIONS.PHOTOS, item.id, item);
+  const imagesList = Array.isArray(item.images) && item.images.length > 0
+    ? item.images.filter(Boolean)
+    : (item.image ? [item.image] : []);
+  
+  const payload: GalleryItem = {
+    ...item,
+    image: item.image || imagesList[0] || '',
+    images: imagesList
+  };
+
+  await safeFirestoreWrite(COLLECTIONS.PHOTOS, item.id, payload);
 }
 
 export async function deleteGalleryItemFromFirestore(itemId: string): Promise<void> {

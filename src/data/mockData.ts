@@ -19,6 +19,11 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     category: 'Indikator Alami',
     date: '14 Agustus 2026',
     image: 'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1000&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80'
+    ],
     badge: 'Populer di Kelas XI',
     isPinned: true,
     description: 'Uji keasaman menggunakan ekstrak rimpang kunyit segar terhadap larutan asam cuka, air netral, dan air kapur/sabun.',
@@ -46,6 +51,11 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     category: 'Indikator Alami',
     date: '8 Agustus 2026',
     image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=1000&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b4?auto=format&fit=crop&w=1000&q=80'
+    ],
     badge: 'Eksperimen Viral Siswa',
     isPinned: true,
     description: 'Mengeksplorasi perubahan warna spektrum biru laut menjadi ungu hingga merah muda saat ditetesi air perasan jeruk nipis.',
@@ -72,6 +82,11 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     category: 'Indikator Alami',
     date: '28 Juli 2026',
     image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1000&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80'
+    ],
     badge: 'Proyek Kearifan Lokal',
     isPinned: true,
     description: 'Pemanfaatan limbah kulit manggis yang kaya senyawa xanton dan antosianin sebagai kertas indikator alternatif yang ramah lingkungan.',
@@ -96,6 +111,11 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     category: 'Eksperimen Lab',
     date: '19 Juli 2026',
     image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1000&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1603555501671-8f96b3fce8b4?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=1000&q=80'
+    ],
     badge: 'Praktikum Inti Kelas XI',
     description: 'Siswa mempraktikkan teknik titrasi volumetri dengan buret dan indikator fenolftalein (PP) hingga mencapai titik ekivalen.',
     chemistryConcept: 'Reaksi netralisasi stoikiometri CH3COOH + NaOH -> CH3COONa + H2O dengan kurva titrasi asam lemah - basa kuat.',
@@ -121,6 +141,11 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     category: 'Eksperimen Lab',
     date: '10 Juli 2026',
     image: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1000&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1000&q=80'
+    ],
     badge: 'Konsep Dasar Kelas X',
     description: 'Membuktikan keberadaan ion bebas yang bergerak dalam larutan garam dapur, larutan gula, asam cuka, dan air kelapa muda.',
     chemistryConcept: 'Derajat ionisasi (alfa) menentukan kemampuan larutan menghantarkan arus listrik melalui mobilitas kation dan anion.',
@@ -143,6 +168,11 @@ export const GALLERY_ITEMS: GalleryItem[] = [
     category: 'Karya Siswa',
     date: '25 Juni 2026',
     image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1000&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1000&q=80',
+      'https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=1000&q=80'
+    ],
     badge: 'Kreativitas Siswa',
     description: 'Visualisasi 3D geometri molekul (Tetrahedral, Trigonal Bipiramida, Oktahedral) menggunakan plastisin ramah lingkungan dan tusuk bambu.',
     chemistryConcept: 'Teori domain elektron dan tolakan pasangan elektron bebas (PEB-PEI) menentukan sudut ikatan dan kepolaran molekul.',
@@ -1021,7 +1051,7 @@ export const INITIAL_PROFILE_EXPERIENCES: import('../types').ProfileExperienceIt
     id: 'prof-1',
     title: 'Lulusan S-1 Kimia (S.Si.)',
     institution: 'UIN Syarif Hidayatullah Jakarta',
-    period: 'Alumni',
+    period: '2019 - 2023',
     category: 'Pendidikan',
     description: 'Fokus studi Kimia Murni dengan spesialisasi Kimia Organik & Kimia Analitik, aktif dalam riset laboratorium dan asistensi praktikum mahasiswa.',
     subItems: [
@@ -1033,7 +1063,7 @@ export const INITIAL_PROFILE_EXPERIENCES: import('../types').ProfileExperienceIt
     id: 'prof-2',
     title: 'Asisten Laboratorium Kimia',
     institution: 'UIN Syarif Hidayatullah Jakarta',
-    period: 'Pengalaman Asistensi',
+    period: '2022 - 2023',
     category: 'Pengalaman',
     description: 'Membimbing praktikum Kimia Dasar dan Kimia Organik bagi mahasiswa baru, menyiapkan reagen standar, serta menguji validitas modul praktikum.',
     subItems: [
@@ -1045,7 +1075,7 @@ export const INITIAL_PROFILE_EXPERIENCES: import('../types').ProfileExperienceIt
     id: 'prof-3',
     title: 'Asisten Laboratorium Kimia & Fisika',
     institution: 'Institut Teknologi Indonesia (ITI) Serpong',
-    period: 'Pengalaman Asistensi',
+    period: '2023 - 2024',
     category: 'Pengalaman',
     description: 'Memandu sesi praktikum sains terintegrasi (Kimia dan Fisika Dasar) untuk mahasiswa teknik, kalibrasi alat ukur presisi, dan evaluasi laporan praktikum.',
     subItems: [
@@ -1057,7 +1087,7 @@ export const INITIAL_PROFILE_EXPERIENCES: import('../types').ProfileExperienceIt
     id: 'prof-4',
     title: 'Laboran Analisis Development (R&D)',
     institution: 'NCU Jakarta',
-    period: 'Pengalaman Laboratorium',
+    period: '2024',
     category: 'Pengalaman',
     description: 'Melakukan pengujian mutu analitik sampel, validasi metode analisis kimia, penanganan instrumen laboratorium, serta dokumentasi data riset produk.',
     subItems: [
@@ -1069,7 +1099,7 @@ export const INITIAL_PROFILE_EXPERIENCES: import('../types').ProfileExperienceIt
     id: 'prof-5',
     title: 'Pengajar IPA dan Kimia SMA',
     institution: 'SMA IAS Jakarta',
-    period: 'Pendidik Aktif',
+    period: '2024 - Sekarang',
     category: 'Pengalaman',
     description: 'Merancang kurikulum pembelajaran kimia kontekstual, memimpin praktikum sains interaktif berbasis indikator alami, serta membina siswa menuju olimpiade sains & seleksi masuk PTN (SNBT).',
     subItems: [
