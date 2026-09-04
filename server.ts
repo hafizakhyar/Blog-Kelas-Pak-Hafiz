@@ -42,19 +42,15 @@ function findStaticItem(
   type: string,
   rawSlug: string
 ): { title: string; description: string; imageUrl: string } | null {
-  const cleanSlug = decodeURIComponent(rawSlug).trim().toLowerCase();
+  const decoded = decodeURIComponent(rawSlug).trim();
+  const cleanSlug = slugify(decoded);
+  const lowerRaw = decoded.toLowerCase();
 
   if (type === 'artikel' || type === 'blog') {
     const post =
-      BLOG_POSTS.find((p) => p.slug && p.slug.toLowerCase() === cleanSlug) ||
-      BLOG_POSTS.find((p) => slugify(p.title) === cleanSlug) ||
-      BLOG_POSTS.find((p) => p.id.toLowerCase() === cleanSlug) ||
-      BLOG_POSTS.find((p) => p.id.toLowerCase() === `post-${cleanSlug}`) ||
-      BLOG_POSTS.find(
-        (p) =>
-          slugify(p.title).includes(cleanSlug) ||
-          (p.slug && p.slug.toLowerCase().includes(cleanSlug))
-      );
+      BLOG_POSTS.find((p) => slugify(p.title) === cleanSlug || (p.slug && slugify(p.slug) === cleanSlug)) ||
+      BLOG_POSTS.find((p) => p.id.toLowerCase() === lowerRaw || p.id.toLowerCase() === `post-${lowerRaw}`) ||
+      BLOG_POSTS.find((p) => slugify(p.title).includes(cleanSlug) || cleanSlug.includes(slugify(p.title)));
 
     if (post) {
       return {
@@ -67,11 +63,9 @@ function findStaticItem(
 
   if (type === 'catatan') {
     const note =
-      INITIAL_CLASS_NOTES.find((n) => n.slug && n.slug.toLowerCase() === cleanSlug) ||
-      INITIAL_CLASS_NOTES.find((n) => slugify(n.title) === cleanSlug) ||
-      INITIAL_CLASS_NOTES.find((n) => n.id.toLowerCase() === cleanSlug) ||
-      INITIAL_CLASS_NOTES.find((n) => n.id.toLowerCase() === `note-${cleanSlug}`) ||
-      INITIAL_CLASS_NOTES.find((n) => slugify(n.title).includes(cleanSlug));
+      INITIAL_CLASS_NOTES.find((n) => slugify(n.title) === cleanSlug || (n.slug && slugify(n.slug) === cleanSlug)) ||
+      INITIAL_CLASS_NOTES.find((n) => n.id.toLowerCase() === lowerRaw || n.id.toLowerCase() === `note-${lowerRaw}`) ||
+      INITIAL_CLASS_NOTES.find((n) => slugify(n.title).includes(cleanSlug) || cleanSlug.includes(slugify(n.title)));
 
     if (note) {
       return {
@@ -84,11 +78,9 @@ function findStaticItem(
 
   if (type === 'praktikum' || type === 'galeri') {
     const item =
-      GALLERY_ITEMS.find((g) => g.slug && g.slug.toLowerCase() === cleanSlug) ||
-      GALLERY_ITEMS.find((g) => slugify(g.title) === cleanSlug) ||
-      GALLERY_ITEMS.find((g) => g.id.toLowerCase() === cleanSlug) ||
-      GALLERY_ITEMS.find((g) => g.id.toLowerCase() === `gal-${cleanSlug}`) ||
-      GALLERY_ITEMS.find((g) => slugify(g.title).includes(cleanSlug));
+      GALLERY_ITEMS.find((g) => slugify(g.title) === cleanSlug || (g.slug && slugify(g.slug) === cleanSlug)) ||
+      GALLERY_ITEMS.find((g) => g.id.toLowerCase() === lowerRaw || g.id.toLowerCase() === `gal-${lowerRaw}`) ||
+      GALLERY_ITEMS.find((g) => slugify(g.title).includes(cleanSlug) || cleanSlug.includes(slugify(g.title)));
 
     if (item) {
       return {
@@ -101,11 +93,9 @@ function findStaticItem(
 
   if (type === 'modul' || type === 'dokumen' || type === 'file') {
     const doc =
-      DOCUMENT_ITEMS.find((d) => d.slug && d.slug.toLowerCase() === cleanSlug) ||
-      DOCUMENT_ITEMS.find((d) => slugify(d.title) === cleanSlug) ||
-      DOCUMENT_ITEMS.find((d) => d.id.toLowerCase() === cleanSlug) ||
-      DOCUMENT_ITEMS.find((d) => d.id.toLowerCase() === `doc-${cleanSlug}`) ||
-      DOCUMENT_ITEMS.find((d) => slugify(d.title).includes(cleanSlug));
+      DOCUMENT_ITEMS.find((d) => slugify(d.title) === cleanSlug || (d.slug && slugify(d.slug) === cleanSlug)) ||
+      DOCUMENT_ITEMS.find((d) => d.id.toLowerCase() === lowerRaw || d.id.toLowerCase() === `doc-${lowerRaw}`) ||
+      DOCUMENT_ITEMS.find((d) => slugify(d.title).includes(cleanSlug) || cleanSlug.includes(slugify(d.title)));
 
     if (doc) {
       return {
@@ -149,7 +139,8 @@ async function findFirestoreDoc(
     const data = await res.json();
     if (!data || !Array.isArray(data.documents)) return null;
 
-    const cleanSlug = decodeURIComponent(rawSlug).trim().toLowerCase();
+    const cleanSlug = slugify(decodeURIComponent(rawSlug));
+    const lowerRaw = decodeURIComponent(rawSlug).trim().toLowerCase();
 
     for (const doc of data.documents) {
       const fields = doc.fields || {};
@@ -158,10 +149,11 @@ async function findFirestoreDoc(
       const docId = doc.name ? doc.name.split('/').pop() : '';
 
       const isMatch =
-        (slug && slug.toLowerCase() === cleanSlug) ||
+        (slug && slugify(slug) === cleanSlug) ||
         slugify(title) === cleanSlug ||
-        docId?.toLowerCase() === cleanSlug ||
-        slugify(title).includes(cleanSlug);
+        docId?.toLowerCase() === lowerRaw ||
+        slugify(title).includes(cleanSlug) ||
+        cleanSlug.includes(slugify(title));
 
       if (isMatch) {
         const desc =
@@ -274,6 +266,32 @@ async function startServer() {
   // Health API
   app.get('/api/health', (_req: Request, res: Response) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // Image Proxy API to allow client-side downloading of images as Blobs/Files without CORS issues
+  app.get('/api/image-proxy', async (req: Request, res: Response) => {
+    const rawUrl = req.query.url as string;
+    if (!rawUrl) {
+      res.status(400).send('Missing url parameter');
+      return;
+    }
+    try {
+      const targetUrl = decodeURIComponent(rawUrl);
+      const fetched = await fetch(targetUrl);
+      if (!fetched.ok) {
+        res.status(fetched.status).send('Failed to fetch remote image');
+        return;
+      }
+      const contentType = fetched.headers.get('content-type') || 'image/jpeg';
+      const arrayBuf = await fetched.arrayBuffer();
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.send(Buffer.from(arrayBuf));
+    } catch (err) {
+      console.warn('Image proxy error:', err);
+      res.status(500).send('Error proxying image');
+    }
   });
 
   // Dedicated share routes: Intercept post-specific paths to deliver dynamic OpenGraph meta tags

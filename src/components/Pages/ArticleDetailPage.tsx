@@ -23,7 +23,7 @@ import { TEACHER_INFO } from '../../data/mockData';
 import { PhotoChangerModal } from '../Modals/PhotoChangerModal';
 import { STORAGE_FOLDERS } from '../../lib/firebase';
 import { WhatsAppIcon } from '../Common/WhatsAppShareButton';
-import { shareArticleToWhatsApp } from '../../utils/share';
+import { shareArticleToWhatsApp, getDirectArticleUrl } from '../../utils/share';
 
 interface ArticleDetailPageProps {
   post: BlogPost;
@@ -79,7 +79,8 @@ export const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
+      const shareUrl = getDirectArticleUrl(post);
+      navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
       onAddToast('Tautan Disalin!', 'Link artikel siap dibagikan ke teman atau grup kelas.', 'info');

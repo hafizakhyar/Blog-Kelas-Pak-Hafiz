@@ -40,7 +40,7 @@ import { TEACHER_INFO } from '../../data/mockData';
 import { PhotoChangerModal } from '../Modals/PhotoChangerModal';
 import { generateLabExperimentFromTitle, QUICK_LAB_EXPERIMENT_PRESETS } from '../../lib/chemistryAutoGenerator';
 import { WhatsAppIcon } from '../Common/WhatsAppShareButton';
-import { sharePraktikumToWhatsApp } from '../../utils/share';
+import { sharePraktikumToWhatsApp, getDirectPraktikumUrl } from '../../utils/share';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../../lib/firebase';
 
 interface PraktikumDetailPageProps {
@@ -327,7 +327,8 @@ ${item.results}
 
   const handleShareLink = () => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
+      const shareUrl = getDirectPraktikumUrl(item);
+      navigator.clipboard.writeText(shareUrl);
       onAddToast(
         'Tautan Praktikum Disalin!',
         `Tautan untuk "${item.title}" siap dibagikan ke teman kelas.`,

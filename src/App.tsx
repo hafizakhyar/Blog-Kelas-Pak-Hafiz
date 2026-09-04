@@ -48,10 +48,148 @@ const DARK_MODE_STORAGE_KEY = 'kelaspakhafiz_dark_mode_v1';
 
 type RouteView = 'main' | 'praktikum-detail' | 'catatan-detail' | 'document-detail' | 'article-detail';
 
+// Helper to resolve route synchronously on initial load to prevent content flash
+function getInitialRouteState() {
+  if (typeof window === 'undefined') {
+    return { route: 'main' as RouteView, activePost: null, activeNote: null, activeGal: null, activeDoc: null, section: 'beranda' };
+  }
+
+  const pathname = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.trim().toLowerCase();
+  const searchParams = new URLSearchParams(window.location.search);
+
+  // 1. Pathname check
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const primarySegment = pathSegments[0] || '';
+  const rawPathSlug = pathSegments[1] ? decodeURIComponent(pathSegments[1]) : '';
+  const cleanPathSlug = rawPathSlug ? slugify(rawPathSlug) : '';
+
+  if (primarySegment === 'artikel' || primarySegment === 'blog') {
+    if (cleanPathSlug) {
+      const post = BLOG_POSTS.find(
+        (p) =>
+          slugify(p.title) === cleanPathSlug ||
+          (p.slug && slugify(p.slug) === cleanPathSlug) ||
+          p.id.toLowerCase() === rawPathSlug.toLowerCase() ||
+          p.id.toLowerCase() === `post-${rawPathSlug.toLowerCase()}` ||
+          slugify(p.title).includes(cleanPathSlug) ||
+          cleanPathSlug.includes(slugify(p.title))
+      );
+      if (post) return { route: 'article-detail' as RouteView, activePost: post, activeNote: null, activeGal: null, activeDoc: null, section: 'blog' };
+    }
+  } else if (primarySegment === 'catatan') {
+    if (cleanPathSlug) {
+      const note = INITIAL_CLASS_NOTES.find(
+        (n) =>
+          slugify(n.title) === cleanPathSlug ||
+          (n.slug && slugify(n.slug) === cleanPathSlug) ||
+          n.id.toLowerCase() === rawPathSlug.toLowerCase() ||
+          n.id.toLowerCase() === `note-${rawPathSlug.toLowerCase()}` ||
+          slugify(n.title).includes(cleanPathSlug) ||
+          cleanPathSlug.includes(slugify(n.title))
+      );
+      if (note) return { route: 'catatan-detail' as RouteView, activePost: null, activeNote: note, activeGal: null, activeDoc: null, section: 'catatan-kelas' };
+    }
+  } else if (primarySegment === 'praktikum' || primarySegment === 'galeri') {
+    if (cleanPathSlug) {
+      const gal = GALLERY_ITEMS.find(
+        (g) =>
+          slugify(g.title) === cleanPathSlug ||
+          (g.slug && slugify(g.slug) === cleanPathSlug) ||
+          g.id.toLowerCase() === rawPathSlug.toLowerCase() ||
+          g.id.toLowerCase() === `gal-${rawPathSlug.toLowerCase()}` ||
+          slugify(g.title).includes(cleanPathSlug) ||
+          cleanPathSlug.includes(slugify(g.title))
+      );
+      if (gal) return { route: 'praktikum-detail' as RouteView, activePost: null, activeNote: null, activeGal: gal, activeDoc: null, section: 'galeri' };
+    }
+  } else if (primarySegment === 'modul' || primarySegment === 'file' || primarySegment === 'dokumen') {
+    if (cleanPathSlug) {
+      const doc = DOCUMENT_ITEMS.find(
+        (d) =>
+          slugify(d.title) === cleanPathSlug ||
+          (d.slug && slugify(d.slug) === cleanPathSlug) ||
+          d.id.toLowerCase() === rawPathSlug.toLowerCase() ||
+          d.id.toLowerCase() === `doc-${rawPathSlug.toLowerCase()}` ||
+          slugify(d.title).includes(cleanPathSlug) ||
+          cleanPathSlug.includes(slugify(d.title))
+      );
+      if (doc) return { route: 'document-detail' as RouteView, activePost: null, activeNote: null, activeGal: null, activeDoc: doc, section: 'modul' };
+    }
+  }
+
+  // 2. Hash check
+  if (hash.startsWith('#artikel-') || hash.startsWith('#blog-')) {
+    const raw = hash.replace(/^#(artikel|blog)-/, '');
+    const clean = slugify(raw);
+    const post = BLOG_POSTS.find(
+      (p) =>
+        slugify(p.title) === clean ||
+        (p.slug && slugify(p.slug) === clean) ||
+        p.id.toLowerCase() === raw.toLowerCase() ||
+        p.id.toLowerCase() === `post-${raw.toLowerCase()}` ||
+        slugify(p.title).includes(clean) ||
+        clean.includes(slugify(p.title))
+    );
+    if (post) return { route: 'article-detail' as RouteView, activePost: post, activeNote: null, activeGal: null, activeDoc: null, section: 'blog' };
+  } else if (hash.startsWith('#catatan-') && hash !== '#catatan-kelas') {
+    const raw = hash.replace(/^#catatan-/, '');
+    const clean = slugify(raw);
+    const note = INITIAL_CLASS_NOTES.find(
+      (n) =>
+        slugify(n.title) === clean ||
+        (n.slug && slugify(n.slug) === clean) ||
+        n.id.toLowerCase() === raw.toLowerCase() ||
+        n.id.toLowerCase() === `note-${raw.toLowerCase()}` ||
+        slugify(n.title).includes(clean) ||
+        clean.includes(slugify(n.title))
+    );
+    if (note) return { route: 'catatan-detail' as RouteView, activePost: null, activeNote: note, activeGal: null, activeDoc: null, section: 'catatan-kelas' };
+  } else if (hash.startsWith('#praktikum-') || (hash.startsWith('#galeri-') && hash !== '#galeri')) {
+    const raw = hash.replace(/^#(praktikum|galeri)-/, '');
+    const clean = slugify(raw);
+    const gal = GALLERY_ITEMS.find(
+      (g) =>
+        slugify(g.title) === clean ||
+        (g.slug && slugify(g.slug) === clean) ||
+        g.id.toLowerCase() === raw.toLowerCase() ||
+        g.id.toLowerCase() === `gal-${raw.toLowerCase()}` ||
+        slugify(g.title).includes(clean) ||
+        clean.includes(slugify(g.title))
+    );
+    if (gal) return { route: 'praktikum-detail' as RouteView, activePost: null, activeNote: null, activeGal: gal, activeDoc: null, section: 'galeri' };
+  } else if (hash.startsWith('#modul-') || (hash.startsWith('#file-') && hash !== '#modul')) {
+    const raw = hash.replace(/^#(modul|file|dokumen)-/, '');
+    const clean = slugify(raw);
+    const doc = DOCUMENT_ITEMS.find(
+      (d) =>
+        slugify(d.title) === clean ||
+        (d.slug && slugify(d.slug) === clean) ||
+        d.id.toLowerCase() === raw.toLowerCase() ||
+        d.id.toLowerCase() === `doc-${raw.toLowerCase()}` ||
+        slugify(d.title).includes(clean) ||
+        clean.includes(slugify(d.title))
+    );
+    if (doc) return { route: 'document-detail' as RouteView, activePost: null, activeNote: null, activeGal: null, activeDoc: doc, section: 'modul' };
+  }
+
+  // 3. Search parameters check
+  const searchArtikel = searchParams.get('artikel') || (searchParams.get('baca') === 'artikel' || searchParams.get('read') === 'artikel' ? searchParams.get('slug') : null);
+  if (searchArtikel) {
+    const clean = slugify(searchArtikel);
+    const post = BLOG_POSTS.find((p) => slugify(p.title) === clean || (p.slug && slugify(p.slug) === clean) || p.id.toLowerCase() === searchArtikel.toLowerCase());
+    if (post) return { route: 'article-detail' as RouteView, activePost: post, activeNote: null, activeGal: null, activeDoc: null, section: 'blog' };
+  }
+
+  const cleanHashSection = hash.replace('#', '') || 'beranda';
+  return { route: 'main' as RouteView, activePost: null, activeNote: null, activeGal: null, activeDoc: null, section: cleanHashSection || 'beranda' };
+}
+
 export default function App() {
-  // Navigation & View Route State
-  const [currentRoute, setCurrentRoute] = useState<RouteView>('main');
-  const [activeSection, setActiveSection] = useState<string>('beranda');
+  // Navigation & View Route State (Synchronous resolution from initial URL)
+  const [initialState] = useState(getInitialRouteState);
+  const [currentRoute, setCurrentRoute] = useState<RouteView>(initialState.route);
+  const [activeSection, setActiveSection] = useState<string>(initialState.section);
 
   // Dark Mode State with LocalStorage Persistence
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -84,10 +222,10 @@ export default function App() {
   }, [isDarkMode]);
 
   // Active items for dedicated detail pages
-  const [activeGalleryItem, setActiveGalleryItem] = useState<GalleryItem | null>(null);
-  const [activeNote, setActiveNote] = useState<ClassNote | null>(null);
-  const [activeDocument, setActiveDocument] = useState<DocumentItem | null>(null);
-  const [activeBlogPost, setActiveBlogPost] = useState<BlogPost | null>(null);
+  const [activeGalleryItem, setActiveGalleryItem] = useState<GalleryItem | null>(initialState.activeGal);
+  const [activeNote, setActiveNote] = useState<ClassNote | null>(initialState.activeNote);
+  const [activeDocument, setActiveDocument] = useState<DocumentItem | null>(initialState.activeDoc);
+  const [activeBlogPost, setActiveBlogPost] = useState<BlogPost | null>(initialState.activePost);
 
   // Gallery modal & Main portal modal
   const [selectedGalleryItem, setSelectedGalleryItem] = useState<GalleryItem | null>(null);
@@ -313,22 +451,25 @@ export default function App() {
 
   // Helper to resolve route from URL pathname or hash
   const parseCurrentRoute = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
     const pathname = window.location.pathname.toLowerCase();
     const hash = window.location.hash.trim().toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
 
     // 1. Check Pathname-based routes first: /artikel/:slug, /catatan/:slug, /praktikum/:slug, /modul/:slug
     const pathSegments = pathname.split('/').filter(Boolean);
     const primarySegment = pathSegments[0] || '';
     const rawPathSlug = pathSegments[1] ? decodeURIComponent(pathSegments[1]) : '';
+    const cleanPathSlug = rawPathSlug ? slugify(rawPathSlug) : '';
 
-    if (rawPathSlug) {
+    if (cleanPathSlug) {
       // 1a. Article / Blog: /artikel/:slug or /blog/:slug
       if (primarySegment === 'artikel' || primarySegment === 'blog') {
         let matchedPost =
-          blogPosts.find((p) => p.slug && p.slug.toLowerCase() === rawPathSlug) ||
-          blogPosts.find((p) => slugify(p.title) === rawPathSlug) ||
-          blogPosts.find((p) => p.id.toLowerCase() === rawPathSlug || p.id.toLowerCase() === `post-${rawPathSlug}`) ||
-          blogPosts.find((p) => slugify(p.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(p.title)));
+          blogPosts.find((p) => slugify(p.title) === cleanPathSlug || (p.slug && slugify(p.slug) === cleanPathSlug)) ||
+          blogPosts.find((p) => p.id.toLowerCase() === rawPathSlug.toLowerCase() || p.id.toLowerCase() === `post-${rawPathSlug.toLowerCase()}`) ||
+          blogPosts.find((p) => slugify(p.title).includes(cleanPathSlug) || cleanPathSlug.includes(slugify(p.title)));
 
         if (matchedPost) {
           setActiveBlogPost(matchedPost);
@@ -342,10 +483,9 @@ export default function App() {
       // 1b. Catatan Kelas: /catatan/:slug
       if (primarySegment === 'catatan') {
         let matchedNote =
-          notes.find((n) => n.slug && n.slug.toLowerCase() === rawPathSlug) ||
-          notes.find((n) => slugify(n.title) === rawPathSlug) ||
-          notes.find((n) => n.id.toLowerCase() === rawPathSlug || n.id.toLowerCase() === `note-${rawPathSlug}`) ||
-          notes.find((n) => slugify(n.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(n.title)));
+          notes.find((n) => slugify(n.title) === cleanPathSlug || (n.slug && slugify(n.slug) === cleanPathSlug)) ||
+          notes.find((n) => n.id.toLowerCase() === rawPathSlug.toLowerCase() || n.id.toLowerCase() === `note-${rawPathSlug.toLowerCase()}`) ||
+          notes.find((n) => slugify(n.title).includes(cleanPathSlug) || cleanPathSlug.includes(slugify(n.title)));
 
         if (matchedNote) {
           setActiveNote(matchedNote);
@@ -359,10 +499,9 @@ export default function App() {
       // 1c. Praktikum / Galeri: /praktikum/:slug or /galeri/:slug
       if (primarySegment === 'praktikum' || primarySegment === 'galeri') {
         let matchedItem =
-          galleryItems.find((g) => g.slug && g.slug.toLowerCase() === rawPathSlug) ||
-          galleryItems.find((g) => slugify(g.title) === rawPathSlug) ||
-          galleryItems.find((g) => g.id.toLowerCase() === rawPathSlug || g.id.toLowerCase() === `gal-${rawPathSlug}`) ||
-          galleryItems.find((g) => slugify(g.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(g.title)));
+          galleryItems.find((g) => slugify(g.title) === cleanPathSlug || (g.slug && slugify(g.slug) === cleanPathSlug)) ||
+          galleryItems.find((g) => g.id.toLowerCase() === rawPathSlug.toLowerCase() || g.id.toLowerCase() === `gal-${rawPathSlug.toLowerCase()}`) ||
+          galleryItems.find((g) => slugify(g.title).includes(cleanPathSlug) || cleanPathSlug.includes(slugify(g.title)));
 
         if (matchedItem) {
           setActiveGalleryItem(matchedItem);
@@ -376,10 +515,9 @@ export default function App() {
       // 1d. Modul / Dokumen: /modul/:slug, /file/:slug, /dokumen/:slug
       if (primarySegment === 'modul' || primarySegment === 'file' || primarySegment === 'dokumen') {
         let matchedDoc =
-          documents.find((d) => d.slug && d.slug.toLowerCase() === rawPathSlug) ||
-          documents.find((d) => slugify(d.title) === rawPathSlug) ||
-          documents.find((d) => d.id.toLowerCase() === rawPathSlug || d.id.toLowerCase() === `doc-${rawPathSlug}`) ||
-          documents.find((d) => slugify(d.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(d.title)));
+          documents.find((d) => slugify(d.title) === cleanPathSlug || (d.slug && slugify(d.slug) === cleanPathSlug)) ||
+          documents.find((d) => d.id.toLowerCase() === rawPathSlug.toLowerCase() || d.id.toLowerCase() === `doc-${rawPathSlug.toLowerCase()}`) ||
+          documents.find((d) => slugify(d.title).includes(cleanPathSlug) || cleanPathSlug.includes(slugify(d.title)));
 
         if (matchedDoc) {
           setActiveDocument(matchedDoc);
@@ -391,7 +529,34 @@ export default function App() {
       }
     }
 
-    // 2. Check Hash-based routes: #artikel-..., #catatan-..., #praktikum-..., #modul-...
+    // 2. Check Search Parameters (e.g. ?artikel=... or ?read=artikel&slug=...)
+    const queryArtikel = searchParams.get('artikel') || (searchParams.get('baca') === 'artikel' || searchParams.get('read') === 'artikel' ? searchParams.get('slug') : null);
+    if (queryArtikel) {
+      const cleanSlug = slugify(queryArtikel);
+      const post = blogPosts.find((p) => slugify(p.title) === cleanSlug || (p.slug && slugify(p.slug) === cleanSlug) || p.id.toLowerCase() === queryArtikel.toLowerCase() || slugify(p.title).includes(cleanSlug) || cleanSlug.includes(slugify(p.title)));
+      if (post) {
+        setActiveBlogPost(post);
+        setCurrentRoute('article-detail');
+        setActiveSection('blog');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
+    const queryCatatan = searchParams.get('catatan') || (searchParams.get('baca') === 'catatan' || searchParams.get('read') === 'catatan' ? searchParams.get('slug') : null);
+    if (queryCatatan) {
+      const cleanSlug = slugify(queryCatatan);
+      const note = notes.find((n) => slugify(n.title) === cleanSlug || (n.slug && slugify(n.slug) === cleanSlug) || n.id.toLowerCase() === queryCatatan.toLowerCase() || slugify(n.title).includes(cleanSlug) || cleanSlug.includes(slugify(n.title)));
+      if (note) {
+        setActiveNote(note);
+        setCurrentRoute('catatan-detail');
+        setActiveSection('catatan-kelas');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
+    // 3. Check Hash-based routes: #artikel-..., #catatan-..., #praktikum-..., #modul-...
     if (hash) {
       if (
         (hash.startsWith('#praktikum-') || hash.startsWith('#galeri-')) &&
@@ -399,12 +564,11 @@ export default function App() {
         hash !== '#praktikum'
       ) {
         const rawParam = hash.replace(/^#(praktikum|galeri)-/, '').toLowerCase();
+        const cleanParam = slugify(rawParam);
         let matchedItem =
-          galleryItems.find((g) => g.id.toLowerCase() === rawParam) ||
-          galleryItems.find((g) => g.id.toLowerCase() === `gal-${rawParam}` || (rawParam.startsWith('gal-') && g.id.toLowerCase() === rawParam.replace(/^gal-/, ''))) ||
-          galleryItems.find((g) => g.slug && g.slug.toLowerCase() === rawParam) ||
-          galleryItems.find((g) => slugify(g.title) === rawParam) ||
-          galleryItems.find((g) => slugify(g.title).includes(rawParam) || rawParam.includes(slugify(g.title)));
+          galleryItems.find((g) => slugify(g.title) === cleanParam || (g.slug && slugify(g.slug) === cleanParam)) ||
+          galleryItems.find((g) => g.id.toLowerCase() === rawParam || g.id.toLowerCase() === `gal-${rawParam}` || (rawParam.startsWith('gal-') && g.id.toLowerCase() === rawParam.replace(/^gal-/, ''))) ||
+          galleryItems.find((g) => slugify(g.title).includes(cleanParam) || cleanParam.includes(slugify(g.title)));
 
         if (matchedItem) {
           setActiveGalleryItem(matchedItem);
@@ -417,12 +581,11 @@ export default function App() {
 
       if (hash.startsWith('#catatan-') && hash !== '#catatan-kelas') {
         const rawParam = hash.replace('#catatan-', '').toLowerCase();
+        const cleanParam = slugify(rawParam);
         let matchedNote =
-          notes.find((n) => n.id.toLowerCase() === rawParam) ||
-          notes.find((n) => n.id.toLowerCase() === `note-${rawParam}` || (rawParam.startsWith('note-') && n.id.toLowerCase() === rawParam.replace(/^note-/, ''))) ||
-          notes.find((n) => n.slug && n.slug.toLowerCase() === rawParam) ||
-          notes.find((n) => slugify(n.title) === rawParam) ||
-          notes.find((n) => slugify(n.title).includes(rawParam) || rawParam.includes(slugify(n.title)));
+          notes.find((n) => slugify(n.title) === cleanParam || (n.slug && slugify(n.slug) === cleanParam)) ||
+          notes.find((n) => n.id.toLowerCase() === rawParam || n.id.toLowerCase() === `note-${rawParam}` || (rawParam.startsWith('note-') && n.id.toLowerCase() === rawParam.replace(/^note-/, ''))) ||
+          notes.find((n) => slugify(n.title).includes(cleanParam) || cleanParam.includes(slugify(n.title)));
 
         if (matchedNote) {
           setActiveNote(matchedNote);
@@ -439,12 +602,11 @@ export default function App() {
         hash !== '#dokumentasi-file'
       ) {
         const rawParam = hash.replace(/^#(file|dokumentasi|modul)-/, '').toLowerCase();
+        const cleanParam = slugify(rawParam);
         let matchedDoc =
-          documents.find((d) => d.id.toLowerCase() === rawParam) ||
-          documents.find((d) => d.id.toLowerCase() === `doc-${rawParam}` || (rawParam.startsWith('doc-') && d.id.toLowerCase() === rawParam.replace(/^doc-/, ''))) ||
-          documents.find((d) => d.slug && d.slug.toLowerCase() === rawParam) ||
-          documents.find((d) => slugify(d.title) === rawParam) ||
-          documents.find((d) => slugify(d.title).includes(rawParam) || rawParam.includes(slugify(d.title)));
+          documents.find((d) => slugify(d.title) === cleanParam || (d.slug && slugify(d.slug) === cleanParam)) ||
+          documents.find((d) => d.id.toLowerCase() === rawParam || d.id.toLowerCase() === `doc-${rawParam}` || (rawParam.startsWith('doc-') && d.id.toLowerCase() === rawParam.replace(/^doc-/, ''))) ||
+          documents.find((d) => slugify(d.title).includes(cleanParam) || cleanParam.includes(slugify(d.title)));
 
         if (matchedDoc) {
           setActiveDocument(matchedDoc);
@@ -457,12 +619,11 @@ export default function App() {
 
       if ((hash.startsWith('#blog-') || hash.startsWith('#artikel-')) && hash !== '#blog' && hash !== '#artikel') {
         const rawParam = hash.replace(/^#(blog|artikel)-/, '').toLowerCase();
+        const cleanParam = slugify(rawParam);
         let matchedPost =
-          blogPosts.find((p) => p.id.toLowerCase() === rawParam) ||
-          blogPosts.find((p) => p.id.toLowerCase() === `post-${rawParam}` || (rawParam.startsWith('post-') && p.id.toLowerCase() === rawParam.replace(/^post-/, ''))) ||
-          blogPosts.find((p) => p.slug && p.slug.toLowerCase() === rawParam) ||
-          blogPosts.find((p) => slugify(p.title) === rawParam) ||
-          blogPosts.find((p) => slugify(p.title).includes(rawParam) || rawParam.includes(slugify(p.title)));
+          blogPosts.find((p) => slugify(p.title) === cleanParam || (p.slug && slugify(p.slug) === cleanParam)) ||
+          blogPosts.find((p) => p.id.toLowerCase() === rawParam || p.id.toLowerCase() === `post-${rawParam}` || (rawParam.startsWith('post-') && p.id.toLowerCase() === rawParam.replace(/^post-/, ''))) ||
+          blogPosts.find((p) => slugify(p.title).includes(cleanParam) || cleanParam.includes(slugify(p.title)));
 
         if (matchedPost) {
           setActiveBlogPost(matchedPost);

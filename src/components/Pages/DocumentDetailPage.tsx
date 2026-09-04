@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { DocumentItem } from '../../types';
 import { TEACHER_INFO, DOCUMENT_ITEMS } from '../../data/mockData';
-import { shareDocumentToWhatsApp } from '../../utils/share';
+import { shareDocumentToWhatsApp, getDirectDocumentUrl } from '../../utils/share';
 
 interface DocumentDetailPageProps {
   doc: DocumentItem;
@@ -58,7 +58,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
+      const shareUrl = getDirectDocumentUrl(doc);
+      navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
       onAddToast('Tautan Disalin!', 'Link modul siap dibagikan ke siswa atau grup belajar.', 'info');

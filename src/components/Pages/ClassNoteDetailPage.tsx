@@ -33,7 +33,7 @@ import { TEACHER_INFO } from '../../data/mockData';
 import { uploadFileToFirebaseStorage, STORAGE_FOLDERS } from '../../lib/firebase';
 import { generateChemistryContentFromTitle } from '../../lib/chemistryAutoGenerator';
 import { WhatsAppIcon } from '../Common/WhatsAppShareButton';
-import { shareClassNoteToWhatsApp } from '../../utils/share';
+import { shareClassNoteToWhatsApp, getDirectNoteUrl } from '../../utils/share';
 
 interface ClassNoteDetailPageProps {
   note: ClassNote;
@@ -171,7 +171,8 @@ ${
 
   const handleCopyLink = () => {
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
+      const shareUrl = getDirectNoteUrl(note);
+      navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
       onAddToast('Tautan Disalin!', 'Link materi siap dibagikan ke siswa atau rekan guru.', 'info');
