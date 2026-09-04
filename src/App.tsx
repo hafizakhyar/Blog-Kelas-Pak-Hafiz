@@ -21,6 +21,7 @@ import { ArticleDetailPage } from './components/Pages/ArticleDetailPage';
 import { GalleryItem, BlogPost, DocumentItem, ClassNote, PracticalVideoItem } from './types';
 import { INITIAL_CLASS_NOTES, DOCUMENT_ITEMS, BLOG_POSTS, GALLERY_ITEMS, INITIAL_PRACTICAL_VIDEOS } from './data/mockData';
 import { createCircularFavicon } from './utils/favicon';
+import { slugify } from './utils/share';
 import {
   subscribeToClassNotes,
   subscribeToDocuments,
@@ -310,158 +311,172 @@ export default function App() {
     });
   }, []);
 
-  // Helper to resolve route from URL hash
-  const parseHashRoute = useCallback(() => {
-    const hash = window.location.hash.trim();
-    if (!hash || hash === '#' || hash === '#beranda') {
-      setCurrentRoute('main');
-      setActiveSection('beranda');
-      return;
-    }
+  // Helper to resolve route from URL pathname or hash
+  const parseCurrentRoute = useCallback(() => {
+    const pathname = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.trim().toLowerCase();
 
-    // 1. Check Praktikum detail: #praktikum-... or #galeri-... (excluding #galeri and #praktikum)
-    if (
-      (hash.startsWith('#praktikum-') || hash.startsWith('#galeri-')) &&
-      hash !== '#galeri' &&
-      hash !== '#praktikum'
-    ) {
-      const rawParam = hash.replace(/^#(praktikum|galeri)-/, '').toLowerCase();
-      // First: exact ID match
-      let matchedItem = galleryItems.find((g) => g.id.toLowerCase() === rawParam);
+    // 1. Check Pathname-based routes first: /artikel/:slug, /catatan/:slug, /praktikum/:slug, /modul/:slug
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const primarySegment = pathSegments[0] || '';
+    const rawPathSlug = pathSegments[1] ? decodeURIComponent(pathSegments[1]) : '';
 
-      // Second: exact ID match with prefix normalization
-      if (!matchedItem) {
-        matchedItem = galleryItems.find(
-          (g) =>
-            g.id.toLowerCase() === `gal-${rawParam}` ||
-            (rawParam.startsWith('gal-') && g.id.toLowerCase() === rawParam.replace(/^gal-/, ''))
-        );
+    if (rawPathSlug) {
+      // 1a. Article / Blog: /artikel/:slug or /blog/:slug
+      if (primarySegment === 'artikel' || primarySegment === 'blog') {
+        let matchedPost =
+          blogPosts.find((p) => p.slug && p.slug.toLowerCase() === rawPathSlug) ||
+          blogPosts.find((p) => slugify(p.title) === rawPathSlug) ||
+          blogPosts.find((p) => p.id.toLowerCase() === rawPathSlug || p.id.toLowerCase() === `post-${rawPathSlug}`) ||
+          blogPosts.find((p) => slugify(p.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(p.title)));
+
+        if (matchedPost) {
+          setActiveBlogPost(matchedPost);
+          setCurrentRoute('article-detail');
+          setActiveSection('blog');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
 
-      // Third: slug match
-      if (!matchedItem) {
-        matchedItem = galleryItems.find((g) => g.slug && g.slug.toLowerCase() === rawParam);
+      // 1b. Catatan Kelas: /catatan/:slug
+      if (primarySegment === 'catatan') {
+        let matchedNote =
+          notes.find((n) => n.slug && n.slug.toLowerCase() === rawPathSlug) ||
+          notes.find((n) => slugify(n.title) === rawPathSlug) ||
+          notes.find((n) => n.id.toLowerCase() === rawPathSlug || n.id.toLowerCase() === `note-${rawPathSlug}`) ||
+          notes.find((n) => slugify(n.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(n.title)));
+
+        if (matchedNote) {
+          setActiveNote(matchedNote);
+          setCurrentRoute('catatan-detail');
+          setActiveSection('catatan-kelas');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
 
-      // Fourth: slugified title exact match
-      if (!matchedItem) {
-        matchedItem = galleryItems.find(
-          (g) => g.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
-        );
+      // 1c. Praktikum / Galeri: /praktikum/:slug or /galeri/:slug
+      if (primarySegment === 'praktikum' || primarySegment === 'galeri') {
+        let matchedItem =
+          galleryItems.find((g) => g.slug && g.slug.toLowerCase() === rawPathSlug) ||
+          galleryItems.find((g) => slugify(g.title) === rawPathSlug) ||
+          galleryItems.find((g) => g.id.toLowerCase() === rawPathSlug || g.id.toLowerCase() === `gal-${rawPathSlug}`) ||
+          galleryItems.find((g) => slugify(g.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(g.title)));
+
+        if (matchedItem) {
+          setActiveGalleryItem(matchedItem);
+          setCurrentRoute('praktikum-detail');
+          setActiveSection('galeri');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
 
-      if (matchedItem) {
-        setActiveGalleryItem(matchedItem);
-        setCurrentRoute('praktikum-detail');
-        setActiveSection('galeri');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-    }
+      // 1d. Modul / Dokumen: /modul/:slug, /file/:slug, /dokumen/:slug
+      if (primarySegment === 'modul' || primarySegment === 'file' || primarySegment === 'dokumen') {
+        let matchedDoc =
+          documents.find((d) => d.slug && d.slug.toLowerCase() === rawPathSlug) ||
+          documents.find((d) => slugify(d.title) === rawPathSlug) ||
+          documents.find((d) => d.id.toLowerCase() === rawPathSlug || d.id.toLowerCase() === `doc-${rawPathSlug}`) ||
+          documents.find((d) => slugify(d.title).includes(rawPathSlug) || rawPathSlug.includes(slugify(d.title)));
 
-    // 2. Check Catatan Kelas detail: #catatan-... (excluding #catatan-kelas)
-    if (hash.startsWith('#catatan-') && hash !== '#catatan-kelas') {
-      const rawParam = hash.replace('#catatan-', '').toLowerCase();
-      let matchedNote = notes.find((n) => n.id.toLowerCase() === rawParam);
-
-      if (!matchedNote) {
-        matchedNote = notes.find(
-          (n) =>
-            n.id.toLowerCase() === `note-${rawParam}` ||
-            (rawParam.startsWith('note-') && n.id.toLowerCase() === rawParam.replace(/^note-/, ''))
-        );
-      }
-
-      if (!matchedNote) {
-        matchedNote = notes.find((n) => n.slug && n.slug.toLowerCase() === rawParam);
-      }
-
-      if (!matchedNote) {
-        matchedNote = notes.find(
-          (n) => n.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
-        );
-      }
-
-      if (matchedNote) {
-        setActiveNote(matchedNote);
-        setCurrentRoute('catatan-detail');
-        setActiveSection('catatan-kelas');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-    }
-
-    // 3. Check Document detail: #file-... or #modul-... (excluding #modul and #dokumentasi-file)
-    if (
-      (hash.startsWith('#file-') || hash.startsWith('#dokumentasi-') || hash.startsWith('#modul-')) &&
-      hash !== '#modul' &&
-      hash !== '#dokumentasi-file'
-    ) {
-      const rawParam = hash.replace(/^#(file|dokumentasi|modul)-/, '').toLowerCase();
-      let matchedDoc = documents.find((d) => d.id.toLowerCase() === rawParam);
-
-      if (!matchedDoc) {
-        matchedDoc = documents.find(
-          (d) =>
-            d.id.toLowerCase() === `doc-${rawParam}` ||
-            (rawParam.startsWith('doc-') && d.id.toLowerCase() === rawParam.replace(/^doc-/, ''))
-        );
-      }
-
-      if (!matchedDoc) {
-        matchedDoc = documents.find((d) => d.slug && d.slug.toLowerCase() === rawParam);
-      }
-
-      if (!matchedDoc) {
-        matchedDoc = documents.find(
-          (d) => d.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
-        );
-      }
-
-      if (matchedDoc) {
-        setActiveDocument(matchedDoc);
-        setCurrentRoute('document-detail');
-        setActiveSection('modul');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
+        if (matchedDoc) {
+          setActiveDocument(matchedDoc);
+          setCurrentRoute('document-detail');
+          setActiveSection('modul');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
     }
 
-    // 4. Check Blog Post detail: #blog-... or #artikel-... (excluding #blog and #artikel)
-    if ((hash.startsWith('#blog-') || hash.startsWith('#artikel-')) && hash !== '#blog' && hash !== '#artikel') {
-      const rawParam = hash.replace(/^#(blog|artikel)-/, '').toLowerCase();
-      let matchedPost = blogPosts.find((p) => p.id.toLowerCase() === rawParam);
+    // 2. Check Hash-based routes: #artikel-..., #catatan-..., #praktikum-..., #modul-...
+    if (hash) {
+      if (
+        (hash.startsWith('#praktikum-') || hash.startsWith('#galeri-')) &&
+        hash !== '#galeri' &&
+        hash !== '#praktikum'
+      ) {
+        const rawParam = hash.replace(/^#(praktikum|galeri)-/, '').toLowerCase();
+        let matchedItem =
+          galleryItems.find((g) => g.id.toLowerCase() === rawParam) ||
+          galleryItems.find((g) => g.id.toLowerCase() === `gal-${rawParam}` || (rawParam.startsWith('gal-') && g.id.toLowerCase() === rawParam.replace(/^gal-/, ''))) ||
+          galleryItems.find((g) => g.slug && g.slug.toLowerCase() === rawParam) ||
+          galleryItems.find((g) => slugify(g.title) === rawParam) ||
+          galleryItems.find((g) => slugify(g.title).includes(rawParam) || rawParam.includes(slugify(g.title)));
 
-      if (!matchedPost) {
-        matchedPost = blogPosts.find(
-          (p) =>
-            p.id.toLowerCase() === `post-${rawParam}` ||
-            (rawParam.startsWith('post-') && p.id.toLowerCase() === rawParam.replace(/^post-/, ''))
-        );
+        if (matchedItem) {
+          setActiveGalleryItem(matchedItem);
+          setCurrentRoute('praktikum-detail');
+          setActiveSection('galeri');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
 
-      if (!matchedPost) {
-        matchedPost = blogPosts.find((p) => p.slug && p.slug.toLowerCase() === rawParam);
+      if (hash.startsWith('#catatan-') && hash !== '#catatan-kelas') {
+        const rawParam = hash.replace('#catatan-', '').toLowerCase();
+        let matchedNote =
+          notes.find((n) => n.id.toLowerCase() === rawParam) ||
+          notes.find((n) => n.id.toLowerCase() === `note-${rawParam}` || (rawParam.startsWith('note-') && n.id.toLowerCase() === rawParam.replace(/^note-/, ''))) ||
+          notes.find((n) => n.slug && n.slug.toLowerCase() === rawParam) ||
+          notes.find((n) => slugify(n.title) === rawParam) ||
+          notes.find((n) => slugify(n.title).includes(rawParam) || rawParam.includes(slugify(n.title)));
+
+        if (matchedNote) {
+          setActiveNote(matchedNote);
+          setCurrentRoute('catatan-detail');
+          setActiveSection('catatan-kelas');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
 
-      if (!matchedPost) {
-        matchedPost = blogPosts.find(
-          (p) => p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') === rawParam
-        );
+      if (
+        (hash.startsWith('#file-') || hash.startsWith('#dokumentasi-') || hash.startsWith('#modul-')) &&
+        hash !== '#modul' &&
+        hash !== '#dokumentasi-file'
+      ) {
+        const rawParam = hash.replace(/^#(file|dokumentasi|modul)-/, '').toLowerCase();
+        let matchedDoc =
+          documents.find((d) => d.id.toLowerCase() === rawParam) ||
+          documents.find((d) => d.id.toLowerCase() === `doc-${rawParam}` || (rawParam.startsWith('doc-') && d.id.toLowerCase() === rawParam.replace(/^doc-/, ''))) ||
+          documents.find((d) => d.slug && d.slug.toLowerCase() === rawParam) ||
+          documents.find((d) => slugify(d.title) === rawParam) ||
+          documents.find((d) => slugify(d.title).includes(rawParam) || rawParam.includes(slugify(d.title)));
+
+        if (matchedDoc) {
+          setActiveDocument(matchedDoc);
+          setCurrentRoute('document-detail');
+          setActiveSection('modul');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
 
-      if (matchedPost) {
-        setActiveBlogPost(matchedPost);
-        setCurrentRoute('article-detail');
-        setActiveSection('blog');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
+      if ((hash.startsWith('#blog-') || hash.startsWith('#artikel-')) && hash !== '#blog' && hash !== '#artikel') {
+        const rawParam = hash.replace(/^#(blog|artikel)-/, '').toLowerCase();
+        let matchedPost =
+          blogPosts.find((p) => p.id.toLowerCase() === rawParam) ||
+          blogPosts.find((p) => p.id.toLowerCase() === `post-${rawParam}` || (rawParam.startsWith('post-') && p.id.toLowerCase() === rawParam.replace(/^post-/, ''))) ||
+          blogPosts.find((p) => p.slug && p.slug.toLowerCase() === rawParam) ||
+          blogPosts.find((p) => slugify(p.title) === rawParam) ||
+          blogPosts.find((p) => slugify(p.title).includes(rawParam) || rawParam.includes(slugify(p.title)));
+
+        if (matchedPost) {
+          setActiveBlogPost(matchedPost);
+          setCurrentRoute('article-detail');
+          setActiveSection('blog');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
       }
     }
 
-    // 5. Fallback: Main Landing Page Section
+    // 3. Fallback: Main Landing Page Section
     setCurrentRoute('main');
-    const cleanSection = hash.replace('#', '');
+    const cleanSection = hash.replace('#', '') || 'beranda';
     setActiveSection(cleanSection || 'beranda');
 
     // Scroll to section element
@@ -473,12 +488,16 @@ export default function App() {
     }, 50);
   }, [notes, documents, blogPosts, galleryItems]);
 
-  // Listen to Hash Changes
+  // Listen to Hash and Browser History (Popstate) Changes
   useEffect(() => {
-    parseHashRoute();
-    window.addEventListener('hashchange', parseHashRoute);
-    return () => window.removeEventListener('hashchange', parseHashRoute);
-  }, [parseHashRoute]);
+    parseCurrentRoute();
+    window.addEventListener('hashchange', parseCurrentRoute);
+    window.addEventListener('popstate', parseCurrentRoute);
+    return () => {
+      window.removeEventListener('hashchange', parseCurrentRoute);
+      window.removeEventListener('popstate', parseCurrentRoute);
+    };
+  }, [parseCurrentRoute]);
 
   // Scroll section spy (only active when on main landing route)
   useEffect(() => {
@@ -504,38 +523,43 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [currentRoute]);
 
-  // Navigation handlers to dedicated full pages
+  // Navigation handlers to dedicated full pages with clean title-based URLs
   const handleSelectGalleryItem = (item: GalleryItem) => {
     setActiveGalleryItem(item);
     setCurrentRoute('praktikum-detail');
-    window.location.hash = `#praktikum-${item.id}`;
+    const slug = slugify(item.title) || item.slug || item.id;
+    window.history.pushState(null, '', `/praktikum/${encodeURIComponent(slug)}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectNote = (note: ClassNote) => {
     setActiveNote(note);
     setCurrentRoute('catatan-detail');
-    window.location.hash = `#catatan-${note.id}`;
+    const slug = slugify(note.title) || note.slug || note.id;
+    window.history.pushState(null, '', `/catatan/${encodeURIComponent(slug)}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectDocument = (doc: DocumentItem) => {
     setActiveDocument(doc);
     setCurrentRoute('document-detail');
-    window.location.hash = `#file-${doc.id}`;
+    const slug = slugify(doc.title) || doc.slug || doc.id;
+    window.history.pushState(null, '', `/modul/${encodeURIComponent(slug)}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectBlogPost = (post: BlogPost) => {
     setActiveBlogPost(post);
     setCurrentRoute('article-detail');
-    window.location.hash = `#blog-${post.id}`;
+    const slug = slugify(post.title) || post.slug || post.id;
+    window.history.pushState(null, '', `/artikel/${encodeURIComponent(slug)}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleBackToSection = (sectionId: string) => {
     setCurrentRoute('main');
-    window.location.hash = `#${sectionId}`;
+    window.history.pushState(null, '', `/#${sectionId}`);
+    setActiveSection(sectionId);
     setTimeout(() => {
       const el = document.getElementById(sectionId);
       if (el) {

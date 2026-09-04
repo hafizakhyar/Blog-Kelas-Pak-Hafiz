@@ -1,6 +1,7 @@
 export interface GalleryItem {
   id: string;
   title: string;
+  slug?: string;
   category: 'Indikator Alami' | 'Eksperimen Lab' | 'Karya Siswa' | 'Video Tutorial' | string;
   date: string;
   image: string;
@@ -35,6 +36,7 @@ export interface PracticalVideoItem {
 export interface DocumentItem {
   id: string;
   title: string;
+  slug?: string;
   category: 'Modul Ajar' | 'LKPD Praktikum' | 'Ringkasan & Rumus' | 'Bank Soal' | 'RPP & ATP' | 'Silabus' | string;
   classGrade: 'Kelas X' | 'Kelas XI' | 'Kelas XII' | 'Semua Tingkat' | string;
   fileFormat: 'PDF' | 'DOCX' | 'PPTX' | 'XLSX' | 'GDRIVE' | string;
@@ -44,6 +46,7 @@ export interface DocumentItem {
   summary: string;
   topics: string[];
   pages: number;
+  coverImage?: string;
   fileUrl?: string;
   driveUrl?: string;
 }
@@ -95,6 +98,7 @@ export interface TestSolution {
 export interface ClassNote {
   id: string;
   title: string;
+  slug?: string;
   category: string;
   classGrade: 'Kelas X' | 'Kelas XI' | 'Kelas XII' | 'Semua Tingkat';
   content: string;

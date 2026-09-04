@@ -1274,6 +1274,16 @@ ${
                             </button>
                           )}
 
+                          <WhatsAppShareButton
+                            onClick={() => {
+                              shareClassNoteToWhatsApp(note);
+                              onAddToast('Membuka WhatsApp', `Membagikan catatan "${note.title}" ke WhatsApp.`, 'info');
+                            }}
+                            label="WA"
+                            size="sm"
+                            title="Bagikan Catatan ke WhatsApp"
+                          />
+
                           {isAdmin && (
                             <button
                               onClick={() => handleOpenEditModal(note)}

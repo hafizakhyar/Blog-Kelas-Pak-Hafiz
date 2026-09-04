@@ -1,111 +1,113 @@
 /**
- * Utility functions for sharing content (Class Notes, Practicum Lab Gallery, and Articles) to WhatsApp
+ * Utility functions for sharing content (Class Notes, Practicum Lab Gallery, Articles, Documents, and Videos) to WhatsApp
+ * Generates title-based dedicated links and minimal WhatsApp messages containing ONLY the title and dedicated link,
+ * enabling WhatsApp to automatically display the post image, title, and link preview card.
  */
 
-export function getDirectNoteUrl(noteId: string): string {
-  const base = window.location.origin + window.location.pathname;
-  return `${base}#catatan-${encodeURIComponent(noteId)}`;
+export function slugify(text: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // remove diacritics
+    .replace(/[^a-z0-9\s-]/g, '') // remove special characters
+    .trim()
+    .replace(/\s+/g, '-') // replace spaces with hyphens
+    .replace(/-+/g, '-'); // collapse consecutive hyphens
 }
 
-export function getDirectPraktikumUrl(itemId: string): string {
-  const base = window.location.origin + window.location.pathname;
-  return `${base}#praktikum-${encodeURIComponent(itemId)}`;
+export function getDirectArticleUrl(post: { id?: string; title?: string; slug?: string }): string {
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  const titleSlug = post.title ? slugify(post.title) : '';
+  const param = titleSlug || post.slug || post.id || '';
+  return `${base}/artikel/${encodeURIComponent(param)}`;
 }
 
-export function getDirectArticleUrl(postId: string): string {
-  const base = window.location.origin + window.location.pathname;
-  return `${base}#artikel-${encodeURIComponent(postId)}`;
+export function getDirectNoteUrl(note: { id?: string; title?: string; slug?: string }): string {
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  const titleSlug = note.title ? slugify(note.title) : '';
+  const param = titleSlug || note.slug || note.id || '';
+  return `${base}/catatan/${encodeURIComponent(param)}`;
+}
+
+export function getDirectPraktikumUrl(item: { id?: string; title?: string; slug?: string }): string {
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  const titleSlug = item.title ? slugify(item.title) : '';
+  const param = titleSlug || item.slug || item.id || '';
+  return `${base}/praktikum/${encodeURIComponent(param)}`;
+}
+
+export function getDirectDocumentUrl(doc: { id?: string; title?: string; slug?: string }): string {
+  const base = typeof window !== 'undefined' ? window.location.origin : '';
+  const titleSlug = doc.title ? slugify(doc.title) : '';
+  const param = titleSlug || doc.slug || doc.id || '';
+  return `${base}/modul/${encodeURIComponent(param)}`;
 }
 
 /**
  * Share Class Note to WhatsApp
+ * Outputs ONLY post title and dedicated link, allowing WhatsApp preview to show the image, title, and link.
  */
 export function shareClassNoteToWhatsApp(note: {
   id?: string;
   title: string;
-  category: string;
-  classGrade: string;
-  authorName?: string;
-  content: string;
-  keyPoints?: string[];
+  slug?: string;
+  imageUrl?: string;
+  category?: string;
+  classGrade?: string;
 }) {
-  const url = note.id ? getDirectNoteUrl(note.id) : window.location.href;
-  const keyPointsText =
-    note.keyPoints && note.keyPoints.length > 0
-      ? `\n\n✨ *Rumus & Poin Kunci:*\n${note.keyPoints.slice(0, 3).map((p, i) => `• ${p}`).join('\n')}`
-      : '';
-
-  const cleanContent = note.content.length > 200 ? `${note.content.substring(0, 200)}...` : note.content;
-
-  const message = `📝 *Catatan Kimia: ${note.title}*
-🏷️ Topik: ${note.category} (${note.classGrade})
-👨‍🏫 Pengajar: ${note.authorName || 'Pak Hafiz Akhyar, S.Si.'}
-
-📖 *Ringkasan Materi:*
-${cleanContent}${keyPointsText}
-
-🔗 *Pelajari materi lengkap di Kelas Pak Hafiz:*
-${url}`;
-
+  const url = getDirectNoteUrl(note);
+  const message = `*${note.title.trim()}*\n\n${url}`;
   const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
   window.open(shareUrl, '_blank', 'noopener,noreferrer');
 }
 
 /**
  * Share Practicum / Lab Gallery Item to WhatsApp
+ * Outputs ONLY post title and dedicated link, allowing WhatsApp preview to show the image, title, and link.
  */
 export function sharePraktikumToWhatsApp(item: {
   id?: string;
   title: string;
-  category: string;
-  badge?: string;
-  description: string;
-  chemistryConcept?: string;
+  slug?: string;
+  image?: string;
+  category?: string;
 }) {
-  const url = item.id ? getDirectPraktikumUrl(item.id) : window.location.href;
-  const conceptText = item.chemistryConcept
-    ? `\n\n🧪 *Konsep & Reaksi Sains:*\n${item.chemistryConcept.length > 180 ? `${item.chemistryConcept.substring(0, 180)}...` : item.chemistryConcept}`
-    : '';
-
-  const cleanDesc = item.description.length > 200 ? `${item.description.substring(0, 200)}...` : item.description;
-
-  const message = `🔬 *Dokumentasi Praktikum: ${item.title}*
-🏷️ Kategori: ${item.category} ${item.badge ? `(${item.badge})` : ''}
-
-📌 *Deskripsi Eksperimen:*
-${cleanDesc}${conceptText}
-
-🔗 *Lihat foto, alat bahan & prosedur lengkap:*
-${url}`;
-
+  const url = getDirectPraktikumUrl(item);
+  const message = `*${item.title.trim()}*\n\n${url}`;
   const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
   window.open(shareUrl, '_blank', 'noopener,noreferrer');
 }
 
 /**
  * Share Science Article / Blog Post to WhatsApp
+ * Outputs ONLY post title and dedicated link, allowing WhatsApp preview to show the image, title, and link.
  */
 export function shareArticleToWhatsApp(post: {
   id?: string;
   title: string;
-  category: string;
-  summary: string;
-  readTime?: string;
-  author?: { name: string };
+  slug?: string;
+  coverImage?: string;
+  category?: string;
 }) {
-  const url = post.id ? getDirectArticleUrl(post.id) : window.location.href;
-  const authorName = post.author?.name || 'Pak Hafiz';
+  const url = getDirectArticleUrl(post);
+  const message = `*${post.title.trim()}*\n\n${url}`;
+  const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  window.open(shareUrl, '_blank', 'noopener,noreferrer');
+}
 
-  const message = `📖 *Artikel Sains & Kimia: ${post.title}*
-🏷️ Kategori: ${post.category} ${post.readTime ? `• Waktu Baca: ${post.readTime}` : ''}
-✍️ Penulis: ${authorName}
-
-💡 *Intisari Artikel:*
-${post.summary}
-
-🔗 *Baca artikel selengkapnya di Kelas Pak Hafiz:*
-${url}`;
-
+/**
+ * Share Document / Module / LKPD to WhatsApp
+ * Outputs ONLY post title and dedicated link, allowing WhatsApp preview to show the image, title, and link.
+ */
+export function shareDocumentToWhatsApp(doc: {
+  id?: string;
+  title: string;
+  slug?: string;
+  category?: string;
+}) {
+  const url = getDirectDocumentUrl(doc);
+  const message = `*${doc.title.trim()}*\n\n${url}`;
   const shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
   window.open(shareUrl, '_blank', 'noopener,noreferrer');
 }

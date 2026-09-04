@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { DOCUMENT_ITEMS } from '../data/mockData';
 import { DocumentItem } from '../types';
+import { WhatsAppShareButton } from './Common/WhatsAppShareButton';
+import { shareDocumentToWhatsApp } from '../utils/share';
 
 interface DocumentsSectionProps {
   onPreviewDoc: (doc: DocumentItem) => void;
@@ -451,6 +453,16 @@ export const DocumentsSection: React.FC<DocumentsSectionProps> = ({
                     <Download className="w-3.5 h-3.5" />
                     <span>Download</span>
                   </button>
+
+                  {/* WhatsApp Share Button */}
+                  <WhatsAppShareButton
+                    onClick={() => {
+                      shareDocumentToWhatsApp(doc);
+                      onAddToast('Membuka WhatsApp', `Membagikan modul "${doc.title}" ke WhatsApp.`, 'info');
+                    }}
+                    size="icon"
+                    title="Bagikan Dokumen ke WhatsApp"
+                  />
 
                   {/* Mode Guru Controls: Edit Judul, Jenis Dokumen & Link Download, Delete */}
                   {isAdmin && (

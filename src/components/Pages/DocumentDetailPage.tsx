@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { DocumentItem } from '../../types';
 import { TEACHER_INFO, DOCUMENT_ITEMS } from '../../data/mockData';
+import { shareDocumentToWhatsApp } from '../../utils/share';
 
 interface DocumentDetailPageProps {
   doc: DocumentItem;
@@ -65,10 +66,8 @@ export const DocumentDetailPage: React.FC<DocumentDetailPageProps> = ({
   };
 
   const handleShareWhatsApp = () => {
-    const shareText = encodeURIComponent(
-      `📑 *Modul & Berkas Kimia: ${doc.title}*\nJenjang: ${doc.classGrade} | Kategori: ${doc.category}\nFormat: ${doc.fileFormat} (${doc.fileSize})\n\nUnduh dan lihat preview berkasnya di sini:\n${window.location.href}`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${shareText}`, '_blank', 'noopener,noreferrer');
+    shareDocumentToWhatsApp(doc);
+    onAddToast('Membuka WhatsApp', `Membagikan modul "${doc.title}" ke WhatsApp.`, 'info');
   };
 
   const handlePrint = () => {
