@@ -258,7 +258,11 @@ async function startServer() {
   let vite: ViteDevServer | null = null;
   if (!isProd) {
     vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: process.env.DISABLE_HMR === 'true' ? false : undefined,
+        watch: process.env.DISABLE_HMR === 'true' ? null : undefined,
+      },
       appType: 'spa',
     });
   }
@@ -374,9 +378,30 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, HOST, () => {
+  const server = app.listen(PORT, HOST, () => {
     console.log(`Kelas Pak Hafiz Server running at http://${HOST}:${PORT} (mode: ${process.env.NODE_ENV || 'development'})`);
   });
+
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use. Exiting to allow clean restart.`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+
+  const cleanup = () => {
+    if (vite) {
+      vite.close().catch(() => {});
+    }
+    server.close(() => {
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
 }
 
 startServer();

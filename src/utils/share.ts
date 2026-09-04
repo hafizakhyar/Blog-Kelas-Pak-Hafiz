@@ -143,49 +143,41 @@ async function copyImageToClipboard(blob: Blob): Promise<boolean> {
 
 /**
  * Universal Share to WhatsApp helper
- * Directly opens WhatsApp with the clean Title and the direct, clickable link.
- * Guarantees that the link and title are never stripped or discarded,
- * allowing WhatsApp to pre-fill the text and generate the rich photo & card preview via Open Graph.
+ * Opens the interactive WhatsApp Share Modal displaying the photo preview,
+ * with 1-tap options to send directly to WhatsApp, share with photo file, or copy link & text.
  */
 export function shareToWhatsAppWithMedia(options: {
   title: string;
   url: string;
   imageUrl?: string;
   slug?: string;
+  category?: string;
+  description?: string;
 }) {
-  const { title, url } = options;
-  const cleanTitle = title.trim();
-  const captionMessage = `*${cleanTitle}*\n\n${url}`;
-  const encodedText = encodeURIComponent(captionMessage);
+  const { title, url, imageUrl, slug, category, description } = options;
 
-  // 1. Copy link to clipboard for instant backup convenience
-  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+  // 1. Immediately copy link to clipboard for instant backup
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
     navigator.clipboard.writeText(url).catch(() => {});
   }
 
-  // 2. Detect mobile device
-  const isMobile =
-    typeof navigator !== 'undefined' &&
-    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-
-  // 3. Open WhatsApp directly
-  if (isMobile) {
-    // Native whatsapp:// scheme launches the WhatsApp app instantly
-    const mobileScheme = `whatsapp://send?text=${encodedText}`;
-    const universalUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
-
-    window.location.href = mobileScheme;
-    setTimeout(() => {
-      if (document.hidden) return;
-      window.location.href = universalUrl;
-    }, 1200);
-  } else {
-    // On desktop, open WhatsApp Web in a new tab
-    const desktopUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
-    window.open(desktopUrl, '_blank', 'noopener,noreferrer');
+  // 2. Dispatch event to open the WhatsApp Share Modal
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('open-whatsapp-share-modal', {
+        detail: {
+          title,
+          url,
+          imageUrl,
+          slug,
+          category,
+          description,
+        },
+      })
+    );
   }
 
-  return { method: 'whatsapp-direct', success: true };
+  return { method: 'modal-opened', success: true };
 }
 
 /**

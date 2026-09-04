@@ -13,6 +13,7 @@ import { Footer } from './components/Footer';
 import { GalleryDetailModal } from './components/Modals/GalleryDetailModal';
 import { MainPlatformModal } from './components/Modals/MainPlatformModal';
 import { AdminAuthModal } from './components/Modals/AdminAuthModal';
+import { WhatsAppShareModal, WhatsAppShareData } from './components/Modals/WhatsAppShareModal';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { ClassNoteDetailPage } from './components/Pages/ClassNoteDetailPage';
 import { PraktikumDetailPage } from './components/Pages/PraktikumDetailPage';
@@ -230,6 +231,23 @@ export default function App() {
   // Gallery modal & Main portal modal
   const [selectedGalleryItem, setSelectedGalleryItem] = useState<GalleryItem | null>(null);
   const [isMainPortalModalOpen, setIsMainPortalModalOpen] = useState<boolean>(false);
+
+  // WhatsApp Share Modal State
+  const [whatsAppShareData, setWhatsAppShareData] = useState<WhatsAppShareData | null>(null);
+
+  useEffect(() => {
+    const handleOpenShareModal = (e: Event) => {
+      const customEvent = e as CustomEvent<WhatsAppShareData>;
+      if (customEvent.detail) {
+        setWhatsAppShareData(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('open-whatsapp-share-modal', handleOpenShareModal);
+    return () => {
+      window.removeEventListener('open-whatsapp-share-modal', handleOpenShareModal);
+    };
+  }, []);
 
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -1211,6 +1229,13 @@ https://www.kelaspakhafiz.my.id/
         isOpen={isAdminAuthModalOpen}
         onClose={() => setIsAdminAuthModalOpen(false)}
         onSuccess={handleAdminLoginSuccess}
+      />
+
+      {/* WhatsApp Share Modal with Photo & Link Preview */}
+      <WhatsAppShareModal
+        data={whatsAppShareData}
+        onClose={() => setWhatsAppShareData(null)}
+        onAddToast={addToast}
       />
     </div>
   );
