@@ -20,61 +20,58 @@ export const OFFICIAL_WEBSITE_DOMAIN = 'https://www.kelaspakhafiz.my.id';
 
 /**
  * Resolves the appropriate base URL for shareable links.
- * By default, returns the active window.location.origin so that WhatsApp crawler
- * reaches the live server where Open Graph meta tags and article photos are dynamically served.
+ * When running inside an internal development sandbox (such as Cloud Run or localhost),
+ * it returns the official website domain so links shared to WhatsApp can be opened by anyone on mobile.
  */
-export function getBaseAppUrl(preferCurrentOrigin: boolean = true): string {
+export function getBaseAppUrl(preferCurrentOrigin: boolean = false): string {
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     const hostname = window.location.hostname;
+    if (preferCurrentOrigin) return origin;
 
-    if (!preferCurrentOrigin) {
+    if (
+      hostname.includes('run.app') ||
+      hostname.includes('localhost') ||
+      hostname.includes('127.0.0.1') ||
+      hostname.includes('aistudio') ||
+      hostname.includes('webcontainer')
+    ) {
       return OFFICIAL_WEBSITE_DOMAIN;
     }
-
-    // Only when running strictly on localhost or local loopback, fallback to official domain
-    // because external mobile phones cannot resolve localhost directly
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return OFFICIAL_WEBSITE_DOMAIN;
-    }
-
-    // On Cloud Run (ais-dev / ais-pre), custom domains, or live web container:
-    // ALWAYS return origin so WhatsApp crawler connects to our Express SSR server
-    // which injects dynamic Open Graph meta tags with the specific post photo!
     return origin;
   }
   return OFFICIAL_WEBSITE_DOMAIN;
 }
 
-export function getDirectArticleUrl(post: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
+export function getDirectArticleUrl(post: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = post.title ? slugify(post.title) : '';
   const param = titleSlug || (post.slug ? slugify(post.slug) : '') || post.id || '';
   return `${base}/artikel/${encodeURIComponent(param)}`;
 }
 
-export function getDirectNoteUrl(note: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
+export function getDirectNoteUrl(note: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = note.title ? slugify(note.title) : '';
   const param = titleSlug || (note.slug ? slugify(note.slug) : '') || note.id || '';
   return `${base}/catatan/${encodeURIComponent(param)}`;
 }
 
-export function getDirectPraktikumUrl(item: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
+export function getDirectPraktikumUrl(item: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = item.title ? slugify(item.title) : '';
   const param = titleSlug || (item.slug ? slugify(item.slug) : '') || item.id || '';
   return `${base}/praktikum/${encodeURIComponent(param)}`;
 }
 
-export function getDirectDocumentUrl(doc: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
+export function getDirectDocumentUrl(doc: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = doc.title ? slugify(doc.title) : '';
   const param = titleSlug || (doc.slug ? slugify(doc.slug) : '') || doc.id || '';
   return `${base}/modul/${encodeURIComponent(param)}`;
 }
 
-export function getDirectVideoUrl(video: { id?: string; title?: string; youtubeId?: string }, preferCurrentOrigin: boolean = true): string {
+export function getDirectVideoUrl(video: { id?: string; title?: string; youtubeId?: string }, preferCurrentOrigin: boolean = false): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = video.title ? slugify(video.title) : '';
   const param = titleSlug || video.youtubeId || video.id || '';
