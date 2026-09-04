@@ -20,55 +20,65 @@ export const OFFICIAL_WEBSITE_DOMAIN = 'https://www.kelaspakhafiz.my.id';
 
 /**
  * Resolves the appropriate base URL for shareable links.
- * When running inside an internal development sandbox (such as Cloud Run or localhost),
- * it returns the official website domain so links shared to WhatsApp can be opened by anyone on mobile.
+ * By default, returns the active window.location.origin so that WhatsApp crawler
+ * reaches the live server where Open Graph meta tags and article photos are dynamically served.
  */
-export function getBaseAppUrl(preferCurrentOrigin: boolean = false): string {
+export function getBaseAppUrl(preferCurrentOrigin: boolean = true): string {
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
     const hostname = window.location.hostname;
-    if (preferCurrentOrigin) return origin;
 
-    if (
-      hostname.includes('run.app') ||
-      hostname.includes('localhost') ||
-      hostname.includes('127.0.0.1') ||
-      hostname.includes('aistudio') ||
-      hostname.includes('webcontainer')
-    ) {
+    if (!preferCurrentOrigin) {
       return OFFICIAL_WEBSITE_DOMAIN;
     }
+
+    // Only when running strictly on localhost or local loopback, fallback to official domain
+    // because external mobile phones cannot resolve localhost directly
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return OFFICIAL_WEBSITE_DOMAIN;
+    }
+
+    // On Cloud Run (ais-dev / ais-pre), custom domains, or live web container:
+    // ALWAYS return origin so WhatsApp crawler connects to our Express SSR server
+    // which injects dynamic Open Graph meta tags with the specific post photo!
     return origin;
   }
   return OFFICIAL_WEBSITE_DOMAIN;
 }
 
-export function getDirectArticleUrl(post: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
+export function getDirectArticleUrl(post: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = post.title ? slugify(post.title) : '';
   const param = titleSlug || (post.slug ? slugify(post.slug) : '') || post.id || '';
   return `${base}/artikel/${encodeURIComponent(param)}`;
 }
 
-export function getDirectNoteUrl(note: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
+export function getDirectNoteUrl(note: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = note.title ? slugify(note.title) : '';
   const param = titleSlug || (note.slug ? slugify(note.slug) : '') || note.id || '';
   return `${base}/catatan/${encodeURIComponent(param)}`;
 }
 
-export function getDirectPraktikumUrl(item: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
+export function getDirectPraktikumUrl(item: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = item.title ? slugify(item.title) : '';
   const param = titleSlug || (item.slug ? slugify(item.slug) : '') || item.id || '';
   return `${base}/praktikum/${encodeURIComponent(param)}`;
 }
 
-export function getDirectDocumentUrl(doc: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = false): string {
+export function getDirectDocumentUrl(doc: { id?: string; title?: string; slug?: string }, preferCurrentOrigin: boolean = true): string {
   const base = getBaseAppUrl(preferCurrentOrigin);
   const titleSlug = doc.title ? slugify(doc.title) : '';
   const param = titleSlug || (doc.slug ? slugify(doc.slug) : '') || doc.id || '';
   return `${base}/modul/${encodeURIComponent(param)}`;
+}
+
+export function getDirectVideoUrl(video: { id?: string; title?: string; youtubeId?: string }, preferCurrentOrigin: boolean = true): string {
+  const base = getBaseAppUrl(preferCurrentOrigin);
+  const titleSlug = video.title ? slugify(video.title) : '';
+  const param = titleSlug || video.youtubeId || video.id || '';
+  return `${base}/video/${encodeURIComponent(param)}`;
 }
 
 /**
@@ -189,15 +199,21 @@ export function shareClassNoteToWhatsApp(note: {
   title: string;
   slug?: string;
   imageUrl?: string;
+  coverImage?: string;
+  image?: string;
   category?: string;
   classGrade?: string;
+  content?: string;
 }) {
   const url = getDirectNoteUrl(note);
+  const img = note.imageUrl || note.coverImage || note.image;
   shareToWhatsAppWithMedia({
     title: note.title,
     url,
-    imageUrl: note.imageUrl,
-    slug: note.slug || slugify(note.title) || note.id
+    imageUrl: img,
+    slug: note.slug || slugify(note.title) || note.id,
+    category: note.category,
+    description: note.content,
   });
 }
 
@@ -211,15 +227,20 @@ export function sharePraktikumToWhatsApp(item: {
   slug?: string;
   image?: string;
   images?: string[];
+  imageUrl?: string;
+  coverImage?: string;
   category?: string;
+  description?: string;
 }) {
   const url = getDirectPraktikumUrl(item);
-  const img = item.image || (item.images && item.images[0]);
+  const img = item.image || (item.images && item.images[0]) || item.imageUrl || item.coverImage;
   shareToWhatsAppWithMedia({
     title: item.title,
     url,
     imageUrl: img,
-    slug: item.slug || slugify(item.title) || item.id
+    slug: item.slug || slugify(item.title) || item.id,
+    category: item.category,
+    description: item.description,
   });
 }
 
@@ -232,14 +253,20 @@ export function shareArticleToWhatsApp(post: {
   title: string;
   slug?: string;
   coverImage?: string;
+  imageUrl?: string;
+  image?: string;
   category?: string;
+  summary?: string;
 }) {
   const url = getDirectArticleUrl(post);
+  const img = post.coverImage || post.imageUrl || post.image;
   shareToWhatsAppWithMedia({
     title: post.title,
     url,
-    imageUrl: post.coverImage,
-    slug: post.slug || slugify(post.title) || post.id
+    imageUrl: img,
+    slug: post.slug || slugify(post.title) || post.id,
+    category: post.category,
+    description: post.summary,
   });
 }
 
@@ -252,13 +279,45 @@ export function shareDocumentToWhatsApp(doc: {
   title: string;
   slug?: string;
   coverImage?: string;
+  imageUrl?: string;
+  image?: string;
   category?: string;
+  summary?: string;
 }) {
   const url = getDirectDocumentUrl(doc);
+  const img = doc.coverImage || doc.imageUrl || doc.image;
   shareToWhatsAppWithMedia({
     title: doc.title,
     url,
-    imageUrl: doc.coverImage,
-    slug: doc.slug || slugify(doc.title) || doc.id
+    imageUrl: img,
+    slug: doc.slug || slugify(doc.title) || doc.id,
+    category: doc.category,
+    description: doc.summary,
+  });
+}
+
+/**
+ * Share Video Praktikum to WhatsApp
+ */
+export function shareVideoToWhatsApp(video: {
+  id?: string;
+  title: string;
+  youtubeUrl?: string;
+  youtubeId?: string;
+  thumbnailUrl?: string;
+  category?: string;
+  description?: string;
+}) {
+  const thumb =
+    video.thumbnailUrl ||
+    (video.youtubeId ? `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg` : undefined);
+  const url = getDirectVideoUrl(video);
+  shareToWhatsAppWithMedia({
+    title: video.title,
+    url,
+    imageUrl: thumb,
+    slug: slugify(video.title) || video.youtubeId || video.id,
+    category: video.category,
+    description: video.description,
   });
 }

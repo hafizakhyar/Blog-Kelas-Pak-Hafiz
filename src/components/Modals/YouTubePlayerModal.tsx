@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { PracticalVideoItem } from '../../types';
 import { getYouTubeEmbedUrl, getYouTubeWatchUrl } from '../../utils/youtube';
+import { shareVideoToWhatsApp } from '../../utils/share';
 import { WhatsAppShareButton } from '../Common/WhatsAppShareButton';
 
 interface YouTubePlayerModalProps {
@@ -55,9 +56,7 @@ export const YouTubePlayerModal: React.FC<YouTubePlayerModalProps> = ({
   };
 
   const handleShareWhatsApp = () => {
-    const text = `Tonton Video Praktikum Kimia: *${video.title}* (${video.category})\nLink: ${video.youtubeUrl || watchUrl}\n\nDari Portal Pembelajaran Kelas Pak Hafiz: https://www.kelaspakhafiz.my.id/`;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
-    onAddToast('Membuka WhatsApp', `Membagikan video "${video.title}" ke WhatsApp.`, 'info');
+    shareVideoToWhatsApp(video);
   };
 
   return (

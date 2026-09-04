@@ -7,7 +7,8 @@ import {
   BLOG_POSTS,
   INITIAL_CLASS_NOTES,
   GALLERY_ITEMS,
-  DOCUMENT_ITEMS
+  DOCUMENT_ITEMS,
+  INITIAL_PRACTICAL_VIDEOS
 } from './src/data/mockData';
 import { slugify } from './src/utils/share';
 
@@ -106,6 +107,30 @@ function findStaticItem(
     }
   }
 
+  if (type === 'video' || type === 'youtube') {
+    const vid =
+      INITIAL_PRACTICAL_VIDEOS.find(
+        (v) =>
+          slugify(v.title) === cleanSlug ||
+          v.id.toLowerCase() === lowerRaw ||
+          v.id.toLowerCase() === `vid-${lowerRaw}` ||
+          (v.youtubeId && v.youtubeId.toLowerCase() === lowerRaw)
+      ) ||
+      INITIAL_PRACTICAL_VIDEOS.find(
+        (v) => slugify(v.title).includes(cleanSlug) || cleanSlug.includes(slugify(v.title))
+      );
+
+    if (vid) {
+      return {
+        title: vid.title,
+        description: cleanSnippet(vid.description || vid.chemistryConcept || ''),
+        imageUrl:
+          vid.thumbnailUrl ||
+          (vid.youtubeId ? `https://img.youtube.com/vi/${vid.youtubeId}/hqdefault.jpg` : DEFAULT_IMAGE)
+      };
+    }
+  }
+
   return null;
 }
 
@@ -127,6 +152,7 @@ async function findFirestoreDoc(
     else if (type === 'catatan') collectionName = 'catatan_kelas';
     else if (type === 'praktikum' || type === 'galeri') collectionName = 'catatan_foto';
     else if (type === 'modul' || type === 'dokumen' || type === 'file') collectionName = 'catatan_dokumen';
+    else if (type === 'video' || type === 'youtube') collectionName = 'catatan_video';
 
     if (!collectionName) return null;
 
@@ -181,10 +207,42 @@ async function findFirestoreDoc(
 }
 
 function injectMetaTags(html: string, meta: ShareItemMeta): string {
-  const { title, description, imageUrl, canonicalUrl } = meta;
+  let { title, description, imageUrl, canonicalUrl } = meta;
   const escapedTitle = title.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const escapedDesc = description.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const pageTitle = `${escapedTitle} — Kelas Pak Hafiz`;
+
+  // Ensure imageUrl is an absolute URL with https protocol for WhatsApp scrapers
+  if (imageUrl) {
+    if (imageUrl.startsWith('//')) {
+      imageUrl = `https:${imageUrl}`;
+    } else if (imageUrl.startsWith('/')) {
+      try {
+        const u = new URL(canonicalUrl);
+        imageUrl = `${u.protocol}//${u.host}${imageUrl}`;
+      } catch {
+        imageUrl = `https://www.kelaspakhafiz.my.id${imageUrl}`;
+      }
+    }
+    // Optimize Unsplash images for Open Graph WhatsApp cards (1200x630, 80% quality)
+    if (imageUrl.includes('images.unsplash.com')) {
+      try {
+        const u = new URL(imageUrl);
+        u.searchParams.set('w', '1200');
+        u.searchParams.set('h', '630');
+        u.searchParams.set('fit', 'crop');
+        u.searchParams.set('auto', 'format');
+        u.searchParams.set('q', '80');
+        imageUrl = u.toString();
+      } catch {
+        // keep as is
+      }
+    }
+  } else {
+    imageUrl = DEFAULT_IMAGE;
+  }
+
+  const mimeType = imageUrl.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg';
 
   let result = html;
 
@@ -213,6 +271,14 @@ function injectMetaTags(html: string, meta: ShareItemMeta): string {
   result = result.replace(
     /<meta\s+property="og:image:secure_url"\s+content="[\s\S]*?"\s*\/?>/i,
     `<meta property="og:image:secure_url" content="${imageUrl}" />`
+  );
+  result = result.replace(
+    /<meta\s+property="og:image:alt"\s+content="[\s\S]*?"\s*\/?>/i,
+    `<meta property="og:image:alt" content="${escapedTitle}" />`
+  );
+  result = result.replace(
+    /<meta\s+property="og:image:type"\s+content="[\s\S]*?"\s*\/?>/i,
+    `<meta property="og:image:type" content="${mimeType}" />`
   );
 
   // Ensure canonical og:url
@@ -309,6 +375,8 @@ async function startServer() {
       '/modul/:slug',
       '/file/:slug',
       '/dokumen/:slug',
+      '/video/:slug',
+      '/youtube/:slug',
     ],
     async (req: Request, res: Response, next: NextFunction) => {
       try {
@@ -359,7 +427,13 @@ async function startServer() {
         // 4. Inject dynamic post metadata for WhatsApp / social preview scrapers
         const finalHtml = injectMetaTags(html, meta);
 
-        res.status(200).set({ 'Content-Type': 'text/html; charset=utf-8' }).send(finalHtml);
+        res
+          .status(200)
+          .set({
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'public, max-age=180, s-maxage=600, stale-while-revalidate=86400',
+          })
+          .send(finalHtml);
       } catch (error) {
         console.error('Error serving share preview:', error);
         next();

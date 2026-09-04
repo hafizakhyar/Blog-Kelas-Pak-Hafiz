@@ -27,10 +27,12 @@ export const WhatsAppShareModal: React.FC<WhatsAppShareModalProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isSharingFile, setIsSharingFile] = useState(false);
+  const [useOfficialDomain, setUseOfficialDomain] = useState(false);
 
   useEffect(() => {
     setCopiedText(false);
     setCopiedLink(false);
+    setUseOfficialDomain(false);
   }, [data]);
 
   if (!data) return null;
@@ -39,8 +41,13 @@ export const WhatsAppShareModal: React.FC<WhatsAppShareModalProps> = ({
   const rawUrl = data.url.trim();
   const cleanImage = data.imageUrl || 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1200&h=630&q=80';
 
+  // Calculate active URL based on toggle
+  const activeUrl = useOfficialDomain
+    ? rawUrl.replace(/^https?:\/\/[^/]+/, 'https://www.kelaspakhafiz.my.id')
+    : rawUrl;
+
   // WhatsApp optimized message: Link is placed first to guarantee WhatsApp crawler preview detection and avoid truncation
-  const fullShareMessage = `${rawUrl}\n\n*${cleanTitle}*\n\n_Kelas Pak Hafiz — Sains Dalam Sudut Pandang yang Lebih Segar_`;
+  const fullShareMessage = `${activeUrl}\n\n*${cleanTitle}*\n\n_Kelas Pak Hafiz — Sains Dalam Sudut Pandang yang Lebih Segar_`;
   const encodedMessage = encodeURIComponent(fullShareMessage);
   const whatsappWebOrAppUrl = `https://wa.me/?text=${encodedMessage}`;
 
@@ -78,7 +85,7 @@ export const WhatsAppShareModal: React.FC<WhatsAppShareModalProps> = ({
   // 3. Handle Copy Link Only
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(rawUrl);
+      await navigator.clipboard.writeText(activeUrl);
       setCopiedLink(true);
       if (onAddToast) {
         onAddToast('Tautan Tersalin', 'Tautan langsung artikel berhasil disalin.', 'success');
@@ -228,13 +235,72 @@ export const WhatsAppShareModal: React.FC<WhatsAppShareModalProps> = ({
                 </div>
               </div>
 
-              <div className="p-3.5 space-y-1.5">
+              <div className="p-3.5 space-y-2">
                 <p className="font-bold text-sm text-slate-800 dark:text-slate-100 line-clamp-2 leading-snug">
                   {cleanTitle}
                 </p>
-                <p className="text-[11px] font-mono text-[#0284C7] dark:text-[#38BDF8] break-all line-clamp-1">
-                  {rawUrl}
-                </p>
+
+                {/* Status Pratinjau Foto */}
+                <div className="flex items-center justify-between gap-2 pt-0.5">
+                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Foto postingan sesuai & siap tampil di WhatsApp</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/80 dark:border-slate-700/80">
+                  <p className="text-[11px] font-mono text-[#0284C7] dark:text-[#38BDF8] break-all line-clamp-1 flex-1">
+                    {activeUrl}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="shrink-0 text-[11px] font-medium text-slate-500 hover:text-[#128C7E] dark:text-slate-400 dark:hover:text-[#25D366] flex items-center gap-1 cursor-pointer"
+                  >
+                    {copiedLink ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        <span className="text-emerald-600 dark:text-emerald-400">Tersalin</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Salin Link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Pilihan Sumber Tautan (Bila Pengguna Ingin Menggunakan Domain Resmi) */}
+            <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-100/80 dark:bg-slate-800/80 text-xs">
+              <span className="text-slate-600 dark:text-slate-300 font-medium">Format Tautan:</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setUseOfficialDomain(false)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    !useOfficialDomain
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700'
+                  }`}
+                  title="Tautan server aktif yang otomatis memuat foto postingan di kartu preview WhatsApp"
+                >
+                  Server SSR (Auto Foto)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUseOfficialDomain(true)}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                    useOfficialDomain
+                      ? 'bg-slate-700 text-white dark:bg-slate-600 shadow-xs'
+                      : 'text-slate-600 hover:bg-slate-200 dark:text-slate-400 dark:hover:bg-slate-700'
+                  }`}
+                  title="Domain resmi kelaspakhafiz.my.id"
+                >
+                  kelaspakhafiz.my.id
+                </button>
               </div>
             </div>
 
