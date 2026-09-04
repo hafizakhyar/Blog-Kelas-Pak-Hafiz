@@ -143,58 +143,49 @@ async function copyImageToClipboard(blob: Blob): Promise<boolean> {
 
 /**
  * Universal Share to WhatsApp helper
- * 1. If Web Share API supports file sharing (Mobile phones / tablets), shares real image file + caption directly to WhatsApp.
- * 2. If desktop, opens WhatsApp Web with the clean title & dedicated link, and copies the image to clipboard if possible.
+ * Directly opens WhatsApp with the clean Title and the direct, clickable link.
+ * Guarantees that the link and title are never stripped or discarded,
+ * allowing WhatsApp to pre-fill the text and generate the rich photo & card preview via Open Graph.
  */
-export async function shareToWhatsAppWithMedia(options: {
+export function shareToWhatsAppWithMedia(options: {
   title: string;
   url: string;
   imageUrl?: string;
   slug?: string;
 }) {
-  const { title, url, imageUrl, slug } = options;
-  const captionMessage = `*${title.trim()}*\n\n${url}`;
+  const { title, url } = options;
+  const cleanTitle = title.trim();
+  const captionMessage = `*${cleanTitle}*\n\n${url}`;
+  const encodedText = encodeURIComponent(captionMessage);
 
-  // 1. If an image is available, attempt to retrieve the blob
-  let imageBlob: Blob | null = null;
-  if (imageUrl) {
-    imageBlob = await fetchImageAsBlob(imageUrl);
+  // 1. Copy link to clipboard for instant backup convenience
+  if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).catch(() => {});
   }
 
-  // 2. Try Mobile Web Share API with File (attaches real photo directly in WhatsApp!)
-  if (imageBlob && typeof navigator !== 'undefined' && navigator.share && navigator.canShare) {
-    try {
-      const mimeType = imageBlob.type || 'image/jpeg';
-      const ext = mimeType.includes('png') ? 'png' : 'jpg';
-      const safeSlug = slug ? slugify(slug) : slugify(title) || 'foto-materi';
-      const file = new File([imageBlob], `${safeSlug}.${ext}`, { type: mimeType });
+  // 2. Detect mobile device
+  const isMobile =
+    typeof navigator !== 'undefined' &&
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 
-      if (navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: title.trim(),
-          text: captionMessage,
-          files: [file],
-        });
-        return { method: 'file-share', success: true };
-      }
-    } catch (shareErr: any) {
-      // If user aborted/cancelled share sheet, do nothing
-      if (shareErr?.name === 'AbortError') {
-        return { method: 'cancelled', success: false };
-      }
-      console.warn('Web Share with file failed, falling back to URL:', shareErr);
-    }
+  // 3. Open WhatsApp directly
+  if (isMobile) {
+    // Native whatsapp:// scheme launches the WhatsApp app instantly
+    const mobileScheme = `whatsapp://send?text=${encodedText}`;
+    const universalUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    window.location.href = mobileScheme;
+    setTimeout(() => {
+      if (document.hidden) return;
+      window.location.href = universalUrl;
+    }, 1200);
+  } else {
+    // On desktop, open WhatsApp Web in a new tab
+    const desktopUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    window.open(desktopUrl, '_blank', 'noopener,noreferrer');
   }
 
-  // 3. Desktop fallback: Copy image to clipboard so user can press Ctrl+V in WhatsApp Web
-  if (imageBlob) {
-    copyImageToClipboard(imageBlob).catch(() => {});
-  }
-
-  // 4. Open WhatsApp with pre-filled message (Title + Dedicated Link)
-  const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(captionMessage)}`;
-  window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
-  return { method: 'link-share', success: true };
+  return { method: 'whatsapp-direct', success: true };
 }
 
 /**
